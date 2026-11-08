@@ -4,6 +4,31 @@ import Image from "next/image";
 import Link from "next/link";
 import { IntentPrefetchLink } from "@/components/ui/IntentPrefetchLink";
 import { usePathname } from "next/navigation";
+import {
+        Accessibility,
+        BookOpen,
+        CircleHelp,
+        Code,
+        Cookie,
+        Database,
+        FileText,
+        Hammer,
+        History,
+        Heart,
+        Info,
+        LayoutTemplate,
+        Library,
+        Lightbulb,
+        ListChecks,
+        Mail,
+        MessageSquare,
+        Scale,
+        ScrollText,
+        ShieldCheck,
+        Sparkles,
+        Users,
+        Wrench,
+} from "lucide-react";
 import { FeedbackButton } from "@/components/feedback/FeedbackButton";
 import { FooterSupportLinks } from "@/components/landing/FooterSupportLinks";
 import { CONTACT_EMAILS, FEEDBACK_ISSUES_URL, SOURCE_REPO_URL } from "@/lib/contact";
@@ -36,53 +61,56 @@ export function Footer() {
                 {
                         title: t("footer.group.product"),
                         links: [
-                                { label: t("nav.startBuilding"), href: "/dashboard" },
-                                { label: t("footer.templates"), href: localizedPath(GALLERY_PATH, locale) },
-                                ...((indexLocales() as string[]).includes(locale) ? [{ label: t("footer.examples"), href: roleExamplePath(locale) }] : []),
-                                { label: t("footer.features"), href: "#features" },
-                                { label: t("howItWorks.title"), href: "#how-it-works" },
+                                { Icon: Hammer, label: t("nav.startBuilding"), href: "/dashboard" },
+                                { Icon: LayoutTemplate, label: t("footer.templates"), href: localizedPath(GALLERY_PATH, locale) },
+                                ...((indexLocales() as string[]).includes(locale) ? [{ Icon: FileText, label: t("footer.examples"), href: roleExamplePath(locale) }] : []),
+                        { Icon: Sparkles, label: t("footer.features"), href: "#features" },
+                        { Icon: ListChecks, label: t("howItWorks.title"), href: "#how-it-works" },
                         ],
                 },
                 {
                         title: t("footer.group.resources"),
                         links: [
-                                { label: t("footer.blog"), href: blogIndexPath(locale) },
-                                { label: t("footer.tools"), href: localizedPath(TOOLS_PATH, locale) },
-                                { label: t("footer.resourcesPage"), href: localizedPath(RESOURCES_PATH, locale) },
-                                { label: t("footer.about"), href: "/about" },
-                                { label: t("footer.changelog"), href: "/changelog" },
-                                { label: t("footer.faq"), href: "#faq" },
+                                { Icon: BookOpen, label: t("footer.blog"), href: blogIndexPath(locale) },
+                                { Icon: Wrench, label: t("footer.tools"), href: localizedPath(TOOLS_PATH, locale) },
+                                { Icon: Library, label: t("footer.resourcesPage"), href: localizedPath(RESOURCES_PATH, locale) },
+                                { Icon: Info, label: t("footer.about"), href: "/about" },
+                                { Icon: History, label: t("footer.changelog"), href: "/changelog" },
+                                { Icon: CircleHelp, label: t("footer.faq"), href: "#faq" },
                         ],
                 },
                 {
                         title: t("footer.group.legal"),
                         links: [
-                                { label: t("footer.privacy"), href: "/privacy" },
-                                { label: t("footer.terms"), href: "/terms" },
-                                { label: t("footer.cookies"), href: "/cookies" },
-                                { label: t("footer.yourData"), href: "/your-data" },
-                                { label: t("footer.accessibility"), href: "/accessibility" },
-                                ...(isLegalNoticeReady() ? [{ label: t("footer.impressum"), href: "/impressum" }] : []),
+                                { Icon: ShieldCheck, label: t("footer.privacy"), href: "/privacy" },
+                                { Icon: ScrollText, label: t("footer.terms"), href: "/terms" },
+                                { Icon: Cookie, label: t("footer.cookies"), href: "/cookies" },
+                                { Icon: Database, label: t("footer.yourData"), href: "/your-data" },
+                                { Icon: Accessibility, label: t("footer.accessibility"), href: "/accessibility" },
+                                ...(isLegalNoticeReady() ? [{ Icon: Scale, label: t("footer.impressum"), href: "/impressum" }] : []),
                         ],
                 },
                 {
                         title: t("footer.group.support"),
                         links: [
-                                { label: t("footer.contact"), href: "/contact" },
-                                { label: CONTACT_EMAILS.support, href: `mailto:${CONTACT_EMAILS.support}` },
+                                { Icon: MessageSquare, label: t("footer.contact"), href: "/contact" },
+                                { Icon: Mail, label: CONTACT_EMAILS.support, href: `mailto:${CONTACT_EMAILS.support}` },
                                 {
+                                        Icon: Mail,
                                         label: `${CONTACT_EMAILS.founder} (${t("contact.founder")})`,
                                         href: `mailto:${CONTACT_EMAILS.founder}`,
                                 },
-                                { label: t("footer.feedbackGithub"), href: FEEDBACK_ISSUES_URL },
-                                { label: t("footer.sourceCode"), href: SOURCE_REPO_URL },
-                                { label: t("landing.support.cta"), href: getKofiUrl("footer") },
-                                { label: t("supporters.title"), href: "/supporters" },
+                                { Icon: Lightbulb, label: t("footer.feedbackGithub"), href: FEEDBACK_ISSUES_URL },
+                                { Icon: Code, label: t("footer.sourceCode"), href: SOURCE_REPO_URL },
+                                { Icon: Heart, label: t("landing.support.cta"), href: getKofiUrl("footer") },
+                                { Icon: Users, label: t("supporters.title"), href: "/supporters" },
                         ],
                 },
         ];
 
-        const linkClass = "text-sm text-mid transition-colors hover:text-strong";
+        const linkClass =
+                "inline-flex items-center gap-2 text-sm text-mid transition-colors hover:text-strong";
+        const iconProps = { className: "h-4 w-4 shrink-0", "aria-hidden": true } as const;
 
         return (
                 <footer className="border-t border-edge bg-surface-1 px-6 py-16">
@@ -142,6 +170,7 @@ export function Footer() {
                                                                                                 href={resolvedHref}
                                                                                                 className={linkClass}
                                                                                         >
+                                                                                                <link.Icon {...iconProps} />
                                                                                                 {link.label}
                                                                                         </IntentPrefetchLink>
                                                                                 ) : (
@@ -160,6 +189,7 @@ export function Footer() {
                                                                                                 }
                                                                                                 className={linkClass}
                                                                                         >
+                                                                                                <link.Icon {...iconProps} />
                                                                                                 {link.label}
                                                                                         </a>
                                                                                 );

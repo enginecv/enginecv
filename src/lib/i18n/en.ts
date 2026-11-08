@@ -149,7 +149,7 @@ export const en: Translations = {
   "landing.faq.q5": "Does AI work yet?",
   "landing.faq.a5": "Not yet. AI chat and provider integrations are still in progress, and the landing page now reflects the app as it exists today.",
 
-  "landing.cta.title": "Start With The Builder That Works Today",
+  "landing.cta.title": "Start Building Your CV Today",
   "landing.cta.noSignup": "No account required. Start locally and export whenever you want.",
 
   "landing.footer.tagline": "Free Resume Builder · Privacy-first · Local-first and portable",
@@ -202,6 +202,7 @@ export const en: Translations = {
   "hero.noRotationLabel": "No Account. No Paywall. No Nonsense.",
   "hero.startBuilding": "Start Building Your CV",
   "hero.viewTemplates": "See all templates",
+  "landing.hero.localNote": "No account needed. Your resume stays on your device.",
 
   // How It Works
   "howItWorks.title": "How It Works",

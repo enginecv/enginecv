@@ -149,7 +149,7 @@ export const es: Translations = {
   "landing.faq.q5": "¿AI funciona ya?",
   "landing.faq.a5": "Aún no. El chat AI y las integraciones con proveedores aún están en desarrollo, y la página de inicio ahora refleja la aplicación tal como existe hoy.",
 
-  "landing.cta.title": "Empieza con el builder que funciona hoy",
+  "landing.cta.title": "Empieza a crear tu CV hoy mismo",
   "landing.cta.noSignup": "No se requiere cuenta. Empieza localmente y exporta cuando quieras.",
 
   "landing.footer.tagline": "Builder de Currículums Gratis · Privacidad primero · Local-first y portable",
@@ -202,6 +202,7 @@ export const es: Translations = {
   "hero.noRotationLabel": "Sin cuenta. Sin muro de pago. Sin tonterías.",
   "hero.startBuilding": "Empieza a crear tu CV",
   "hero.viewTemplates": "Ver todas las plantillas",
+  "landing.hero.localNote": "Sin cuenta. Tu CV se queda en tu dispositivo.",
 
   // How It Works
   "howItWorks.title": "Cómo funciona",

@@ -71,35 +71,24 @@ export function Hero() {
             {t("landing.hero.description1")}
           </p>
 
-          <p className="mt-4 max-w-xl text-base leading-7 text-mid">
-            {t("landing.hero.openSource")}{" "}
-            <a
-              href={SOURCE_REPO_URL}
-              target="_blank"
-              rel="noreferrer"
-              data-testid="landing-hero-source-link"
-              className="inline-flex items-center gap-1.5 font-semibold text-bright underline decoration-edge-strong underline-offset-4 transition-colors hover:text-accent focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-            >
-              <Github className="h-4 w-4" aria-hidden="true" />
-              {t("landing.hero.openSourceLink")}
-            </a>
-          </p>
-
-          <div className="mt-9 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
+          <div className="mt-9 flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-center">
             <AppEntryLink
               href="/dashboard"
-              className="group inline-flex min-h-12 touch-manipulation items-center justify-center gap-2 rounded-lg bg-accent px-6 text-base font-semibold text-surface-0 transition-colors hover:bg-accent-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              className="group inline-flex whitespace-nowrap min-h-12 touch-manipulation items-center justify-center gap-2 rounded-lg bg-accent px-6 text-base font-semibold text-surface-0 transition-colors hover:bg-accent-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
             >
               {t("hero.startBuilding")}
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" aria-hidden="true" />
             </AppEntryLink>
             <IntentPrefetchLink
               href={localizedPath(GALLERY_PATH, locale)}
-              className="inline-flex min-h-12 touch-manipulation items-center justify-center rounded-lg border border-edge-strong bg-surface-2/80 px-6 text-base font-medium text-strong transition-colors hover:bg-surface-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+              className="inline-flex whitespace-nowrap min-h-12 touch-manipulation items-center justify-center rounded-lg px-3 text-base font-medium text-mid underline decoration-edge-strong underline-offset-4 transition-colors hover:text-strong hover:decoration-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
             >
               {t("hero.viewTemplates")}
             </IntentPrefetchLink>
           </div>
+          <p className="mt-3 text-sm text-dim" data-testid="landing-hero-local-note">
+            {t("landing.hero.localNote")}
+          </p>
 
           <div
             className="mt-10 flex flex-wrap items-center gap-x-5 gap-y-3 border-y border-edge py-4 text-[13px] text-mid"
@@ -121,6 +110,20 @@ export function Hero() {
               {t("landing.hero.badgeOpenSource")}
             </a>
           </div>
+
+          <p className="mt-5 max-w-xl text-sm leading-6 text-dim">
+            {t("landing.hero.openSource")}{" "}
+            <a
+              href={SOURCE_REPO_URL}
+              target="_blank"
+              rel="noreferrer"
+              data-testid="landing-hero-source-link"
+              className="inline-flex items-center gap-1.5 font-semibold text-bright underline decoration-edge-strong underline-offset-4 transition-colors hover:text-accent focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            >
+              <Github className="h-4 w-4" aria-hidden="true" />
+              {t("landing.hero.openSourceLink")}
+            </a>
+          </p>
         </div>
 
         <LazyWorkbenchDemo />

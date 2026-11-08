@@ -149,7 +149,7 @@ export const bs: Translations = {
   "landing.faq.q5": "Da li AI radi?",
   "landing.faq.a5": "Još ne. AI chat i integracije s pružateljima su još u izradi, a landing stranica sada odražava aplikaciju kakva trenutno postoji.",
 
-  "landing.cta.title": "Krenite s builderom koji radi danas",
+  "landing.cta.title": "Počnite izrađivati svoj CV već danas",
   "landing.cta.noSignup": "Račun nije potreban. Počnite lokalno i izvozite kad god želite.",
 
   "landing.footer.tagline": "Besplatan uređivač CV-a · Privatnost na prvom mjestu · Lokalno i prenosivo",
@@ -200,8 +200,9 @@ export const bs: Translations = {
   "hero.noTermPaywall": "naplate",
   "hero.noTermNonsense": "gluposti",
   "hero.noRotationLabel": "Bez računa. Bez naplate. Bez gluposti.",
-  "hero.startBuilding": "Počnite kreirati svoj CV",
-  "hero.viewTemplates": "Pogledajte sve šablone",
+  "hero.startBuilding": "Napravite svoj CV",
+  "hero.viewTemplates": "Svi šabloni",
+  "landing.hero.localNote": "Bez računa. Vaš CV ostaje na vašem uređaju.",
 
   // How It Works
   "howItWorks.title": "Kako funkcioniše",

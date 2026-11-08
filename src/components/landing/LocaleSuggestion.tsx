@@ -72,9 +72,9 @@ export function LocaleSuggestion() {
             aria-label={copy("localeSuggestion.label")}
             lang={suggested}
             data-testid="locale-suggestion"
-            className="fixed inset-x-4 bottom-4 z-50 mx-auto flex max-w-md items-center gap-3 rounded-2xl border border-edge bg-surface-4 px-4 py-3 text-sm text-strong shadow-2xl"
+            className="fixed inset-x-4 bottom-4 z-50 mx-auto flex max-w-md flex-wrap items-center gap-x-3 gap-y-2 sm:flex-nowrap rounded-2xl border border-edge bg-surface-4 px-4 py-3 text-sm text-strong shadow-2xl"
         >
-            <p className="min-w-0 flex-1">{copy("localeSuggestion.message")}</p>
+            <p className="min-w-0 basis-full sm:basis-auto sm:flex-1">{copy("localeSuggestion.message")}</p>
             <Link
                 href={localizedPath("/", suggested)}
                 data-testid="locale-suggestion-link"
@@ -86,7 +86,7 @@ export function LocaleSuggestion() {
                 type="button"
                 onClick={dismiss}
                 aria-label={copy("localeSuggestion.dismiss")}
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-faint transition-colors hover:text-strong"
+                className="ml-auto flex h-8 w-8 shrink-0 items-center sm:ml-0 justify-center rounded-lg text-faint transition-colors hover:text-strong"
             >
                 <X className="h-4 w-4" aria-hidden="true" />
             </button>
