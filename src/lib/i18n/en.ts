@@ -236,6 +236,7 @@ export const en: Translations = {
   "footer.support.githubSponsors": "GitHub Sponsors",
   "footer.support.github": "GitHub profile",
   "footer.support.portfolio": "Portfolio website (safet.click)",
+  "footer.support.reportBug": "Report a bug on GitHub",
 
   // Resume Carousel
   "templates.showcase.counter": "Template {current}/{total}",

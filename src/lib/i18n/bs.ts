@@ -236,6 +236,7 @@ export const bs: Translations = {
   "footer.support.githubSponsors": "GitHub Sponsors",
   "footer.support.github": "GitHub profil",
   "footer.support.portfolio": "Portfolio web stranica (safet.click)",
+  "footer.support.reportBug": "Prijavi grešku na GitHubu",
 
   // Resume Carousel
   "templates.showcase.counter": "Šablon {current}/{total}",

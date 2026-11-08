@@ -1,6 +1,7 @@
 "use client";
 
 import { Coffee, Github, Globe, Heart, Bug, type LucideIcon } from "lucide-react";
+import { FEEDBACK_ISSUES_URL } from "@/lib/contact";
 import { useTranslation } from "@/lib/i18n";
 import {
         ENGINECV_GITHUB_PROFILE_URL,
@@ -53,8 +54,8 @@ const FOOTER_SUPPORT_LINKS: FooterSupportLink[] = [
         },
         {
                 id: "report-bug",
-                href: ENGINECV_PORTFOLIO_URL,
-                labelKey: "footer.support.portfolio",
+                href: FEEDBACK_ISSUES_URL,
+                labelKey: "footer.support.reportBug",
                 Icon: Bug,
         },
 ];
