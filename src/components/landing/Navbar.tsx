@@ -100,7 +100,7 @@ export function Navbar() {
         {/* Right */}
         <div className={`${styles.desktopActions} shrink-0 items-center gap-3`}>
           <ThemeToggle />
-          <LanguageSwitcher />
+          <LanguageSwitcher fullLabel buttonClassName="border border-edge" />
           
           <AppEntryLink
             href="/dashboard"

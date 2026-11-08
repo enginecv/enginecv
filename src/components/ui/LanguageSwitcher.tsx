@@ -106,6 +106,8 @@ export function LanguageSwitcher({
         onClick={handleToggle}
         className={`touch-manipulation flex items-center gap-1.5 rounded-lg ${compact ? "px-2" : "px-2.5"} py-1.5 text-sm text-faint transition-colors hover:bg-edge hover:text-strong ${buttonClassName || ""}`}
         aria-label={t("language.change")}
+        aria-haspopup="true"
+        aria-expanded={open}
       >
         <Languages className="h-4 w-4" />
         <span className={`text-xs font-medium ${fullLabel ? "" : "uppercase"}`}>

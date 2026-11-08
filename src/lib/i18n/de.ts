@@ -149,7 +149,7 @@ export const de: Translations = {
   "landing.faq.q5": "Funktioniert AI schon?",
   "landing.faq.a5": "Noch nicht. AI-Chat und Anbieterintegrationen sind noch in Arbeit, und die Landing-Page spiegelt die App jetzt so wider, wie sie heute existiert.",
 
-  "landing.cta.title": "Starte mit dem Builder, der heute funktioniert",
+  "landing.cta.title": "Erstelle noch heute deinen Lebenslauf",
   "landing.cta.noSignup": "Kein Konto erforderlich. Starte lokal und exportiere jederzeit.",
 
   "landing.footer.tagline": "Kostenloser Lebenslauf-Builder · Privatsphäre zuerst · Local-first und portabel",
@@ -202,6 +202,7 @@ export const de: Translations = {
   "hero.noRotationLabel": "Ohne Konto. Ohne Paywall. Ohne Ballast.",
   "hero.startBuilding": "Lebenslauf erstellen",
   "hero.viewTemplates": "Alle Vorlagen ansehen",
+  "landing.hero.localNote": "Kein Konto nötig. Dein Lebenslauf bleibt auf deinem Gerät.",
 
   // How It Works
   "howItWorks.title": "So funktioniert's",
