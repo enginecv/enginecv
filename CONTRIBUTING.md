@@ -71,7 +71,7 @@ Pull requests are reviewed against these. A change that breaks one will be asked
 
 ## Reporting bugs and ideas
 
-Use the issue templates. Do not paste real resume content, personal data or secrets into public issues.
+The easiest way is the **Send feedback** button inside the app, which opens a pre-filled issue here and lets you remove any context you do not want to share. You can also open an issue with one of the templates directly. Do not paste real resume content, personal data or secrets into public issues.
 
 ## Security
 

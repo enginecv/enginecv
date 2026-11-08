@@ -1,0 +1,58 @@
+name: Feature request
+description: Suggest a new feature, an improvement, or a workflow change. Not for bug reports.
+title: "[Feature]: "
+labels:
+  - "type:feature"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a feature. Fields marked with **\*** are required.
+        Feature requests don't include any environment context — focus on the problem and the desired outcome.
+
+  - type: input
+    id: summary
+    attributes:
+      label: Summary
+      description: One short line describing the feature.
+      placeholder: e.g. Allow exporting multiple resumes to a single ZIP file
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What are you trying to do? What is the user pain that this would solve? Concrete scenarios beat abstract goals.
+      placeholder: |
+        I tailor 5–10 resumes per job-application week and end up downloading them one at a time. Each export takes a click and a save dialog, so a batch of ten is a friction-heavy chore.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed_solution
+    attributes:
+      label: Proposed solution
+      description: Optional. If you have a specific shape in mind, describe it. Otherwise leave blank and let the discussion shape the solution.
+      placeholder: |
+        Add a "Select multiple" mode on the dashboard with a "Download as ZIP" action that exports each selected resume as a PDF inside one archive.
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Optional. Workarounds you tried, similar features in other tools, or approaches you considered and rejected.
+      placeholder: |
+        - Currently I export PDFs one by one and zip them locally.
+        - Tool X has a similar batch-export but it requires sign-in.
+
+  - type: markdown
+    attributes:
+      value: |
+        ### Privacy reminder
+
+        This issue is **public**. Do not paste any resume content, personal data, or API keys.
+
+        ### Voting
+
+        Feature requests are prioritized partly by community interest. Use 👍 reactions on this issue rather than +1 comments.

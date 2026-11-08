@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security disclosure
+    url: https://github.com/enginecv/enginecv/security/advisories/new
+    about: Report a security vulnerability privately. Do not open a public issue for security issues.
+  - name: EngineCV app
+    url: https://enginecv.app
+    about: Open the resume builder. Bug reports are easiest from the in-app "Send feedback" button — it pre-fills the environment fields for you.

@@ -8,7 +8,7 @@ import {
     type FeedbackContext,
 } from "./buildFeedbackUrl";
 
-const REPO = "enginecv/enginecv-feedback";
+const REPO = "enginecv/enginecv";
 const MAILTO = "support@enginecv.app";
 
 const baseCtx: FeedbackContext = {

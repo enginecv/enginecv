@@ -1,0 +1,104 @@
+name: Quirk report
+description: Something feels off, looks weird, or behaves unexpectedly but is not a clear bug.
+title: "[Quirk]: "
+labels:
+  - "type:quirk"
+  - "status:needs-repro"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a quirk. Fields marked with **\*** are required.
+        Most environment fields are auto-filled if you used the in-app **Send feedback** button.
+
+  - type: input
+    id: summary
+    attributes:
+      label: Summary
+      description: One short line describing what felt off.
+      placeholder: e.g. Section heading underline appears thicker after toggling dark mode
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce (or what triggers it)
+      description: Numbered list if reliably reproducible, or a description of when you noticed it.
+      placeholder: |
+        1. Open editor
+        2. Add an Education entry
+        3. Toggle the heading style preset
+        4. Notice the underline width jumps
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severity
+      description: How disruptive is this?
+      options:
+        - cosmetic
+        - annoying
+        - blocking
+      default: 0
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: App version
+      description: Auto-filled by the in-app feedback button.
+      placeholder: e.g. 0.1.0
+    validations:
+      required: true
+
+  - type: input
+    id: browser
+    attributes:
+      label: Browser / user agent
+      description: Auto-filled by the in-app feedback button.
+      placeholder: e.g. Chrome 137 on Windows 11
+    validations:
+      required: true
+
+  - type: input
+    id: viewport
+    attributes:
+      label: Viewport (WxH)
+      description: Auto-filled by the in-app feedback button.
+      placeholder: e.g. 1920x1080
+
+  - type: input
+    id: route
+    attributes:
+      label: Route
+      description: Auto-filled by the in-app feedback button.
+      placeholder: e.g. /editor/abc123
+
+  - type: input
+    id: locale
+    attributes:
+      label: Locale
+      description: Auto-filled by the in-app feedback button.
+      placeholder: e.g. en
+
+  - type: textarea
+    id: console
+    attributes:
+      label: Console output
+      description: Open DevTools (F12) → Console tab. Paste any warnings or errors. Optional.
+      render: shell
+
+  - type: markdown
+    attributes:
+      value: |
+        ### Screenshots / recordings
+
+        Screenshots are especially helpful for visual quirks. Drag and drop images into the comment area below before submitting.
+
+        ### Privacy reminder
+
+        This issue is **public**. Do not paste any resume content, personal data, or API keys.

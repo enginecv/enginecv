@@ -1,0 +1,108 @@
+name: Bug report
+description: Crashes, broken UI, data loss, export failures, or anything that blocks the resume-building flow.
+title: "[Bug]: "
+labels:
+  - "type:bug"
+  - "status:needs-repro"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a bug. Fields marked with **\*** are required.
+        Most environment fields are auto-filled if you used the in-app **Send feedback** button.
+
+  - type: input
+    id: summary
+    attributes:
+      label: Summary
+      description: One short line describing what went wrong.
+      placeholder: e.g. PDF export hangs after clicking Download
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Numbered list, ideally starting from a fresh page load.
+      placeholder: |
+        1. Open the editor at /editor/<id>
+        2. Click Export → PDF
+        3. Wait 30s
+        4. Observe the loading spinner never stops
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      placeholder: The PDF should download within a few seconds.
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      placeholder: The spinner runs forever and no file is produced.
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: App version
+      description: Auto-filled by the in-app feedback button. See the footer of the app for the current version.
+      placeholder: e.g. 0.1.0
+    validations:
+      required: true
+
+  - type: input
+    id: browser
+    attributes:
+      label: Browser / user agent
+      description: Auto-filled by the in-app feedback button. Otherwise paste your browser name and version.
+      placeholder: e.g. Chrome 137 on Windows 11
+    validations:
+      required: true
+
+  - type: input
+    id: viewport
+    attributes:
+      label: Viewport (WxH)
+      description: Auto-filled by the in-app feedback button. Window width × height in pixels.
+      placeholder: e.g. 1920x1080
+
+  - type: input
+    id: route
+    attributes:
+      label: Route
+      description: Auto-filled by the in-app feedback button. The path in the URL when the bug happened.
+      placeholder: e.g. /editor/abc123
+
+  - type: input
+    id: locale
+    attributes:
+      label: Locale
+      description: Auto-filled by the in-app feedback button. App language at the time of the bug.
+      placeholder: e.g. en
+
+  - type: textarea
+    id: console
+    attributes:
+      label: Console output
+      description: Open DevTools (F12) → Console tab, copy any red errors, and paste them here. Very helpful for debugging.
+      render: shell
+
+  - type: markdown
+    attributes:
+      value: |
+        ### Screenshots / recordings
+
+        Drag and drop images or short screen recordings into the comment area below before submitting.
+
+        ### Privacy reminder
+
+        This issue is **public**. Do not paste any resume content, personal data, or API keys.
+        For security vulnerabilities use the private vulnerability reporting link in the security policy instead.
