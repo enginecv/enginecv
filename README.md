@@ -194,4 +194,4 @@ Bug reports, fixes and translations are welcome. See [CONTRIBUTING.md](./CONTRIB
 
 ## License
 
-The source code is licensed under the [GNU Affero General Public License v3.0](./LICENSE). The EngineCV name and logo are not covered by that licence.
+The source code is licensed under the [GNU Affero General Public License v3.0](./LICENSE). The blog posts and guide copy are **not** open licensed; see [LICENSE-CONTENT.md](./LICENSE-CONTENT.md) for the exact paths and terms. The EngineCV name and logo are not covered by either licence.
