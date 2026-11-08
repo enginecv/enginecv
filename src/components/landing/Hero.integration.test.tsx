@@ -61,8 +61,19 @@ describe("Hero template showcase", () => {
         expect(proofLine).toHaveTextContent("Runs in your browser");
         expect(proofLine).toHaveTextContent(`${getExportFormatCount()} export formats`);
         expect(proofLine).toHaveTextContent("No lock-in");
+        expect(proofLine).toHaveTextContent("Open source (AGPL-3.0)");
         expect(proofLine).toHaveClass("flex", "flex-wrap");
         expect(proofLine.className).not.toContain("grid-cols-3");
+    });
+
+    it("says the project is open source and links to the repository", () => {
+        render(<Hero />);
+
+        expect(screen.getByText(/EngineCV is open source\./)).toBeInTheDocument();
+        expect(screen.getByTestId("landing-hero-source-link")).toHaveAttribute(
+            "href",
+            "https://github.com/enginecv/enginecv",
+        );
     });
 
     it("shows a placeholder until the workbench demo scrolls into view", () => {

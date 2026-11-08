@@ -3,9 +3,10 @@
 import { IntentPrefetchLink } from "@/components/ui/IntentPrefetchLink";
 import { AppEntryLink } from "@/components/ui/AppEntryLink";
 import { getExportFormatClaimParams } from "@/lib/export-formats";
+import { SOURCE_REPO_URL } from "@/lib/contact";
 import { useTranslation } from "@/lib/i18n";
 import { APP_VERSION } from "@/lib/app-version";
-import { ArrowRight, Check } from "lucide-react";
+import { ArrowRight, Check, Github } from "lucide-react";
 import { LazyWorkbenchDemo } from "./LazyWorkbenchDemo";
 import styles from "./Hero.module.css";
 import { localizedPath } from "@/lib/i18n/locales";
@@ -70,6 +71,20 @@ export function Hero() {
             {t("landing.hero.description1")}
           </p>
 
+          <p className="mt-4 max-w-xl text-base leading-7 text-mid">
+            {t("landing.hero.openSource")}{" "}
+            <a
+              href={SOURCE_REPO_URL}
+              target="_blank"
+              rel="noreferrer"
+              data-testid="landing-hero-source-link"
+              className="inline-flex items-center gap-1.5 font-semibold text-bright underline decoration-edge-strong underline-offset-4 transition-colors hover:text-accent focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            >
+              <Github className="h-4 w-4" aria-hidden="true" />
+              {t("landing.hero.openSourceLink")}
+            </a>
+          </p>
+
           <div className="mt-9 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center">
             <AppEntryLink
               href="/dashboard"
@@ -96,6 +111,15 @@ export function Hero() {
                 {item}
               </div>
             ))}
+            <a
+              href={SOURCE_REPO_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-2 whitespace-nowrap transition-colors hover:text-strong focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+            >
+              <Github className="h-3.5 w-3.5 shrink-0 text-success" aria-hidden="true" />
+              {t("landing.hero.badgeOpenSource")}
+            </a>
           </div>
         </div>
 

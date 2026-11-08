@@ -2,6 +2,7 @@ import { Navbar } from "@/components/landing/Navbar";
 import { Hero } from "@/components/landing/Hero";
 import { ProductStory } from "@/components/landing/ProductStory";
 import { PrivacySection } from "@/components/landing/PrivacySection";
+import { OpenSourceSection } from "@/components/landing/OpenSourceSection";
 import { FAQ } from "@/components/landing/FAQ";
 import { SupportSection } from "@/components/landing/SupportSection";
 import { FinalCTA } from "@/components/landing/FinalCTA";
@@ -24,6 +25,7 @@ export function LandingPage({ locale }: { locale: Locale }) {
           <Hero />
           <ProductStory />
           <PrivacySection />
+          <OpenSourceSection />
           <FAQ />
           <SupportSection />
           <FinalCTA />
