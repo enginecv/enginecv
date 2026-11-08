@@ -26,7 +26,7 @@ describe("localized site navigation", () => {
             </RouteLocaleProvider>,
         );
 
-        for (const link of screen.getAllByRole("link", { name: "EngineCV", exact: true })) {
+        for (const link of screen.getAllByRole("link", { name: "EngineCV" })) {
             expect(link).toHaveAttribute("href", `/${locale}`);
         }
         expect(container.querySelectorAll(`a[href="/${locale}/blog"]`)).toHaveLength(2);

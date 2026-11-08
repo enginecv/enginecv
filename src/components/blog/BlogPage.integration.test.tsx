@@ -96,7 +96,7 @@ describe("localized blog index without published articles", () => {
                 <BlogIndexContent posts={[meta({ locale })]} showEnglishLink />
             </RouteLocaleProvider>,
         );
-        const link = screen.getByRole("link", { name: translateBlog(locale, "index.moreEnglish"), exact: true });
+        const link = screen.getByRole("link", { name: translateBlog(locale, "index.moreEnglish") });
         expect(link).toHaveAttribute("href", "/blog");
         expect(link).toHaveAttribute("hreflang", "en");
         expect(screen.getByRole("article").compareDocumentPosition(link) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
