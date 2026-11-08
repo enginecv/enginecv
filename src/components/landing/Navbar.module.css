@@ -1,0 +1,33 @@
+.desktopNav {
+  display: none;
+}
+
+.desktopActions {
+  display: none;
+}
+
+.mobileToggle {
+  display: inline-flex;
+}
+
+.mobileMenu {
+  display: block;
+}
+
+@media (min-width: 640px) {
+  .desktopNav {
+    display: flex;
+  }
+
+  .desktopActions {
+    display: flex;
+  }
+
+  .mobileToggle {
+    display: none;
+  }
+
+  .mobileMenu {
+    display: none;
+  }
+}

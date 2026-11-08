@@ -1,0 +1,61 @@
+{
+  "generatedAt": "2026-10-05T17:57:35.290Z",
+  "entries": [
+    {
+      "id": "enginecv-modern",
+      "name": "Modern",
+      "file": "enginecv-modern.png",
+      "width": 1588,
+      "height": 2246
+    },
+    {
+      "id": "enginecv-compact",
+      "name": "ATS Plain",
+      "file": "enginecv-compact.png",
+      "width": 1588,
+      "height": 2246
+    },
+    {
+      "id": "enginecv-sidebar",
+      "name": "Sidebar",
+      "file": "enginecv-sidebar.png",
+      "width": 1588,
+      "height": 2246
+    },
+    {
+      "id": "enginecv-photo-header",
+      "name": "Photo Header",
+      "file": "enginecv-photo-header.png",
+      "width": 1588,
+      "height": 2246
+    },
+    {
+      "id": "enginecv-lebenslauf",
+      "name": "Lebenslauf",
+      "file": "enginecv-lebenslauf.png",
+      "width": 1588,
+      "height": 2246
+    },
+    {
+      "id": "enginecv-timeline",
+      "name": "Timeline",
+      "file": "enginecv-timeline.png",
+      "width": 1588,
+      "height": 2246
+    },
+    {
+      "id": "enginecv-executive",
+      "name": "Executive",
+      "file": "enginecv-executive.png",
+      "width": 1588,
+      "height": 2246
+    },
+    {
+      "id": "enginecv-developer",
+      "name": "Developer",
+      "file": "enginecv-developer.png",
+      "width": 1588,
+      "height": 2246
+    }
+  ]
+}

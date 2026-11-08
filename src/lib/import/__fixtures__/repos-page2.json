@@ -1,0 +1,26 @@
+[
+  {
+    "name": "cli-tools",
+    "description": null,
+    "topics": [],
+    "stargazers_count": 11,
+    "language": "Go",
+    "fork": false,
+    "archived": false,
+    "created_at": "2021-07-01T10:00:00Z",
+    "pushed_at": "2025-01-12T10:00:00Z",
+    "html_url": "https://github.com/octocat/cli-tools"
+  },
+  {
+    "name": "framework-fork",
+    "description": "Forked framework notes.",
+    "topics": ["framework"],
+    "stargazers_count": 0,
+    "language": null,
+    "fork": true,
+    "archived": false,
+    "created_at": "2020-02-01T10:00:00Z",
+    "pushed_at": "2020-03-01T10:00:00Z",
+    "html_url": "https://github.com/octocat/framework-fork"
+  }
+]

@@ -1,0 +1,300 @@
+@import "tailwindcss";
+
+/* ============================================================
+   Theme tokens — dark is the default theme, light overrides via
+   html[data-theme="light"]. Every UI color flows through these
+   variables; resume documents keep their own user-set colors.
+   ============================================================ */
+:root {
+  /* Surfaces (recessed → elevated) */
+  --surface-0: #101012;
+  --surface-1: #1a1a1c;
+  --surface-2: #1c1c1e;
+  --surface-3: #202023;
+  --surface-4: #252528;
+  --surface-5: #2a2a2e;
+
+  /* Borders / dividers / hover fills */
+  --edge: #323236;
+  --edge-strong: #4a4a50;
+
+  /* Text (least → most prominent) */
+  --faint: #919195;
+  --dim: #9a9aa0;
+  --mid: #a5a5ac;
+  --bright: #d3d3d6;
+  --strong: #ffffff;
+
+  /* Brand accent */
+  --accent: #ffaa8d;
+  --accent-soft: #ffbea8;
+  --accent-deep: #ff8a6d;
+
+  /* Status */
+  --danger: #f26262;
+  --danger-soft: #ffb1b1;
+  --danger-tint: #4b2323;
+  --success: #22c55e;
+  --success-soft: #b8f1c5;
+  --success-tint: #1f2a22;
+  --success-tint2: #2d3d33;
+  --success-line: #5f7b66;
+  --warning: #ffd2a6;
+  --warning-tint: #2b2418;
+  --warning-tint2: #4a3d25;
+  --info: #a7bafb;
+  --info-soft: #aebbe0;
+  --info-violet: #c4b5fd;
+  --info-tint: #222836;
+  --info-line: #3d4657;
+
+  /* Chrome */
+  --scrollbar-thumb: #5a5a60;
+  --scrollbar-thumb-hover: #8a8a90;
+  --glass-bg: rgba(37, 37, 40, 0.85);
+  --glass-border: rgba(255, 255, 255, 0.05);
+
+  --background: var(--surface-2);
+  --foreground: var(--bright);
+}
+
+:root[data-theme="light"] {
+  /* Warm porcelain — same layering order, inverted elevation:
+     page sits slightly darker, cards lift to white. */
+  --surface-0: #ece9e6;
+  --surface-1: #f4f2f0;
+  --surface-2: #f6f4f2;
+  --surface-3: #f0edea;
+  --surface-4: #ffffff;
+  --surface-5: #f3efec;
+
+  --edge: #e4dfdb;
+  --edge-strong: #d0c9c4;
+
+  --faint: #6e6762;
+  --dim: #6b645f;
+  --mid: #504b47;
+  --bright: #35322f;
+  --strong: #171514;
+
+  /* Same hue as #ffaa8d, deepened for AA contrast on white */
+  --accent: #a24120;
+  --accent-soft: #8d391c;
+  --accent-deep: #89371b;
+
+  --danger: #ca2323;
+  --danger-soft: #b91c1c;
+  --danger-tint: #fbe7e5;
+  --success: #166d39;
+  --success-soft: #166534;
+  --success-tint: #e9f4ec;
+  --success-tint2: #d7e9dc;
+  --success-line: #8fb89c;
+  --warning: #8a5a10;
+  --warning-tint: #f8efdd;
+  --warning-tint2: #efe0c2;
+  --info: #3b5bdb;
+  --info-soft: #5b6785;
+  --info-violet: #6d28d9;
+  --info-tint: #e8edf8;
+  --info-line: #c9d4e8;
+
+  --scrollbar-thumb: #c4bcb6;
+  --scrollbar-thumb-hover: #a39a93;
+  --glass-bg: rgba(255, 255, 255, 0.85);
+  --glass-border: rgba(0, 0, 0, 0.06);
+}
+
+/* Keyboard focus is always visible (WCAG 2.4.7). Components with their own
+   focus styles override this, because utilities win over the base layer. */
+@layer base {
+  a[href]:focus-visible,
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible,
+  summary:focus-visible,
+  [tabindex]:not([tabindex="-1"]):focus-visible,
+  [role="button"]:focus-visible,
+  [contenteditable="true"]:focus-visible,
+  /* A dialog focuses its first control programmatically, which does not match
+     :focus-visible, so the ring is requested explicitly there. */
+  [data-dialog-initial-focus]:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: inherit;
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-surface-0: var(--surface-0);
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-surface-4: var(--surface-4);
+  --color-surface-5: var(--surface-5);
+  --color-edge: var(--edge);
+  --color-edge-strong: var(--edge-strong);
+  --color-faint: var(--faint);
+  --color-dim: var(--dim);
+  --color-mid: var(--mid);
+  --color-bright: var(--bright);
+  --color-strong: var(--strong);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-deep: var(--accent-deep);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-tint: var(--danger-tint);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-success-tint: var(--success-tint);
+  --color-success-tint2: var(--success-tint2);
+  --color-success-line: var(--success-line);
+  --color-warning: var(--warning);
+  --color-warning-tint: var(--warning-tint);
+  --color-warning-tint2: var(--warning-tint2);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-info-violet: var(--info-violet);
+  --color-info-tint: var(--info-tint);
+  --color-info-line: var(--info-line);
+
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+
+  /* Unified transition timing */
+  --transition-duration-fast: 150ms;
+  --transition-duration-normal: 250ms;
+  --transition-duration-slow: 400ms;
+
+  /* Standardized Easing */
+  --ease-in-out-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Standardized Shadows */
+  --shadow-subtle: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  --shadow-float: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+
+  /* Dialed-back radius scale — tighter than Tailwind defaults for a
+     flatter, more technical feel. rounded-full stays infinite. */
+  --radius-xs: 0.0625rem; /* 1px */
+  --radius-sm: 0.1875rem; /* 3px */
+  --radius-md: 0.25rem;   /* 4px */
+  --radius-lg: 0.375rem;  /* 6px */
+  --radius-xl: 0.5rem;    /* 8px */
+  --radius-2xl: 0.625rem; /* 10px */
+  --radius-3xl: 0.875rem; /* 14px */
+  --radius-4xl: 1.25rem;  /* 20px */
+
+  --animate-wave: wave 6s linear infinite;
+  --animate-wave-slow: wave-slow 10s linear infinite;
+
+  @keyframes wave {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-33.33%); }
+  }
+  @keyframes wave-slow {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-33.33%); }
+  }
+}
+
+/* Glass & Blur Utilities */
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+}
+
+.glass-panel-light {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+/* Logo artwork is black; render white on dark surfaces, black on light. */
+.logo-adaptive {
+  filter: brightness(0) invert(1);
+}
+
+:root[data-theme="light"] .logo-adaptive {
+  filter: brightness(0);
+}
+
+.text-gradient-accent {
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-deep) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+html {
+  scroll-behavior: smooth;
+  max-width: 100%;
+  overflow-x: hidden;
+  overflow-x: clip;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  max-width: 100%;
+  overflow-x: hidden;
+  overflow-x: clip;
+}
+
+/* Global scrollbar styling — slim, theme-aware, background-agnostic.
+   The transparent border + padding-box clip keeps the thumb looking
+   like a 6px pill regardless of the surrounding surface color.
+   Firefox uses scrollbar-width/scrollbar-color; WebKit uses the
+   ::-webkit-scrollbar pseudo-elements. Opt-out by re-hiding on
+   specific elements with Tailwind's [&::-webkit-scrollbar]:hidden. */
+html {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: var(--scrollbar-thumb);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background-color: var(--scrollbar-thumb-hover);
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-thumb:active {
+  background-color: var(--accent);
+  background-clip: padding-box;
+}
+
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Side panels (Content + Customize) should never scroll horizontally. */
+.sidebar-scroll {
+  overflow-x: hidden !important;
+}
+
+.sidebar-scroll::-webkit-scrollbar:horizontal {
+  height: 0;
+}

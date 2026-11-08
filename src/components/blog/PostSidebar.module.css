@@ -1,0 +1,14 @@
+.sidebar {
+  display: none;
+  margin-top: 2.5rem;
+}
+
+@media (min-width: 768px) {
+  .sidebar {
+    display: block;
+    position: sticky;
+    top: 6rem;
+    align-self: start;
+    margin-top: 0;
+  }
+}

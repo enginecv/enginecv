@@ -1,0 +1,27 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "enginecv",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-05-10",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "vars": {
+    "NEXT_PUBLIC_ENABLE_ADS": "false",
+    "NEXT_PUBLIC_ADSENSE_CLIENT": "ca-pub-3968492756394322",
+    "NEXT_PUBLIC_ENABLE_AUTO_ADS_PUBLIC": "false"
+  },
+  "kv_namespaces": [
+    {
+      "binding": "REFERRALS",
+      "id": "186988c2548048d28e6e896534461a52"
+    }
+  ],
+  "observability": {
+    "enabled": true
+  }
+}

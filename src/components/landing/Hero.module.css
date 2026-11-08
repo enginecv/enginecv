@@ -1,0 +1,33 @@
+.termTrack {
+  animation: term-cycle 8s cubic-bezier(0.76, 0, 0.24, 1) infinite;
+  will-change: transform;
+}
+
+@keyframes term-cycle {
+  0%,
+  22% {
+    transform: translate3d(0, 0, 0);
+  }
+
+  30%,
+  52% {
+    transform: translate3d(0, -25%, 0);
+  }
+
+  60%,
+  82% {
+    transform: translate3d(0, -50%, 0);
+  }
+
+  90%,
+  100% {
+    transform: translate3d(0, -75%, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .termTrack {
+    animation: none;
+    will-change: auto;
+  }
+}

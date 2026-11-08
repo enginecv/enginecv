@@ -1,0 +1,11 @@
+{
+    "login": "octocat",
+    "name": "The Octocat",
+    "bio": "Building things with tentacles. Open source enthusiast.",
+    "company": "@github",
+    "blog": "octocat.dev",
+    "location": "San Francisco",
+    "avatar_url": "https://avatars.githubusercontent.com/u/583231?v=4",
+    "html_url": "https://github.com/octocat",
+    "public_repos": 130
+}

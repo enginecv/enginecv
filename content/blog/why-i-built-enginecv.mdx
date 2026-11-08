@@ -1,0 +1,356 @@
+---
+title: "Why I Built EngineCV"
+description: "Tired of fake 'free' resume builders and paywalls? EngineCV is a truly free, privacy-first, local resume builder with full export support and no account required."
+slug: "why-i-built-enginecv"
+date: "2026-05-03"
+updated: "2026-11-05"
+author: "safet-imamovic"
+tags: [
+  "free resume builder",
+  "resume builder no paywall",
+  "local resume builder",
+  "privacy resume builder",
+  "ATS resume generator free",
+  "open resume builder alternative",
+  "resume builder without account",
+  "export resume pdf free"
+]
+sponsored: false
+adSlots: [end-of-article, sidebar-square]
+---
+
+## The Problem With “Free” Resume Builders
+
+If you’ve ever searched **“free resume builder”**, you already know what happens.
+
+You click one of the top results — the ones dominating SEO rankings — and everything looks great.
+
+- Clean UI  
+- Smooth experience  
+- “100% free” claims  
+
+So you start building.
+
+You spend **20–30 minutes** crafting your resume.
+
+Then…
+
+> **Download as PDF → Premium only**
+
+---
+
+## The Sunk Cost Trap
+
+This isn’t bad UX.
+
+It’s intentional.
+
+It’s called the **sunk cost fallacy**.
+
+You’ve already invested time, so paying feels easier than starting over.
+
+And yeah — it works.
+
+It happened to me **three separate times** on different sites.
+
+Each time I thought:
+
+> “Okay, this one won’t do that.”
+
+Every time — same outcome.
+
+So eventually:
+
+> **“I’ll just build my own.”**
+
+---
+
+## A Resume Isn’t Your Life Story
+
+Another issue most builders ignore:
+
+A CV isn’t supposed to be your entire life story anymore.
+
+Recruiters don’t care about everything you’ve ever done.
+
+They care about one thing:
+
+> **Are you a fit for this specific job?**
+
+Sending the same resume everywhere is one of the biggest mistakes people make.
+
+You need:
+
+- Tailoring  
+- Rewriting  
+- Role-specific focus  
+
+Most builders don’t help with that.  
+They just format text.
+
+---
+
+## The Bigger Problem: Your Data
+
+Now the real issue.
+
+When you use an online resume builder, you’re giving away:
+
+- Full name  
+- Address  
+- Work history  
+- Education  
+- Timeline of your life  
+
+That’s extremely sensitive data.
+
+And most platforms:
+
+- Store it on their servers  
+- Push you into OAuth signups  
+- Use it for retention and marketing  
+
+Personally, I don’t want my entire identity sitting on some random server.
+
+---
+
+## EngineCV’s Core Idea
+
+> What if a resume builder didn’t need a backend at all?
+
+That’s EngineCV.
+
+---
+
+### Local-First Resume Builder
+
+- Your data stays **on your device**
+- No server by default
+- No tracking: only cookieless, aggregate page counts (see the [privacy policy](/privacy))
+- No accounts at all
+
+---
+
+### Privacy by Design
+
+Your resume is stored as structured JSON.
+
+- Export anytime  
+- Re-import anytime  
+- Optional encryption  
+
+No lock-in.
+
+No hidden storage.
+
+---
+
+### No Backend (On Purpose)
+
+Most apps store your data on their servers.
+
+That’s why:
+
+- You don’t press save  
+- Your data magically persists  
+- It syncs across devices  
+
+EngineCV avoids this entirely.
+
+> There is **no server involved**.
+
+If you want cross-device usage:
+
+- Export JSON  
+- Import it anywhere  
+
+Simple.
+
+---
+
+## Why EngineCV Is Free
+
+Let’s address the obvious question.
+
+### Why is it free?
+
+The core product is free, and there is no paid plan. If EngineCV ever needs to cover its costs, for example with ads that only appear after you allow them, that will never lock editing, import, or export behind a paywall.
+
+---
+
+### No Paywalls. Ever.
+
+- No PDF export lock  
+- No “premium templates only”  
+- No forced upgrades  
+
+---
+
+## What You Can Do With It Today
+
+Here is what EngineCV does now, so you do not have to take the idea on trust.
+
+### Start from what you already have
+
+- Import a LinkedIn data export, a Europass file, or your GitHub profile
+- Open a CV you exported earlier as JSON
+- Paste an AI assistant's answer with "Paste from AI"
+
+Files are read in your browser and are not uploaded. The GitHub import sends only your username, straight from your browser to GitHub's public API, and never asks you to sign in.
+
+### Build and style it
+
+- A live preview while you type
+- Templates, colours, fonts and layout you can change
+- The underlying JSON, if you prefer to edit structured data directly
+- An interface in English, Bosnian, German, French and Spanish
+
+---
+
+## What It Deliberately Does Not Do
+
+- **No accounts.** There is nothing to sign up for or log in to.
+- **No sync.** Your CV does not travel between devices on its own.
+- **No server copy.** Nobody, including me, can restore a CV you have lost.
+- **No AI features yet.** See the FAQ below.
+
+Each of these is a trade-off. They are what keeps your data on your device, and they are also the reason you need to look after your own backups.
+
+---
+
+## Where Your Data Lives, and the Catch
+
+Your CVs are saved in your browser's local database, on your device. That is what keeps them private, and it is also the catch.
+
+If you clear your site data, switch browsers or lose the device without having exported, the CVs are gone, because there is no server copy to restore from. Export a JSON backup after any edit that matters, and before you clear your browser data.
+
+The **Your data** page shows what EngineCV stores in your browser, lets you download a copy of it and lets you delete all of it. It is the place to go if you want to check the claims on this page for yourself.
+
+---
+
+## How to Back Up Your CV
+
+Because there is no server copy, a backup is something you do yourself. It takes under a minute.
+
+1. Open your CV and export it as JSON.
+2. Keep the file somewhere you trust, such as a cloud drive or a USB stick.
+3. To restore it, or to move to another device, import the JSON file.
+
+If the backup contains personal details and you will store it somewhere shared, use the encrypted JSON export. Keep the password safe, because there is no server that holds a copy of it.
+
+---
+
+## Who This Is For
+
+EngineCV suits people who want to build a CV without handing over their details, and who are happy to export and keep their own files. It is a poor fit if you want your CV to sync across devices by itself or to be stored for you. That is a deliberate choice, and I would rather say so plainly.
+
+---
+
+## A Few Honest Limits
+
+Because everything runs in your browser, EngineCV is only as good as your browser. The PDF export uses your browser's own print engine, so check the file you are about to send, including page breaks and links, before you submit it.
+
+It is also a young project. If something does not work the way this page says, tell me, because that is a bug and not a feature.
+
+---
+
+## FAQ
+
+### Can I export my resume?
+
+Yes.
+
+You can export your resume as:
+
+- PDF  
+- DOCX  
+- Markdown and plain text  
+- HTML  
+- JSON, optionally encrypted  
+- Image formats (PNG, SVG)  
+
+Your data is always portable.
+
+---
+
+### Where is my resume stored?
+
+By default:
+
+> **On your device (in your browser).**
+
+Nowhere else. There is no sync and no server copy of your resume.
+
+To move to another device, export your CV and import it there. An encrypted JSON backup is available if you want one.
+
+---
+
+### Do I need an account?
+
+No.
+
+There are no accounts in EngineCV, so there is nothing to sign up for or log in to.
+
+---
+
+### Is EngineCV really free?
+
+Yes.
+
+Editing, import, every export format and every template are free, with no paid plan.
+
+AI features are not live yet. If you want an AI assistant to help, the "Paste from AI" import lets any chat assistant write your CV, and you paste its answer into EngineCV. Nothing you paste is sent anywhere.
+
+---
+
+## How I Plan to Sustain This
+
+Let’s be real.
+
+I’ll probably make less than the big paywalled platforms.
+
+And I’m fine with that.
+
+Revenue comes from:
+
+- Ads, only after you allow them  
+- Affiliate links  
+- Donations through Ko-fi  
+
+Enough to keep building.
+
+Not enough to compromise the product.
+
+---
+
+## Why This Exists
+
+EngineCV exists because I got tired of being tricked.
+
+If you’ve ever:
+
+- Built a resume for 30 minutes  
+- Hit a paywall at the end  
+- Felt forced to pay  
+
+Then you already understand why this matters.
+
+---
+
+## Final Thought
+
+This shouldn’t be complicated.
+
+A resume builder should:
+
+- Let you build  
+- Let you export  
+- Respect your data  
+
+That’s it.
+
+---
+
+## Try It Yourself
+
+No signup. No tricks.

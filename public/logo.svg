@@ -1,0 +1,11 @@
+<svg width="800" height="600" viewBox="0 0 800 600" xmlns="http://www.w3.org/2000/svg">
+  <g fill="#000000">
+    <rect id="svg_1" height="400" width="100" y="100" x="0"/>
+    <rect id="svg_2" transform="rotate(-90 200 150)" height="400" width="100" y="-50" x="150"/>
+    <rect id="svg_3" transform="rotate(-90 200 450)" height="400" width="100" y="250" x="150"/>
+    <rect id="svg_5" transform="rotate(-28 449.855 300.066)" height="400" width="100" y="100.06639" x="399.85461"/>
+    <rect id="svg_8" transform="rotate(28 650 299.726)" height="400" width="100" y="99.72646" x="600"/>
+    <rect id="svg_9" height="97.88732" width="100" y="402.4587" x="499.6357"/>
+    <path id="svg_12" transform="rotate(-180 743.611 123.322)" d="m699.49622,146.78613l0,-46.92861l88.22944,46.92861l-88.22944,0z"/>
+  </g>
+</svg>

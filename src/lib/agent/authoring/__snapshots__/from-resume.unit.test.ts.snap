@@ -1,0 +1,615 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`resumeToAuthoring > is stable (QA full CV snapshot) 1`] = `
+"{
+  "format": "enginecv.authoring/v1",
+  "basics": {
+    "name": "Amina Šehić-Đurić",
+    "headline": "Staff Software Engineer — Distributed Systems 🚀",
+    "email": [
+      {
+        "email": "amina@example.com",
+        "label": "Work"
+      },
+      {
+        "email": "amina.personal@example.org",
+        "label": "Personal"
+      }
+    ],
+    "phone": "+387 60 000 000",
+    "location": "Sarajevo, Bosnia & Herzegovina",
+    "website": "https://amina.example.com",
+    "linkedin": "https://linkedin.com/in/amina",
+    "github": "https://github.com/amina",
+    "links": [
+      {
+        "name": "Mastodon",
+        "url": "https://mastodon.social/@amina",
+        "label": "@amina"
+      },
+      {
+        "name": "Blog",
+        "url": "https://amina.example.com/blog"
+      },
+      {
+        "name": "Talks",
+        "url": "https://talks.example.com/amina",
+        "label": "Conference talks"
+      }
+    ],
+    "drivingLicense": "B, BE",
+    "nationality": "BA",
+    "dateOfBirth": "1990-04-12",
+    "passport": "A1234567",
+    "nationalId": "1204990175021",
+    "maritalStatus": "Single",
+    "militaryService": "Not applicable",
+    "genderPronoun": "she/her",
+    "disability": "none",
+    "visa": "EU Blue Card",
+    "height": "172"
+  },
+  "summary": "Engineer with a decade on storage and scheduling systems. Happiest where correctness, latency and operability meet — and willing to write the *runbook* nobody else wants to.",
+  "experience": [
+    {
+      "id": "exp-1",
+      "position": "Staff Engineer",
+      "company": "Northwind Data",
+      "location": "Remote",
+      "start": "2021-03",
+      "end": "present",
+      "description": "Led the **replication** rewrite and its [runbook](https://example.com/runbook).\\n\\n- Cut p99 write latency from 240 ms to 38 ms.\\n- Moved 40 TB across regions with no read downtime.\\n- Added \`property-based\` tests for the *quorum* path.\\n",
+      "highlights": [
+        "Owned the ingestion pipeline",
+        "On-call lead for the storage rota"
+      ],
+      "skills": [
+        "Rust",
+        "Kubernetes",
+        "PostgreSQL"
+      ],
+      "url": "https://northwind.example.com"
+    },
+    {
+      "id": "exp-2",
+      "position": "Senior Engineer",
+      "company": "Meridian Systems",
+      "start": "2018-01",
+      "end": "2021-02",
+      "description": "Built the scheduler that replaced a nightly cron fleet."
+    },
+    {
+      "id": "exp-3",
+      "position": "Šehić-Đurić · Ελληνικά · Русский · 中文 · العربية · 🚀",
+      "company": "Институт KubernetesKubernetesKubernetesKubernetesKubernetesKubernetes",
+      "location": "Sarajevo",
+      "start": "2016-06",
+      "end": "2017-12",
+      "description": "Research on *consistent hashing* under churn — see [the paper](https://example.org/paper).",
+      "highlights": [
+        "Published two papers 📄"
+      ],
+      "skills": [
+        "C++",
+        "KubernetesKubernetesKubernetesKubernetesKubernetesKubernetes"
+      ],
+      "url": "https://example.org"
+    },
+    {
+      "id": "exp-hidden",
+      "position": "QAHIDDEN Position",
+      "company": "QAHIDDEN Company",
+      "location": "Nowhere",
+      "start": "2010-01",
+      "end": "2011-01",
+      "description": "QAHIDDEN description — must never reach a rendered page.",
+      "hidden": true
+    }
+  ],
+  "education": [
+    {
+      "id": "edu-1",
+      "institution": "University of Sarajevo",
+      "studyType": "MSc",
+      "area": "Computer Science",
+      "location": "Sarajevo",
+      "start": "2013-10",
+      "end": "2015-07",
+      "score": "9.1/10",
+      "description": "Thesis on *consistent hashing* under churn.",
+      "courses": [
+        "Distributed Systems",
+        "Compilers"
+      ],
+      "skills": [
+        "Algorithms"
+      ],
+      "url": "https://unsa.ba"
+    },
+    {
+      "id": "edu-2",
+      "institution": "University of Sarajevo",
+      "studyType": "BSc Computer Science",
+      "start": "2010-10",
+      "end": "2013-07"
+    },
+    {
+      "id": "edu-3",
+      "institution": "Universität Wien 🇦🇹",
+      "studyType": "Erasmus",
+      "area": "Mathematik",
+      "location": "Wien",
+      "start": "2012-10",
+      "end": "2013-02",
+      "score": "1,0",
+      "description": "Exchange semester — **Maßtheorie** and numerics.",
+      "courses": [
+        "KubernetesKubernetesKubernetesKubernetesKubernetesKubernetes"
+      ],
+      "url": "https://univie.ac.at"
+    },
+    {
+      "id": "edu-hidden",
+      "institution": "QAHIDDEN Academy",
+      "hidden": true
+    }
+  ],
+  "courses": [
+    {
+      "id": "course-1",
+      "name": "Advanced Kubernetes Operations",
+      "institution": "Linux Foundation",
+      "location": "Online",
+      "start": "2022-01",
+      "end": "2022-04",
+      "description": "Operator patterns, \`etcd\` recovery, cluster upgrades.",
+      "skills": [
+        "Kubernetes",
+        "Go"
+      ],
+      "url": "https://training.linuxfoundation.org"
+    },
+    {
+      "id": "course-2",
+      "name": "Rust for Systems Programmers",
+      "start": "2020-09"
+    },
+    {
+      "id": "course-3",
+      "name": "分散システム — Šehić-Đurić · Ελληνικά · Русский · 中文 · العربية · 🚀",
+      "institution": "東京大学",
+      "location": "東京",
+      "start": "2019-04",
+      "end": "2019-08",
+      "description": "Consensus, *failure detectors*, and the FLP result.",
+      "skills": [
+        "Paxos"
+      ],
+      "url": "https://u-tokyo.ac.jp"
+    },
+    {
+      "id": "course-hidden",
+      "name": "QAHIDDEN Course",
+      "hidden": true
+    }
+  ],
+  "certificates": [
+    {
+      "id": "cert-1",
+      "name": "Certified Kubernetes Administrator",
+      "issuer": "CNCF",
+      "date": "2022-05",
+      "description": "Credential ID \`CKA-2022-0142\`, valid three years.",
+      "skills": [
+        "Kubernetes"
+      ],
+      "url": "https://cncf.io/verify/CKA-2022-0142",
+      "issuerUrl": "https://cncf.io"
+    },
+    {
+      "id": "cert-2",
+      "name": "AWS Solutions Architect",
+      "issuer": "Amazon Web Services",
+      "date": "2019-11"
+    },
+    {
+      "id": "cert-3",
+      "name": "Šehić-Đurić · Ελληνικά · Русский · 中文 · العربية · 🚀",
+      "issuer": "Институт KubernetesKubernetesKubernetesKubernetesKubernetesKubernetes",
+      "description": "No date — the layout must not leave a dangling separator.",
+      "skills": [
+        "KubernetesKubernetesKubernetesKubernetesKubernetesKubernetes"
+      ],
+      "url": "https://example.org/cert",
+      "issuerUrl": "https://example.org"
+    },
+    {
+      "id": "cert-hidden",
+      "name": "QAHIDDEN Certificate",
+      "hidden": true
+    }
+  ],
+  "awards": [
+    {
+      "id": "award-1",
+      "name": "Engineering Excellence Award",
+      "issuer": "Northwind Data",
+      "date": "2023-12",
+      "description": "For the **zero-downtime** region migration.",
+      "skills": [
+        "Rust"
+      ],
+      "url": "https://northwind.example.com/awards"
+    },
+    {
+      "id": "award-2",
+      "name": "Hackathon Winner",
+      "date": "2017-06"
+    },
+    {
+      "id": "award-3",
+      "name": "Награда — Šehić-Đurić · Ελληνικά · Русский · 中文 · العربية · 🚀",
+      "issuer": "Академија",
+      "date": "2015-03",
+      "description": "Citation in *Cyrillic*, to check shaping in emphasis."
+    },
+    {
+      "id": "award-hidden",
+      "name": "QAHIDDEN Award",
+      "hidden": true
+    }
+  ],
+  "publications": [
+    {
+      "id": "pub-1",
+      "name": "Consistent Hashing Under Churn",
+      "publisher": "ACM SIGOPS",
+      "date": "2015-09",
+      "description": "DOI [10.1145/example](https://doi.org/10.1145/example), cited 42 times.",
+      "skills": [
+        "Distributed Systems"
+      ],
+      "url": "https://doi.org/10.1145/example"
+    },
+    {
+      "id": "pub-2",
+      "name": "A Note on Quorum Reads",
+      "date": "2016-02"
+    },
+    {
+      "id": "pub-3",
+      "name": "Šehić-Đurić · Ελληνικά · Русский · 中文 · العربية · 🚀",
+      "publisher": "东京大学出版会",
+      "description": "Very long title handling: KubernetesKubernetesKubernetesKubernetesKubernetesKubernetes",
+      "url": "https://example.org/pub"
+    },
+    {
+      "id": "pub-hidden",
+      "name": "QAHIDDEN Publication",
+      "hidden": true
+    }
+  ],
+  "references": [
+    {
+      "id": "ref-1",
+      "name": "Dr. Lejla Hodžić",
+      "position": "Principal Engineer",
+      "organisation": "Northwind Data",
+      "email": "lejla@example.com",
+      "phone": "+387 61 111 111",
+      "description": "Direct manager for three years — available on request.",
+      "url": "https://linkedin.com/in/lejla"
+    },
+    {
+      "id": "ref-2",
+      "name": "Marco Rossi",
+      "position": "CTO"
+    },
+    {
+      "id": "ref-3",
+      "name": "Šehić-Đurić · Ελληνικά · Русский · 中文 · العربية · 🚀",
+      "position": "教授",
+      "organisation": "東京大学",
+      "email": "sensei@example.jp",
+      "phone": "+81 3 0000 0000",
+      "description": "Thesis supervisor."
+    },
+    {
+      "id": "ref-hidden",
+      "name": "QAHIDDEN Reference",
+      "hidden": true
+    }
+  ],
+  "declaration": [
+    {
+      "id": "decl-1",
+      "text": "I declare that the information given above is true to the best of my knowledge.",
+      "fullName": "Amina Šehić-Đurić",
+      "place": "Sarajevo",
+      "date": "2026-08-17"
+    },
+    {
+      "id": "decl-2",
+      "text": "Signed without an image signature.",
+      "fullName": "Amina Šehić-Đurić"
+    },
+    {
+      "id": "decl-3",
+      "text": "Izjavljujem — Šehić-Đurić · Ελληνικά · Русский · 中文 · العربية · 🚀",
+      "fullName": "Šehić-Đurić · Ελληνικά · Русский · 中文 · العربية · 🚀",
+      "place": "Сарајево",
+      "date": "17.08.2026."
+    },
+    {
+      "id": "decl-hidden",
+      "text": "QAHIDDEN declaration.",
+      "hidden": true
+    }
+  ],
+  "projects": [
+    {
+      "id": "proj-1",
+      "name": "Tracepipe",
+      "subtitle": "Open source",
+      "start": "2020-02",
+      "end": "present",
+      "description": "Distributed tracing for batch jobs, with a \`jq\`-shaped query language.",
+      "highlights": [
+        "1.2k stars",
+        "Used in three production fleets"
+      ],
+      "keywords": [
+        "tracing",
+        "observability"
+      ],
+      "skills": [
+        "Go",
+        "gRPC"
+      ],
+      "url": "https://github.com/amina/tracepipe",
+      "repos": [
+        {
+          "url": "https://github.com/amina/tracepipe",
+          "label": "Source",
+          "platform": "github"
+        },
+        {
+          "url": "https://gitlab.com/amina/tracepipe-mirror",
+          "label": "Mirror",
+          "platform": "gitlab"
+        }
+      ],
+      "visibility": "public"
+    },
+    {
+      "id": "proj-2",
+      "name": "kvbench",
+      "description": "A small benchmark harness for key-value stores."
+    },
+    {
+      "id": "proj-3",
+      "name": "プロジェクト Šehić-Đurić · Ελληνικά · Русский · 中文 · العربية · 🚀",
+      "subtitle": "KubernetesKubernetesKubernetesKubernetesKubernetesKubernetes",
+      "start": "2018-05",
+      "end": "2019-01",
+      "description": "**Bold** and *italic* mixed with 中文 in one line.",
+      "highlights": [
+        "Šehić-Đurić · Ελληνικά · Русский · 中文 · العربية · 🚀"
+      ],
+      "keywords": [
+        "KubernetesKubernetesKubernetesKubernetesKubernetesKubernetes"
+      ],
+      "skills": [
+        "Rust"
+      ],
+      "url": "https://example.org/project",
+      "repos": [
+        "https://codeberg.org/amina/p"
+      ]
+    },
+    {
+      "id": "proj-hidden",
+      "name": "QAHIDDEN Project",
+      "hidden": true
+    }
+  ],
+  "organisations": [
+    {
+      "id": "org-1",
+      "name": "Bosnian Open Source Society",
+      "role": "Board member",
+      "location": "Sarajevo",
+      "start": "2019-01",
+      "end": "present",
+      "description": "Runs the annual **FOSS BA** conference.",
+      "skills": [
+        "Community"
+      ],
+      "url": "https://foss.ba"
+    },
+    {
+      "id": "org-2",
+      "name": "IEEE",
+      "role": "Member",
+      "start": "2015-01"
+    },
+    {
+      "id": "org-3",
+      "name": "Šehić-Đurić · Ελληνικά · Русский · 中文 · العربية · 🚀",
+      "role": "Волонтер",
+      "location": "Сарајево",
+      "start": "2014-01",
+      "end": "2015-12",
+      "description": "Cyrillic role title with a Latin organisation name."
+    },
+    {
+      "id": "org-hidden",
+      "name": "QAHIDDEN Organisation",
+      "hidden": true
+    }
+  ],
+  "interests": [
+    {
+      "id": "int-1",
+      "name": "Bouldering",
+      "description": "Outdoor, grade 6b+."
+    },
+    "Analogue photography",
+    {
+      "id": "int-3",
+      "name": "Šehić-Đurić · Ελληνικά · Русский · 中文 · العربية · 🚀",
+      "description": "Emoji and mixed scripts in one entry 🚀"
+    },
+    {
+      "id": "int-hidden",
+      "name": "QAHIDDEN Interest",
+      "hidden": true
+    }
+  ],
+  "languages": [
+    {
+      "id": "lang-1",
+      "language": "Bosnian",
+      "level": "Native",
+      "description": "Mother tongue."
+    },
+    {
+      "id": "lang-2",
+      "language": "English",
+      "level": "C2",
+      "certificate": {
+        "issuer": "Cambridge Assessment",
+        "id": "CPE-2014-8891",
+        "url": "https://cambridgeenglish.org/verify/CPE-2014-8891"
+      },
+      "description": "Certificate of Proficiency in English."
+    },
+    {
+      "id": "lang-3",
+      "language": "Deutsch",
+      "level": "B2",
+      "selfAssessed": true
+    },
+    {
+      "id": "lang-4",
+      "language": "日本語",
+      "level": "A2",
+      "description": "Conversational only."
+    },
+    {
+      "id": "lang-hidden",
+      "language": "QAHIDDEN Language",
+      "level": "C1",
+      "hidden": true
+    }
+  ],
+  "skills": {
+    "": [
+      {
+        "id": "skill-1",
+        "name": "Rust",
+        "level": "expert",
+        "description": "Systems and tooling.",
+        "keywords": [
+          "tokio",
+          "serde"
+        ]
+      },
+      {
+        "id": "skill-2",
+        "name": "Go",
+        "level": "proficient"
+      }
+    ],
+    "Infrastructure": [
+      {
+        "id": "skill-3",
+        "name": "Kubernetes",
+        "level": "competent",
+        "description": "Operators and upgrades.",
+        "keywords": [
+          "helm"
+        ]
+      },
+      {
+        "id": "skill-4",
+        "name": "Terraform",
+        "level": "amateur"
+      },
+      {
+        "id": "skill-5",
+        "name": "Nix",
+        "level": "beginner"
+      },
+      "KubernetesKubernetesKubernetesKubernetesKubernetesKubernetes",
+      {
+        "id": "skill-hidden",
+        "name": "QAHIDDEN Skill",
+        "level": "expert",
+        "hidden": true
+      }
+    ],
+    "Šehić-Đurić · Ελληνικά · Русский · 中文 · العربية · 🚀": [
+      {
+        "id": "skill-7",
+        "name": "中文输入",
+        "level": "competent"
+      }
+    ]
+  },
+  "custom": [
+    {
+      "id": "custom-entries",
+      "title": "Volunteering",
+      "entries": [
+        {
+          "id": "custom-entry-1",
+          "title": "Mentor",
+          "subtitle": "Code for BiH",
+          "location": "Sarajevo",
+          "start": "2021-01",
+          "end": "present",
+          "description": "Mentored **eight** juniors through their first year.",
+          "skills": [
+            "Mentoring"
+          ],
+          "url": "https://codeforbih.example.org"
+        },
+        {
+          "id": "custom-entry-2",
+          "title": "Translator",
+          "start": "2020-06"
+        },
+        {
+          "id": "custom-entry-3",
+          "title": "Šehić-Đurić · Ελληνικά · Русский · 中文 · العربية · 🚀",
+          "subtitle": "KubernetesKubernetesKubernetesKubernetesKubernetesKubernetes",
+          "location": "Сарајево",
+          "description": "Mixed scripts inside a custom entry."
+        },
+        {
+          "id": "custom-entry-hidden",
+          "title": "QAHIDDEN Custom Entry",
+          "hidden": true
+        }
+      ]
+    },
+    {
+      "id": "custom-text",
+      "title": "Statement",
+      "text": "A free-text section with **Markdown**, a [link](https://example.com), a long token (KubernetesKubernetesKubernetesKubernetesKubernetesKubernetes) and mixed scripts (Šehić-Đurić · Ελληνικά · Русский · 中文 · العربية · 🚀).\\n\\n- and a list item, to check that the text layout renders block content\\n"
+    },
+    {
+      "id": "custom-tags",
+      "title": "Tooling",
+      "tags": [
+        "Neovim",
+        "tmux",
+        "ripgrep",
+        "Šehić-Đurić · Ελληνικά · Русский · 中文 · العربية · 🚀",
+        "KubernetesKubernetesKubernetesKubernetesKubernetesKubernetes"
+      ]
+    }
+  ]
+}"
+`;
