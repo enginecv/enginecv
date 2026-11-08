@@ -8,7 +8,7 @@ import { loadAboutDocs, loadBlogDocs, loadParagraphs, loadRoleDocs } from "./cor
 import { countWords, findDuplicates } from "./word-count";
 
 /**
- * Quality floors from specs/078-adsense-content-depth/contracts/content-rules.md.
+ * Content quality floors.
  * These measure length and reuse only. Whether the text is specific and true is
  * the owner's review, not a test.
  */

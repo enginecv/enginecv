@@ -1,6 +1,6 @@
 /**
  * Content-depth helpers. The numeric floors live in
- * specs/078-adsense-content-depth/contracts/content-rules.md; these functions
+ * the content quality rules; these functions
  * only measure. They are used by tests, never shipped to the client.
  *
  * RoleProse shape (src/lib/role-examples/registry.ts): `intro`, `tips[]`,

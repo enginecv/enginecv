@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { expectNoA11yViolations } from "./helpers/a11y";
 
-// Role example pages (specs/077-cv-role-examples). Every test starts on a fresh
+// Role example pages. Every test starts on a fresh
 // browser context, so the dashboard is empty unless a test adds a resume.
 
 async function pressEdit(page: Page) {

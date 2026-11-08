@@ -166,6 +166,7 @@ export const es: Translations = {
   "landing.safety.noResumeAnalytics": "La analítica de páginas no usa cookies y nunca incluye tu CV",
   "landing.safety.localImports": "Los archivos importados se procesan en tu navegador",
   "landing.safety.neverSold": "Los datos de tu currículum nunca se venden",
+  "landing.safety.openSource": "El código fuente es público, así que puedes comprobar cómo se tratan tus datos",
   "landing.safety.status": "Sin servidor de EngineCV",
   "landing.safety.backupTitle": "Guarda una copia de seguridad",
   "landing.safety.backupWarning": "Borrar los datos del navegador puede eliminar currículums locales. Exporta una copia JSON cifrada antes de borrarlos o cambiar de navegador.",
@@ -2418,7 +2419,7 @@ export const es: Translations = {
 
   // Contact and supporter pages.
   "contact.title": "Contactar con EngineCV",
-  "contact.intro": "Elige un buzón para soporte, colaboraciones, empleo o preguntas sobre el producto. Envía los errores públicos y las sugerencias al repositorio de GitHub.",
+  "contact.intro": "Elige un buzón para soporte, colaboraciones, empleo o preguntas sobre el producto. Envía los errores públicos y las sugerencias al repositorio de código abierto en GitHub.",
   "contact.emailSupport": "Escribir al soporte",
   "contact.githubIssues": "Abrir incidencias en GitHub",
   "contact.general": "General",
@@ -2434,9 +2435,9 @@ export const es: Translations = {
   "contact.publicReports": "Las incidencias de GitHub son ideales para errores públicos y sugerencias con pasos claros para reproducirlos.",
   "contact.privateData": "Nunca publiques datos privados del CV, secretos ni detalles de seguridad en incidencias públicas. Escribe al soporte.",
   "contact.partnershipTime": "Las consultas de empleo y colaboración pueden tardar más si no hay una oferta o colaboración activa.",
-  "contact.feedbackRepo": "Repositorio de comentarios en GitHub",
-  "contact.feedbackDesc": "Informa de errores públicos y sugiere funciones aquí para que los comentarios puedan consultarse.",
-  "contact.viewRepo": "Ver repositorio",
+  "contact.feedbackRepo": "Código abierto en GitHub",
+  "contact.feedbackDesc": "EngineCV es de código abierto. Informa de errores y sugiere funciones como issues, o lee y mejora el código.",
+  "contact.viewRepo": "Ver en GitHub",
   "contact.privacy": "Consultar información de privacidad",
   "supporters.title": "Colaboradores",
   "supporters.thanks": "Gracias",
@@ -2540,6 +2541,8 @@ export const es: Translations = {
   "template.tag.tech": "Tecnología",
 
   "footer.feedbackGithub": "Comentarios en GitHub",
+
+  "footer.sourceCode": "Código fuente (código abierto)",
   "blog.notFound": "Artículo no encontrado",
 
   "icon.logo": "Logotipo de {name}",

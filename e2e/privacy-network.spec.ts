@@ -26,7 +26,7 @@ test("JSON tools make no external requests and apply offline", async ({ page, co
     expect(external).toEqual([]);
 });
 
-// Executable form of specs/022-trust-baseline/contracts/privacy-network.md (P1, P6, P8).
+// Executable form of the privacy network contract (P1, P6, P8).
 // These cases must hold whether or not the server was built with ads enabled:
 // without consent, nothing reaches ad hosts, and no analytics beyond the
 // cookieless page measurement Cloudflare adds in production runs at all.
@@ -141,7 +141,7 @@ test("P8: Ko-fi placement links redirect to Ko-fi without setting cookies", asyn
     expect(response.headers()["set-cookie"]).toBeUndefined();
 });
 
-// specs/073-agent-authoring-format/contracts/ui-and-routes.md (privacy contract, FR-020).
+// Privacy contract (FR-020): pasted and copied CV text never leaves the browser.
 test("P9: pasted and copied CV text never leaves the browser", async ({ page, context }) => {
     test.setTimeout(90_000);
     await context.grantPermissions(["clipboard-read", "clipboard-write"]);

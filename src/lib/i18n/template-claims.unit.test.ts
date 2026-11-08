@@ -8,7 +8,7 @@ import { fr } from "./fr";
 
 // Public copy about template text extraction states how many templates were
 // checked, so it is fed from the template registry and cannot drift from what
-// ships. The measurement itself is specs/022-trust-baseline/parse-results.md,
+// ships. The measurement itself is the parse report the e2e `parse` project writes,
 // produced by e2e/parse-pdf.spec.ts.
 const LOCALES = { en, bs, de, fr, es } as const;
 

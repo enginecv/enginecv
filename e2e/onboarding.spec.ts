@@ -6,7 +6,7 @@ import { de } from "../src/lib/i18n/de";
 import { expectNoA11yViolations } from "./helpers/a11y";
 import { mockGithubHappyPath } from "./helpers/github-mocks";
 
-// First-run onboarding (specs/038-first-run-onboarding). Every test starts on a
+// First-run onboarding. Every test starts on a
 // fresh browser context, so the dashboard is empty unless a test adds a resume.
 
 function linkedinZip(): Buffer {

@@ -4,7 +4,7 @@ import type { ExampleResumeInput } from "./types";
  * German version of the software developer example, used by the public role
  * example pages (#64). It is deliberately not part of `software-developer.ts`:
  * adding `de` there would put unreviewed German into the first-run picker for
- * every German visitor (specs/038-first-run-onboarding). People and contact
+ * every German visitor People and contact
  * details are fictional.
  */
 export const de = (): ExampleResumeInput => ({

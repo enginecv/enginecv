@@ -8,7 +8,7 @@ export type TemplateApplyResult = {
 };
 
 /**
- * Apply rules in `docs/design-template-system-plan.md` (Template Application Rules).
+ * Rules for applying a template to a resume.
  * Visual settings come from the template; content, history, and user/environment
  * preferences (language, dateFormat, measurementSystem, ai) stay on the resume.
  *

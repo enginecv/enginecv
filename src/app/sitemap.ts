@@ -51,7 +51,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Gallery and tool pages are listed in English only. Their translations are
     // short chrome translations (about 70-200 words each) that stay reachable and
     // linked from the language switcher, but are not advertised until each has
-    // enough original content to stand on its own (see specs/078).
+    // enough original content to stand on its own.
     const galleryPages = GALLERY_ROUTES.map((path) => ({
         url: absolute(path),
         changeFrequency: "monthly",

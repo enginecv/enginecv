@@ -14,7 +14,7 @@ for (const theme of ["light", "dark"] as const) test(`JSON editor and cleanup di
 });
 
 // WCAG 2.1 AA scans (serious/critical violations fail) over the surfaces in
-// specs/022-trust-baseline/contracts/quality-gates.md §A, in both themes.
+// the accessibility quality gate, in both themes.
 
 async function createResume(page: Page) {
     await page.goto("/dashboard");

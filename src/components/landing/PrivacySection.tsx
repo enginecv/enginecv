@@ -9,6 +9,7 @@ const ENGINECV_FEATURE_KEYS = [
   "landing.safety.noResumeAnalytics",
   "landing.safety.localImports",
   "landing.safety.neverSold",
+  "landing.safety.openSource",
 ];
 
 export function PrivacySection() {

@@ -1,7 +1,7 @@
 /**
  * Escaping and shortening helpers for the README export. The inline escape
  * set matches `export-markdown.ts`; kept local so that module's API stays
- * as it is (see specs/040-github-readme-export/research.md R4).
+ * as it is.
  */
 
 const INLINE_ESCAPE = /([\\`*_[\]<>|])/g;

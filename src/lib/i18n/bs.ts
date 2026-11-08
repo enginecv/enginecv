@@ -166,6 +166,7 @@ export const bs: Translations = {
   "landing.safety.noResumeAnalytics": "Analitika stranica je bez kolačića i nikada ne uključuje vaš CV",
   "landing.safety.localImports": "Uvezene datoteke obrađuju se u vašem pregledniku",
   "landing.safety.neverSold": "Vaši podaci iz CV-a nikada se ne prodaju",
+  "landing.safety.openSource": "Izvorni kod je javan, pa možete provjeriti kako se postupa s vašim podacima",
   "landing.safety.status": "Bez EngineCV servera",
   "landing.safety.backupTitle": "Sačuvajte backup",
   "landing.safety.backupWarning": "Brisanje podataka preglednika može izbrisati lokalne CV-e. Izvezite šifrirani JSON backup prije brisanja podataka ili promjene preglednika.",
@@ -2418,7 +2419,7 @@ export const bs: Translations = {
 
   // Contact and supporter pages.
   "contact.title": "Kontaktirajte EngineCV",
-  "contact.intro": "Odaberite adresu za podršku, partnerstva, poslove ili pitanja o proizvodu. Javne prijave grešaka i prijedloge funkcija šaljite u naš GitHub repozitorij za povratne informacije.",
+  "contact.intro": "Odaberite adresu za podršku, partnerstva, poslove ili pitanja o proizvodu. Javne prijave grešaka i prijedloge funkcija šaljite u naš open source GitHub repozitorij.",
   "contact.emailSupport": "Pošaljite email podršci",
   "contact.githubIssues": "Otvori GitHub prijave",
   "contact.general": "Opća pitanja",
@@ -2434,9 +2435,9 @@ export const bs: Translations = {
   "contact.publicReports": "GitHub prijave su najbolji izbor za javne greške i prijedloge uz jasne korake za reprodukciju.",
   "contact.privateData": "Ne objavljujte privatni sadržaj CV-a, tajne podatke ili sigurnosno osjetljive detalje u javnim prijavama. Pošaljite email podršci.",
   "contact.partnershipTime": "Upiti o poslovima i partnerstvima mogu trajati duže ako nema aktivne pozicije ili saradnje.",
-  "contact.feedbackRepo": "GitHub repozitorij za povratne informacije",
-  "contact.feedbackDesc": "Ovdje prijavite javne greške i predložite funkcije kako bi povratne informacije ostale pretražive.",
-  "contact.viewRepo": "Otvori repozitorij",
+  "contact.feedbackRepo": "Open source na GitHubu",
+  "contact.feedbackDesc": "EngineCV je open source. Prijavite greške i predložite funkcije kao issue, ili pročitajte i poboljšajte kod.",
+  "contact.viewRepo": "Otvori na GitHubu",
   "contact.privacy": "Pregledaj informacije o privatnosti",
   "supporters.title": "Podržavatelji",
   "supporters.thanks": "Hvala vam",
@@ -2540,6 +2541,8 @@ export const bs: Translations = {
   "template.tag.tech": "Tehnologija",
 
   "footer.feedbackGithub": "Povratne informacije na GitHubu",
+
+  "footer.sourceCode": "Izvorni kod (open source)",
   "blog.notFound": "Članak nije pronađen",
 
   "icon.logo": "Logo {name}",
