@@ -79,4 +79,4 @@ Do not open a public issue for a vulnerability. Use [private vulnerability repor
 
 ## Licence
 
-By contributing you agree that your contribution is licensed under the [AGPL-3.0](./LICENSE), the same licence as the project.
+By contributing you agree that your code is licensed under the [AGPL-3.0](./LICENSE), the same licence as the project. Changes to the editorial content listed in [LICENSE-CONTENT.md](./LICENSE-CONTENT.md) (blog posts and guide copy) are covered by the terms in that file instead.
