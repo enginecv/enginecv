@@ -1,6 +1,6 @@
 import type { Page } from "@playwright/test";
 
-// Hosts from specs/022-trust-baseline/contracts/privacy-network.md.
+// Hosts the privacy contract allows.
 // Analytics EngineCV does not use at all: any request to these is a regression.
 export const ANALYTICS_HOSTS = [
     "www.googletagmanager.com",

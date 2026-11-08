@@ -8,10 +8,13 @@
  * states only facts that are visible in the product and the repository.
  */
 
+import { SOURCE_REPO_URL } from "@/lib/contact";
+
 export interface AboutSection {
     id: "who" | "why" | "privacy" | "contact";
     heading: string;
     paragraphs: string[];
+    links?: { label: string; href: string }[];
 }
 
 export const ABOUT_META = {
@@ -30,8 +33,10 @@ export const ABOUT_SECTIONS: AboutSection[] = [
         heading: "Who builds EngineCV",
         paragraphs: [
             "EngineCV is built and maintained by Safet Imamovic, who also writes most of the guides on the blog. The same person answers the founder address on the contact page, so a message about the product reaches the one who can change it.",
-            "The source code for feedback, bug reports and feature requests lives in a public GitHub repository, and every release is listed on the changelog page, including what changed and when. That history is meant to let you judge how actively the project is looked after, rather than asking you to take it on trust.",
+            "EngineCV is open source. The code is published on GitHub under the AGPL-3.0, so you can read how your resume data is handled, report bugs and request features as issues, or send a fix. The blog posts and guide copy are not open licensed; the repository says which parts are which.",
+            "Every release is listed on the changelog page, including what changed and when. That history is meant to let you judge how actively the project is looked after, rather than asking you to take it on trust.",
         ],
+        links: [{ label: "EngineCV on GitHub", href: SOURCE_REPO_URL }],
     },
     {
         id: "why",

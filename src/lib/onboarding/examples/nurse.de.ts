@@ -4,7 +4,7 @@ import type { ExampleResumeInput } from "./types";
  * German version of the nurse example, used by the public role example pages
  * (#64). It is deliberately not part of `nurse.ts`: adding `de` there would put
  * unreviewed German into the first-run picker for every German visitor
- * (specs/038-first-run-onboarding). People and contact details are fictional.
+ * People and contact details are fictional.
  */
 export const de = (): ExampleResumeInput => ({
     description: "Beispiel-Lebenslauf: Pflegefachkraft.",

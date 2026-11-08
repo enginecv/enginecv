@@ -166,6 +166,7 @@ export const de: Translations = {
   "landing.safety.noResumeAnalytics": "Seiten-Analyse ohne Cookies und nie mit deinem Lebenslauf",
   "landing.safety.localImports": "Importierte Dateien werden in deinem Browser verarbeitet",
   "landing.safety.neverSold": "Deine Lebenslaufdaten werden nie verkauft",
+  "landing.safety.openSource": "Der Quellcode ist öffentlich, sodass du prüfen kannst, wie mit deinen Daten umgegangen wird",
   "landing.safety.status": "Kein EngineCV-Server",
   "landing.safety.backupTitle": "Backup aufbewahren",
   "landing.safety.backupWarning": "Das Löschen von Browserdaten kann lokale Lebensläufe entfernen. Exportiere vorher ein verschlüsseltes JSON-Backup, besonders vor einem Browserwechsel.",
@@ -2418,7 +2419,7 @@ export const de: Translations = {
 
   // Contact and supporter pages.
   "contact.title": "EngineCV kontaktieren",
-  "contact.intro": "Wähle ein Postfach für Support, Partnerschaften, Jobs oder Produktfragen. Öffentliche Fehlerberichte und Funktionswünsche gehören in unser GitHub-Feedback-Repository.",
+  "contact.intro": "Wähle ein Postfach für Support, Partnerschaften, Jobs oder Produktfragen. Öffentliche Fehlerberichte und Funktionswünsche gehören in unser quelloffenes GitHub-Repository.",
   "contact.emailSupport": "Support per E-Mail",
   "contact.githubIssues": "GitHub-Issues öffnen",
   "contact.general": "Allgemein",
@@ -2434,9 +2435,9 @@ export const de: Translations = {
   "contact.publicReports": "GitHub-Issues eignen sich für öffentliche Fehlerberichte und Funktionswünsche mit klaren Schritten zum Nachstellen.",
   "contact.privateData": "Veröffentliche keine privaten Lebenslaufdaten, Geheimnisse oder sicherheitsrelevanten Details in öffentlichen Issues. Schreib dem Support per E-Mail.",
   "contact.partnershipTime": "Job- und Partnerschaftsanfragen können länger dauern, wenn keine Stelle oder Zusammenarbeit aktiv ist.",
-  "contact.feedbackRepo": "GitHub-Feedback-Repository",
-  "contact.feedbackDesc": "Melde hier öffentliche Fehler und Funktionswünsche, damit Feedback auffindbar bleibt.",
-  "contact.viewRepo": "Feedback-Repository ansehen",
+  "contact.feedbackRepo": "Open Source auf GitHub",
+  "contact.feedbackDesc": "EngineCV ist Open Source. Melde Fehler und Funktionswünsche als Issues oder lies und verbessere den Code.",
+  "contact.viewRepo": "Auf GitHub ansehen",
   "contact.privacy": "Datenschutzhinweise lesen",
   "supporters.title": "Unterstützer",
   "supporters.thanks": "Vielen Dank",
@@ -2540,6 +2541,8 @@ export const de: Translations = {
   "template.tag.tech": "Technik",
 
   "footer.feedbackGithub": "Feedback auf GitHub",
+
+  "footer.sourceCode": "Quellcode (Open Source)",
   "blog.notFound": "Beitrag nicht gefunden",
 
   "icon.logo": "{name}-Logo",

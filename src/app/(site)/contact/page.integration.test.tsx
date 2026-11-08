@@ -13,7 +13,7 @@ describe("ContactPage", () => {
         cleanup();
     });
 
-    it("renders the public contact channels and feedback repo", () => {
+    it("renders the public contact channels and the GitHub repository", () => {
         render(<ContactPage />);
 
         expect(screen.getByRole("heading", { name: "Contact EngineCV" })).toBeInTheDocument();
@@ -37,7 +37,7 @@ describe("ContactPage", () => {
             "href",
             FEEDBACK_ISSUES_URL,
         );
-        expect(screen.getByRole("link", { name: "View feedback repo" })).toHaveAttribute(
+        expect(screen.getByRole("link", { name: "View on GitHub" })).toHaveAttribute(
             "href",
             FEEDBACK_REPO_URL,
         );

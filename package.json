@@ -3,6 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "license": "AGPL-3.0-only",
+  "homepage": "https://enginecv.app",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/enginecv/enginecv.git"
+  },
+  "bugs": {
+    "url": "https://github.com/enginecv/enginecv/issues"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",

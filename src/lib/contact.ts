@@ -9,3 +9,4 @@ export const CONTACT_EMAILS = {
 
 export const FEEDBACK_REPO_URL = `https://github.com/${FEEDBACK_REPO}`;
 export const FEEDBACK_ISSUES_URL = `${FEEDBACK_REPO_URL}/issues`;
+export const SOURCE_REPO_URL = FEEDBACK_REPO_URL;

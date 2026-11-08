@@ -166,6 +166,7 @@ export const fr: Translations = {
   "landing.safety.noResumeAnalytics": "L’analyse des pages est sans cookies et n’inclut jamais votre CV",
   "landing.safety.localImports": "Les fichiers importés sont traités dans votre navigateur",
   "landing.safety.neverSold": "Les données de votre CV ne sont jamais vendues",
+  "landing.safety.openSource": "Le code source est public, vous pouvez donc vérifier comment vos données sont traitées",
   "landing.safety.status": "Aucun serveur EngineCV",
   "landing.safety.backupTitle": "Gardez une sauvegarde",
   "landing.safety.backupWarning": "Effacer les données du navigateur peut supprimer vos CV locaux. Exportez une sauvegarde JSON chiffrée avant de les effacer ou de changer de navigateur.",
@@ -2417,7 +2418,7 @@ export const fr: Translations = {
 
   // Contact and supporter pages.
   "contact.title": "Contacter EngineCV",
-  "contact.intro": "Choisissez une adresse pour l’assistance, les partenariats, les emplois ou les questions produit. Signalez les bugs publics et les demandes de fonctionnalités dans notre dépôt GitHub.",
+  "contact.intro": "Choisissez une adresse pour l’assistance, les partenariats, les emplois ou les questions produit. Signalez les bugs publics et les demandes de fonctionnalités dans notre dépôt GitHub open source.",
   "contact.emailSupport": "Contacter l’assistance",
   "contact.githubIssues": "Ouvrir les tickets GitHub",
   "contact.general": "Général",
@@ -2433,9 +2434,9 @@ export const fr: Translations = {
   "contact.publicReports": "Les tickets GitHub conviennent aux bugs publics et aux demandes de fonctionnalités avec des étapes claires.",
   "contact.privateData": "Ne publiez jamais de contenu privé de CV, de secrets ou de détails sensibles dans les tickets publics. Écrivez à l’assistance.",
   "contact.partnershipTime": "Les demandes d’emploi et de partenariat peuvent prendre plus de temps sans offre ou collaboration en cours.",
-  "contact.feedbackRepo": "Dépôt GitHub des retours",
-  "contact.feedbackDesc": "Signalez les bugs publics et proposez des fonctionnalités ici pour garder les retours consultables.",
-  "contact.viewRepo": "Voir le dépôt",
+  "contact.feedbackRepo": "Open source sur GitHub",
+  "contact.feedbackDesc": "EngineCV est open source. Signalez les bugs et proposez des fonctionnalités via les issues, ou lisez et améliorez le code.",
+  "contact.viewRepo": "Voir sur GitHub",
   "contact.privacy": "Consulter la confidentialité",
   "supporters.title": "Soutiens",
   "supporters.thanks": "Merci",
@@ -2539,6 +2540,8 @@ export const fr: Translations = {
   "template.tag.tech": "Technologie",
 
   "footer.feedbackGithub": "Retours sur GitHub",
+
+  "footer.sourceCode": "Code source (open source)",
   "blog.notFound": "Article introuvable",
 
   "icon.logo": "Logo {name}",

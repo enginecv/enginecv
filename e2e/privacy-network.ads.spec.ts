@@ -3,7 +3,7 @@ import { expectNoA11yViolations, setTheme } from "./helpers/a11y";
 import { AD_HOSTS, hostsHit, recordRequests } from "./helpers/network";
 
 
-// Contract cases P2–P5 (specs/022-trust-baseline/contracts/privacy-network.md).
+// Contract cases P2–P5.
 // Runs only in the `chromium-ads` project, whose server is built with ads enabled
 // and a placeholder publisher id. Ad traffic is intercepted and never leaves the machine.
 

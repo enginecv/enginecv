@@ -50,7 +50,7 @@ export function getExampleRole(id: ExampleRoleId): ExampleRole {
 
 /**
  * The example in the visitor's language when a reviewed translation exists,
- * otherwise English. v1 ships English only (specs/038-first-run-onboarding).
+ * otherwise English. v1 ships English only.
  */
 export function resolveExampleContent(content: ExampleContent, locale: Locale): { locale: Locale; input: ExampleResumeInput } {
     const localized = content[locale];

@@ -6,7 +6,7 @@ import { IntentPrefetchLink } from "@/components/ui/IntentPrefetchLink";
 import { usePathname } from "next/navigation";
 import { FeedbackButton } from "@/components/feedback/FeedbackButton";
 import { FooterSupportLinks } from "@/components/landing/FooterSupportLinks";
-import { CONTACT_EMAILS, FEEDBACK_REPO_URL } from "@/lib/contact";
+import { CONTACT_EMAILS, FEEDBACK_ISSUES_URL, SOURCE_REPO_URL } from "@/lib/contact";
 import { useTranslation } from "@/lib/i18n";
 import { APP_VERSION } from "@/lib/app-version";
 import { getKofiUrl } from "@/lib/support";
@@ -74,7 +74,8 @@ export function Footer() {
                                         label: `${CONTACT_EMAILS.founder} (${t("contact.founder")})`,
                                         href: `mailto:${CONTACT_EMAILS.founder}`,
                                 },
-                                { label: t("footer.feedbackGithub"), href: FEEDBACK_REPO_URL },
+                                { label: t("footer.feedbackGithub"), href: FEEDBACK_ISSUES_URL },
+                                { label: t("footer.sourceCode"), href: SOURCE_REPO_URL },
                                 { label: t("landing.support.cta"), href: getKofiUrl("footer") },
                                 { label: t("supporters.title"), href: "/supporters" },
                         ],

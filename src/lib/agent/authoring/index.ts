@@ -1,7 +1,7 @@
 /**
  * `enginecv.authoring/v1`: the content-only CV format AIs read and write.
  * Everything else in the app goes through these exports, never the files
- * behind them (see specs/073-agent-authoring-format/contracts/conversion.md).
+ * behind them.
  */
 export { AUTHORING_FORMAT, AUTHORING_SCHEMA_URL, authoringV1Schema, type AuthoringDocument } from "./schema";
 export { NOTICE_CODES, formatPath, type Notice, type NoticeCode, type NoticeKind } from "./notices";

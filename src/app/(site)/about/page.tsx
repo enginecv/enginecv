@@ -18,6 +18,18 @@ export default function AboutPage() {
                     {section.paragraphs.map((paragraph) => (
                         <p key={paragraph}>{paragraph}</p>
                     ))}
+                    {section.links?.map((link) => (
+                        <p key={link.href}>
+                            <a
+                                href={link.href}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="underline underline-offset-4 hover:text-strong"
+                            >
+                                {link.label}
+                            </a>
+                        </p>
+                    ))}
                     {section.id === "contact" ? (
                         <p>
                             <Link href="/contact" className="underline underline-offset-4 hover:text-strong">

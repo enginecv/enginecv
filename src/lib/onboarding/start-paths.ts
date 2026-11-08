@@ -2,7 +2,7 @@ import { ClipboardPaste, FileJson, Github, IdCard, Linkedin, Plus, Sparkles, typ
 
 /**
  * Every way to start a CV, in display order. The ids double as the public
- * `?start=` link values (specs/038-first-run-onboarding/contracts/start-links.md):
+ * `?start=` link values:
  * never rename one without keeping the old value working.
  */
 export const START_PATH_IDS = ["blank", "example", "ai", "linkedin", "europass", "github", "json"] as const;

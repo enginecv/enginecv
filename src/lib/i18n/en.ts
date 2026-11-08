@@ -166,6 +166,7 @@ export const en: Translations = {
   "landing.safety.noResumeAnalytics": "Page analytics are cookieless and never include your resume",
   "landing.safety.localImports": "Imported files are processed in your browser",
   "landing.safety.neverSold": "Your resume data is never sold",
+  "landing.safety.openSource": "The source code is public, so you can check how your data is handled",
   "landing.safety.status": "No EngineCV server",
   "landing.safety.backupTitle": "Keep a backup",
   "landing.safety.backupWarning": "Clearing browser data can erase local resumes. Export an encrypted JSON backup before clearing it or changing browsers.",
@@ -2420,7 +2421,7 @@ export const en: Translations = {
 
   // Contact and supporter pages.
   "contact.title": "Contact EngineCV",
-  "contact.intro": "Choose an inbox for support, partnerships, jobs, or product questions. Public bug reports and feature requests belong in our GitHub feedback repository.",
+  "contact.intro": "Choose an inbox for support, partnerships, jobs, or product questions. Public bug reports and feature requests belong in our open-source GitHub repository.",
   "contact.emailSupport": "Email support",
   "contact.githubIssues": "Open GitHub issues",
   "contact.general": "General",
@@ -2436,9 +2437,9 @@ export const en: Translations = {
   "contact.publicReports": "GitHub issues are best for public bug reports and feature requests with clear reproduction steps.",
   "contact.privateData": "Do not post private resume content, secrets, or security-sensitive details in public GitHub issues. Email support first.",
   "contact.partnershipTime": "Jobs and partnership enquiries may take longer unless a position or collaboration is active.",
-  "contact.feedbackRepo": "GitHub feedback repo",
-  "contact.feedbackDesc": "Report public bugs and request features here so feedback stays searchable.",
-  "contact.viewRepo": "View feedback repo",
+  "contact.feedbackRepo": "Open source on GitHub",
+  "contact.feedbackDesc": "EngineCV is open source. Report bugs and request features as issues, or read and improve the code.",
+  "contact.viewRepo": "View on GitHub",
   "contact.privacy": "Review privacy posture",
   "supporters.title": "Supporters",
   "supporters.thanks": "Thank you",
@@ -2542,6 +2543,8 @@ export const en: Translations = {
   "template.tag.tech": "Tech",
 
   "footer.feedbackGithub": "Feedback on GitHub",
+
+  "footer.sourceCode": "Source code (open source)",
   "blog.notFound": "Post not found",
 
   "icon.logo": "{name} logo",

@@ -23,7 +23,7 @@ const ORGANIZATION_ID = `${SITE_URL}/#organization`;
  * Profiles that belong to EngineCV itself. A personal profile or the private
  * GitHub repository does not belong here; add an org page once one exists.
  */
-export const ORGANIZATION_SAME_AS = [ENGINECV_KOFI_URL] as const;
+export const ORGANIZATION_SAME_AS = [ENGINECV_KOFI_URL, "https://github.com/enginecv"] as const;
 
 export function absoluteUrl(path: string): string {
     return path === "/" ? SITE_URL : `${SITE_URL}${path}`;

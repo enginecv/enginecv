@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
-// Keyboard-only journey (specs/022-trust-baseline/contracts/quality-gates.md §A):
+// Keyboard-only journey:
 // no mouse input from landing to a downloaded export.
 
 async function focusedTestId(page: Page) {
