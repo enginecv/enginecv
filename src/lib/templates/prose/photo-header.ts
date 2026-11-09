@@ -8,7 +8,7 @@ export const prose: TemplateProse = {
     ],
     build: [
         "The header is a row: a round photo about 104 points across on the left, then your name at 30 points, then your contact details arranged in two columns. A teal ring surrounds the photo, and the same teal colours your job title, the section headings and the icons beside your contact details, so the top of the page and the section headings feel connected.",
-        "Below the header the page is a single column of sections in Inter at 10.5 points, each introduced by an uppercase teal heading on a pale cyan band. A thin grey line separates the header from the body. Spacing is a little tighter than the Modern template, which helps when you also have a photo taking up vertical space.",
+        "Below the header the page is a single column of sections in Inter at 10.5 points, each introduced by an uppercase teal heading on a pale teal band. A thin grey line separates the header from the body. Spacing is a little tighter than the Modern template, which helps when you also have a photo taking up vertical space.",
     ],
     tips: [
         "Choose a photo that is recent, evenly lit and shows your face clearly against a plain background. Crop it as a head and shoulders shot, since the round frame will cut the corners off anything wider.",

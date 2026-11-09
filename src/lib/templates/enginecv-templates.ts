@@ -29,14 +29,14 @@ const BUILTIN_DEFS: BuiltinTemplateDef[] = [
     {
         id: "enginecv-modern",
         name: "Modern",
-        description: "Clean blue-accented sans-serif with a clear name and job title, hairline heading rules and generous spacing.",
+        description: "Clean slate-accented sans-serif with a clear name and job title, hairline heading rules and generous spacing.",
         tags: ["Modern", "Clean", "ATS"],
         paperSize: "a4",
         settingsOverride: {
             theme: "modern",
             colors: {
                 variant: "basic",
-                accent: "#2563eb",
+                accent: "#334155",
                 text: "#0f172a",
                 background: "#ffffff",
                 applyTo: ["headings", "headingsLine", "dotsBarsBubbles", "jobTitle", "headerIcons"],
@@ -61,7 +61,7 @@ const BUILTIN_DEFS: BuiltinTemplateDef[] = [
                 marginBottom: 12,
                 paddingTop: 4,
                 paddingBottom: 4,
-                border: { ...noBorder, style: "solid", width: 1, color: "#2563eb", bottom: true },
+                border: { ...noBorder, style: "solid", width: 1, color: "#334155", bottom: true },
             },
             personalDetails: {
                 alignment: "left",
@@ -139,14 +139,14 @@ const BUILTIN_DEFS: BuiltinTemplateDef[] = [
     {
         id: "enginecv-sidebar",
         name: "Sidebar",
-        description: "Two-column layout with indigo section bars, a compact skills rail and a bold name.",
+        description: "Two-column layout with burgundy section bars, a compact skills rail and a bold name.",
         tags: ["Two Column", "Sidebar", "Structured"],
         paperSize: "a4",
         settingsOverride: {
             theme: "modern",
             colors: {
                 variant: "basic",
-                accent: "#4338ca",
+                accent: "#9f1239",
                 text: "#111827",
                 background: "#ffffff",
                 applyTo: ["name", "headings", "headingsLine", "dotsBarsBubbles", "jobTitle"],
@@ -187,7 +187,7 @@ const BUILTIN_DEFS: BuiltinTemplateDef[] = [
                 paddingTop: 4,
                 paddingBottom: 4,
                 paddingLeft: 8,
-                backgroundColor: "#eef2ff",
+                backgroundColor: "#fff1f2",
                 border: { ...noBorder },
             },
             personalDetails: {
@@ -202,7 +202,7 @@ const BUILTIN_DEFS: BuiltinTemplateDef[] = [
                 marginBottom: 10,
                 marginLeft: 0,
                 marginRight: 0,
-                border: { ...noBorder, style: "solid", width: 2, color: "#4338ca", bottom: true },
+                border: { ...noBorder, style: "solid", width: 2, color: "#9f1239", bottom: true },
                 photo: {
                     width: 96,
                     height: 96,
@@ -229,7 +229,7 @@ const BUILTIN_DEFS: BuiltinTemplateDef[] = [
             theme: "modern",
             colors: {
                 variant: "basic",
-                accent: "#0e7490",
+                accent: "#0f766e",
                 text: "#0f172a",
                 background: "#ffffff",
                 applyTo: ["headings", "headingsLine", "dotsBarsBubbles", "headerIcons", "jobTitle"],
@@ -256,7 +256,7 @@ const BUILTIN_DEFS: BuiltinTemplateDef[] = [
                 paddingTop: 4,
                 paddingBottom: 4,
                 paddingLeft: 10,
-                backgroundColor: "#ecfeff",
+                backgroundColor: "#f0fdfa",
                 border: { ...noBorder },
             },
             personalDetails: {
@@ -283,7 +283,7 @@ const BUILTIN_DEFS: BuiltinTemplateDef[] = [
                     marginBottom: 0,
                     marginLeft: 0,
                     marginRight: 18,
-                    border: { ...noBorder, style: "solid", width: 3, color: "#0e7490", radius: 999, top: true, bottom: true, left: true, right: true },
+                    border: { ...noBorder, style: "solid", width: 3, color: "#0f766e", radius: 999, top: true, bottom: true, left: true, right: true },
                 },
             },
         },
@@ -362,14 +362,14 @@ const BUILTIN_DEFS: BuiltinTemplateDef[] = [
     {
         id: "enginecv-timeline",
         name: "Timeline",
-        description: "Sky-blue chronological layout with a dashed left rule running through each section.",
+        description: "Amber chronological layout with a dashed left rule running through each section.",
         tags: ["Timeline", "Structured", "Chronological"],
         paperSize: "a4",
         settingsOverride: {
             theme: "modern",
             colors: {
                 variant: "basic",
-                accent: "#0284c7",
+                accent: "#b45309",
                 text: "#111827",
                 background: "#ffffff",
                 applyTo: ["headings", "headingsLine", "dotsBarsBubbles", "dates", "jobTitle"],
@@ -393,7 +393,7 @@ const BUILTIN_DEFS: BuiltinTemplateDef[] = [
                 style: "baseline",
                 marginBottom: 10,
                 paddingBottom: 4,
-                border: { ...noBorder, style: "solid", width: 1, color: "#0369a1", bottom: true },
+                border: { ...noBorder, style: "solid", width: 1, color: "#b45309", bottom: true },
             },
             personalDetails: {
                 alignment: "left",
@@ -407,7 +407,7 @@ const BUILTIN_DEFS: BuiltinTemplateDef[] = [
                 marginBottom: 12,
                 marginLeft: 0,
                 marginRight: 0,
-                border: { ...noBorder, style: "solid", width: 2, color: "#0369a1", bottom: true },
+                border: { ...noBorder, style: "solid", width: 2, color: "#b45309", bottom: true },
             },
             contentStyle: {
                 paddingTop: 2,
@@ -418,7 +418,7 @@ const BUILTIN_DEFS: BuiltinTemplateDef[] = [
                 marginBottom: 0,
                 marginLeft: 0,
                 marginRight: 0,
-                border: { ...noBorder, style: "dashed", width: 1, color: "#0369a1", left: true, dashLength: 4, dashGap: 4 },
+                border: { ...noBorder, style: "dashed", width: 1, color: "#b45309", left: true, dashLength: 4, dashGap: 4 },
                 backgroundColor: "",
                 preset: "plain",
             },
@@ -515,7 +515,7 @@ const BUILTIN_DEFS: BuiltinTemplateDef[] = [
             theme: "modern",
             colors: {
                 variant: "basic",
-                accent: "#0d9488",
+                accent: "#15803d",
                 text: "#1f2328",
                 background: "#ffffff",
                 applyTo: ["name", "headings", "headingsLine", "dotsBarsBubbles", "jobTitle", "headerIcons"],
@@ -546,8 +546,8 @@ const BUILTIN_DEFS: BuiltinTemplateDef[] = [
                 paddingTop: 4,
                 paddingBottom: 4,
                 paddingLeft: 10,
-                backgroundColor: "#f0fdfa",
-                border: { ...noBorder, style: "solid", width: 3, color: "#0d9488", left: true },
+                backgroundColor: "#f0fdf4",
+                border: { ...noBorder, style: "solid", width: 3, color: "#15803d", left: true },
             },
             personalDetails: {
                 alignment: "left",
@@ -561,7 +561,7 @@ const BUILTIN_DEFS: BuiltinTemplateDef[] = [
                 marginBottom: 12,
                 marginLeft: 0,
                 marginRight: 0,
-                border: { ...noBorder, style: "solid", width: 1, color: "#0f766e", bottom: true },
+                border: { ...noBorder, style: "solid", width: 1, color: "#15803d", bottom: true },
             },
         },
     },
