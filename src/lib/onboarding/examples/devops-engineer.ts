@@ -5,9 +5,9 @@ export const content: ExampleContent = {
     en: () => ({
         description: "Example CV: DevOps engineer.",
         basics: {
-            name: "Adnan Softić",
+            name: "John Doe",
             headline: "DevOps Engineer — Kubernetes, Terraform, CI/CD",
-            email: "adnan.softic@example.com",
+            email: "john.doe@example.com",
             phone: "+387 61 000 005",
             location: "Mostar, Bosnia and Herzegovina (open to relocation)",
             summary:
@@ -89,9 +89,9 @@ export const content: ExampleContent = {
     de: () => ({
         description: "Beispiel-Lebenslauf: DevOps-Engineer.",
         basics: {
-            name: "Adnan Softić",
+            name: "John Doe",
             headline: "DevOps-Engineer — Kubernetes, Terraform, CI/CD",
-            email: "adnan.softic@example.com",
+            email: "john.doe@example.com",
             phone: "+387 61 000 005",
             location: "Mostar, Bosnien und Herzegowina (Umzug möglich)",
             summary:

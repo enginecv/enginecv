@@ -19,7 +19,7 @@ export function TemplateDetail({ entry, related }: { entry: GalleryTemplate; rel
         entry.columns === "two" ? t("gallery.factTwoColumns") : t("gallery.factOneColumn"),
         entry.photo ? t("gallery.factPhoto") : t("gallery.factPhotoOptional"),
         t("gallery.factText"),
-        t("gallery.factFree"),
+        t("gallery.factNoAccount"),
     ];
 
     return (

@@ -18,7 +18,7 @@ describe("exampleTextHtml", () => {
     const html = exampleTextHtml(resume, "#222222");
 
     it("contains the CV text, in the CV's language", () => {
-        expect(html).toContain("Amra Begović");
+        expect(html).toContain("Jane Doe");
         expect(html).toContain("Intensivstation");
         expect(html).toContain("Universität Tuzla");
     });

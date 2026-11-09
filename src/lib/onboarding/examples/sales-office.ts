@@ -4,9 +4,9 @@ export const content: ExampleContent = {
     en: () => ({
         description: "Example CV: sales and office coordinator.",
         basics: {
-            name: "Marija Kovač",
+            name: "Jane Doe",
             headline: "Sales and Office Coordinator",
-            email: "marija.kovac@example.com",
+            email: "jane.doe@example.com",
             phone: "+387 65 000 003",
             location: "Banja Luka, Bosnia and Herzegovina",
             summary:

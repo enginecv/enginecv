@@ -9,9 +9,9 @@ import type { ExampleResumeInput } from "./types";
 export const de = (): ExampleResumeInput => ({
     description: "Beispiel-Lebenslauf: Pflegefachkraft.",
     basics: {
-        name: "Amra Begović",
+        name: "Jane Doe",
         headline: "Gesundheits- und Krankenpflegerin — Intensivpflege",
-        email: "amra.begovic@example.com",
+        email: "jane.doe@example.com",
         phone: "+387 61 000 002",
         location: "Tuzla, Bosnien und Herzegowina",
         summary:

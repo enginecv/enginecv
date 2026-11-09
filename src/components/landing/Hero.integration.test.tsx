@@ -148,6 +148,34 @@ describe("Hero template showcase", () => {
         expect(screen.queryByText("Try the editor")).not.toBeInTheDocument();
     });
 
+    it("enlarges the centred template in a dialog and closes it with Escape", async () => {
+        const user = userEvent.setup();
+        const templates = limitShowcaseTemplates(getBuiltinTemplates());
+        render(<LandingWorkbenchDemo />);
+
+        expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+        await user.click(screen.getByRole("button", { name: `Enlarge preview: ${templates[0].meta.name}` }));
+
+        const dialog = await screen.findByRole("dialog", { name: templates[0].meta.name });
+        expect(dialog).toHaveAttribute("aria-modal", "true");
+
+        await user.keyboard("{Escape}");
+        await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    });
+
+    it("steps through templates from the enlarged view", async () => {
+        const user = userEvent.setup();
+        const templates = limitShowcaseTemplates(getBuiltinTemplates());
+        render(<LandingWorkbenchDemo />);
+
+        await user.click(screen.getByRole("button", { name: `Enlarge preview: ${templates[0].meta.name}` }));
+        const dialog = await screen.findByRole("dialog");
+        await user.keyboard("{ArrowRight}");
+
+        expect(screen.getByTestId("landing-template-counter")).toHaveTextContent(`Template 2/${templates.length}`);
+        expect(dialog).toHaveAttribute("aria-label", templates[1].meta.name);
+    });
+
     it("creates exactly one resume from the selected template and opens its editor", async () => {
         const user = userEvent.setup();
         const templates = limitShowcaseTemplates(getBuiltinTemplates());

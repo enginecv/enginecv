@@ -5,9 +5,9 @@ export const content: ExampleContent = {
     en: () => ({
         description: "Example CV: IT support specialist.",
         basics: {
-            name: "Mirza Dedić",
+            name: "John Doe",
             headline: "IT Support Specialist — Microsoft 365, Windows, Helpdesk",
-            email: "mirza.dedic@example.com",
+            email: "john.doe@example.com",
             phone: "+387 61 000 008",
             location: "Bihać, Bosnia and Herzegovina (open to relocation)",
             summary:
@@ -91,9 +91,9 @@ export const content: ExampleContent = {
     de: () => ({
         description: "Beispiel-Lebenslauf: IT-Support-Mitarbeiter.",
         basics: {
-            name: "Mirza Dedić",
+            name: "John Doe",
             headline: "IT-Support-Mitarbeiter — Microsoft 365, Windows, Helpdesk",
-            email: "mirza.dedic@example.com",
+            email: "john.doe@example.com",
             phone: "+387 61 000 008",
             location: "Bihać, Bosnien und Herzegowina (Umzug möglich)",
             summary:

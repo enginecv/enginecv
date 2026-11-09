@@ -65,7 +65,7 @@ describe("published English example", () => {
         expect(screen.getByTestId("preview-stub")).toBeInTheDocument();
 
         const text = screen.getByTestId("role-example-text");
-        expect(text).toHaveTextContent("Amra Begović");
+        expect(text).toHaveTextContent("Jane Doe");
         expect(text).toHaveTextContent("Intensive Care Unit");
         // The page owns the only h1; the CV's own headings sit below the page's h2s.
         expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);

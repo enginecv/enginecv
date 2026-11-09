@@ -5,9 +5,9 @@ export const content: ExampleContent = {
     en: () => ({
         description: "Example CV: backend developer.",
         basics: {
-            name: "Haris Kovačević",
+            name: "John Doe",
             headline: "Backend Developer — Java, Spring Boot, PostgreSQL",
-            email: "haris.kovacevic@example.com",
+            email: "john.doe@example.com",
             phone: "+387 61 000 004",
             location: "Banja Luka, Bosnia and Herzegovina (open to relocation)",
             summary:
@@ -91,9 +91,9 @@ export const content: ExampleContent = {
     de: () => ({
         description: "Beispiel-Lebenslauf: Backend-Entwickler.",
         basics: {
-            name: "Haris Kovačević",
+            name: "John Doe",
             headline: "Backend-Entwickler — Java, Spring Boot, PostgreSQL",
-            email: "haris.kovacevic@example.com",
+            email: "john.doe@example.com",
             phone: "+387 61 000 004",
             location: "Banja Luka, Bosnien und Herzegowina (Umzug möglich)",
             summary:

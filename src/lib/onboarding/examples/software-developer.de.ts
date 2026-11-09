@@ -10,9 +10,9 @@ import type { ExampleResumeInput } from "./types";
 export const de = (): ExampleResumeInput => ({
     description: "Beispiel-Lebenslauf: Full-Stack-Entwickler.",
     basics: {
-        name: "Emir Hadžić",
+        name: "John Doe",
         headline: "Full-Stack-Entwickler — TypeScript, React, Node.js",
-        email: "emir.hadzic@example.com",
+        email: "john.doe@example.com",
         phone: "+387 61 000 001",
         location: "Sarajevo, Bosnien und Herzegowina (remote möglich)",
         summary:

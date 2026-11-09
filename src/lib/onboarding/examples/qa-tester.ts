@@ -5,9 +5,9 @@ export const content: ExampleContent = {
     en: () => ({
         description: "Example CV: QA tester.",
         basics: {
-            name: "Dino Hasanović",
+            name: "John Doe",
             headline: "QA Engineer — Test Automation, Playwright, API Testing",
-            email: "dino.hasanovic@example.com",
+            email: "john.doe@example.com",
             phone: "+387 61 000 007",
             location: "Sarajevo, Bosnia and Herzegovina (open to relocation)",
             summary:
@@ -89,9 +89,9 @@ export const content: ExampleContent = {
     de: () => ({
         description: "Beispiel-Lebenslauf: Softwaretester.",
         basics: {
-            name: "Dino Hasanović",
+            name: "John Doe",
             headline: "QA-Engineer — Testautomatisierung, Playwright, API-Tests",
-            email: "dino.hasanovic@example.com",
+            email: "john.doe@example.com",
             phone: "+387 61 000 007",
             location: "Sarajevo, Bosnien und Herzegowina (Umzug möglich)",
             summary:

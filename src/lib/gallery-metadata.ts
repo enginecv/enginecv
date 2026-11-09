@@ -24,7 +24,7 @@ export function galleryTemplateMetadata(locale: Locale, entry: GalleryTemplate):
     const path = galleryTemplatePath(entry.slug);
     const base = pageMetadata({
         title: interpolate(translate(locale, "gallery.detailMetaTitle"), { name }),
-        description: `${translate(locale, `gallery.summary.${entry.slug}`)} ${translate(locale, "gallery.factFree")}.`,
+        description: `${translate(locale, `gallery.summary.${entry.slug}`)} ${translate(locale, "gallery.factNoAccount")}.`,
         path: localizedPath(path, locale),
         ogLocale: OG_LOCALES[locale],
         languages: localeAlternates(path),

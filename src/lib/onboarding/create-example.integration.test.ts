@@ -21,7 +21,7 @@ describe("createResumeFromExample", () => {
         const rows = await db.resumes.toArray();
         expect(rows).toHaveLength(1);
         expect(rows[0]).toMatchObject({ id, meta: { title: "Beispiel – Pflege", tags: ["example"] } });
-        expect(rows[0].basics.name).toBe("Amra Begović");
+        expect(rows[0].basics.name).toBe("Jane Doe");
         // No reviewed German version yet: the content is English.
         expect(rows[0].settings.language).toBe("en");
         expect(await db.resumeHistory.where("resumeId").equals(id).count()).toBe(1);
