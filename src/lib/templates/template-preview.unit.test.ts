@@ -21,7 +21,7 @@ describe("template preview sample", () => {
         expect(sample.settings.contentSections).toEqual(
             expect.arrayContaining(["experience", "education", "projects", "skills", "languages", "declaration"]),
         );
-        expect(sample.declaration[0]).toMatchObject({ place: "Berlin", fullName: "Alex Carter" });
+        expect(sample.declaration[0]).toMatchObject({ place: "Berlin", fullName: "John Doe" });
         expect(sample.declaration[0].signature).toMatch(/^data:image\/svg\+xml,/);
     });
 });

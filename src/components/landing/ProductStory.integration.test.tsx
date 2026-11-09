@@ -15,7 +15,7 @@ describe("ProductStory", () => {
     it("shows real sample data in the editor visual", () => {
         render(<ProductStory />);
 
-        expect(screen.getByTestId("landing-story-sample-name")).toHaveTextContent("NameAlex Carter");
+        expect(screen.getByTestId("landing-story-sample-name")).toHaveTextContent("NameJohn Doe");
         expect(screen.getByTestId("landing-story-sample-headline")).toHaveTextContent(
             "HeadlineSenior Product Designer",
         );

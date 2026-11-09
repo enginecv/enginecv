@@ -929,7 +929,8 @@ describe("ResumePreview", () => {
         const previewPage = container.querySelector(".resume-page") as HTMLElement;
         await waitFor(() => expect(within(previewPage).getByText("English")).toBeInTheDocument());
 
-        const fluency = within(previewPage).getAllByText("C1")[0];
+        // Text mode sets the level in plain parentheses, with no badge.
+        const fluency = within(previewPage).getAllByText("(C1)")[0];
         expect(fluency.style.fontSize).toBe("1em");
         expect(fluency.className).not.toContain("border-current/20");
         unmount();

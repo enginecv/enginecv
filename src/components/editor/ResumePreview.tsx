@@ -2076,7 +2076,7 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
         if (!fluency || languagesStyle.fluencyDisplay === "hidden") return null;
         const fluencyStyle: CSSProperties = { fontSize: `${languagesStyle.fluencySize ?? 0.85}em` };
         return languagesStyle.fluencyDisplay === "text" ? (
-            <span className="font-semibold" style={fluencyStyle}>{fluency}</span>
+            <span className="opacity-75" style={fluencyStyle}>({fluency})</span>
         ) : (
             <span className="rounded-sm border border-current/20 px-1.5 py-0.5 font-semibold" style={fluencyStyle}>
                 {fluency}
