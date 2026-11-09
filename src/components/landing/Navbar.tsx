@@ -34,6 +34,7 @@ export function Navbar() {
     { label: t("nav.features"), href: "#features" },
     { label: t("nav.faq"), href: "#faq" },
     { label: t("nav.blog"), href: blogIndexPath(locale) },
+    { label: t("footer.about"), href: "/about" },
     { label: t("nav.contact"), href: "/contact" },
   ];
   const navLinkClass =

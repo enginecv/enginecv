@@ -1,4 +1,31 @@
-# EngineCV
+<div align="center">
+
+<a href="https://enginecv.app">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./docs/assets/logo-text-light.png">
+    <img src="./docs/assets/logo-text-dark.png" alt="EngineCV" width="320">
+  </picture>
+</a>
+
+**A free, local-first resume builder. No account, no paywall, no data leaving your browser.**
+
+[![CI](https://github.com/enginecv/enginecv/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/enginecv/enginecv/actions/workflows/ci.yml)
+[![License: AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](./LICENSE)
+[![Live site](https://img.shields.io/badge/live-enginecv.app-0e7490)](https://enginecv.app)
+[![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](./CONTRIBUTING.md)
+
+![Next.js](https://img.shields.io/badge/Next.js-16-000000?logo=nextdotjs&logoColor=white)
+![React](https://img.shields.io/badge/React-19-61dafb?logo=react&logoColor=black)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6?logo=typescript&logoColor=white)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-38bdf8?logo=tailwindcss&logoColor=white)
+
+[Website](https://enginecv.app) · [Templates](https://enginecv.app/cv-templates) · [CV examples](https://enginecv.app/cv-examples) · [Blog](https://enginecv.app/blog) · [Changelog](./CHANGELOG.md) · [Contributing](./CONTRIBUTING.md)
+
+<a href="https://enginecv.app">
+  <img src="./public/og-image.png" alt="EngineCV resume builder preview" width="720">
+</a>
+
+</div>
 
 EngineCV is a local-first resume builder with live preview, flexible exports, and a product philosophy centered on privacy, utility, and low lock-in.
 

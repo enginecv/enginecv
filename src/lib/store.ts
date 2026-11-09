@@ -172,6 +172,9 @@ interface ResumeStore {
     clearTemplateMode: () => void;
 }
 
+/** Template a brand-new blank resume is based on. */
+const DEFAULT_NEW_RESUME_TEMPLATE_ID = "enginecv-modern";
+
 const DEFAULT_RESUME_SIDEBAR_TAB: SidebarTab = "content";
 
 function createEditorSurfaceState(sidebarTab: SidebarTab = DEFAULT_RESUME_SIDEBAR_TAB) {
@@ -902,7 +905,11 @@ export const useResumeStore = create<ResumeStore>((set, get) => ({
     },
 
     createNew: async () => {
-        const newResume = createEmptyResume();
+        // A blank resume starts from the Modern template, not the bare schema
+        // defaults, so the first thing a user sees is a finished design.
+        const modern = getBuiltinTemplateById(DEFAULT_NEW_RESUME_TEMPLATE_ID);
+        const blank = createEmptyResume();
+        const newResume = modern ? applyTemplateToResume(blank, modern).resume : blank;
         const id = createId();
         const now = Date.now();
         newResume.id = id;

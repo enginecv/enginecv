@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createEmptyResume } from "./schema";
 import { db } from "./db";
 import { useResumeStore } from "./store";
+import { getBuiltinTemplateById } from "./templates/enginecv-templates";
 
 type ResumeStoreState = ReturnType<typeof useResumeStore.getState>;
 
@@ -151,6 +152,17 @@ describe("useResumeStore", () => {
 
         expect(state.resume.settings.language).toBe("en");
         expect(state.paperSize).toBe("letter");
+    });
+
+    it("starts a new blank resume from the Modern template design", async () => {
+        const modern = getBuiltinTemplateById("enginecv-modern");
+        expect(modern).toBeDefined();
+
+        const id = await useResumeStore.getState().createNew();
+        const { resume } = expectResumeEditorSession(id);
+
+        expect(resume.settings.colors.accent).toBe(modern?.settings.colors.accent);
+        expect(resume.settings.colors.accent).not.toBe(createEmptyResume().settings.colors.accent);
     });
 
     it("creates, saves, and reloads a resume through IndexedDB", async () => {
