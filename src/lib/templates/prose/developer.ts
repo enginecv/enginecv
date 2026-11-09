@@ -7,8 +7,8 @@ export const prose: TemplateProse = {
         "It suits software engineers, but also data, DevOps, security and other technical roles where a repository, a deployed service or a contribution to an open-source project can be shown directly. If you have few public projects, the order is easy to change.",
     ],
     build: [
-        "The default section order is projects, experience, skills, education, languages and certificates, so a reader meets what you built before where you were employed. You can reorder sections in the editor, and the template follows. Your name and the section headings are set in JetBrains Mono, with the name at 28 points and the headings at 11 points in uppercase, while the body text stays in Inter at 10 points so longer descriptions remain easy to read.",
-        "The accent is a muted teal that appears on the line under the header block, while the lines under section headings are a light grey so they stay in the background. Contact details sit in two columns, which leaves room for links such as a GitHub profile and a personal site, and a photo can be placed on the left.",
+        "The default section order is projects, experience, skills, education, languages and certificates, so a reader meets what you built before where you were employed. You can reorder sections in the editor, and the template follows. Your name and the section headings are set in JetBrains Mono, with the name at 28 points and the headings at 11 points in uppercase, while the body text stays in Inter at 10.5 points so longer descriptions remain easy to read.",
+        "The accent is a teal that colours your name, job title and section headings; each heading sits on a pale teal band with a solid teal bar on its left edge, which makes the sections easy to scan. Contact details sit in two columns, which leaves room for links such as a GitHub profile and a personal site, and a photo can be placed on the left.",
     ],
     tips: [
         "Describe each project in terms of the problem, your part and the result, and link to the repository or the running service. A link someone can open is more persuasive than a long description.",
