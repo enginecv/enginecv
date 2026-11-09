@@ -1,5 +1,6 @@
 import { CEFR_SKILLS, deriveOverallCefrLevel, emptyCefrSkillLevels, type CefrLevel, type CefrSkill } from "@/lib/cefr";
-import { createEmptyResume, isNativeLanguageFluency, languageSchema, type Language, type Resume } from "@/lib/schema";
+import { isNativeLanguageFluency, languageSchema, type Language, type Resume } from "@/lib/schema";
+import { createNewResume } from "@/lib/templates/default-design";
 
 export const MAX_LANGUAGE_NAME_LENGTH = 60;
 
@@ -62,7 +63,7 @@ export function mergeAssessmentIntoResume(resume: Resume, entry: Language): { re
 
 /** A new resume holding only the assessed language, shown in the CEFR grid layout. */
 export function resumeFromAssessment(entry: Language): Resume {
-    const base = createEmptyResume();
+    const base = createNewResume();
     return {
         ...base,
         languages: [entry],

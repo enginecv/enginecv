@@ -2445,4 +2445,55 @@ describe("ResumePreview", () => {
         expect(entries.some((entry) => entry.style.backgroundColor === "rgb(255, 0, 0)")).toBe(true);
         expect(entries.some((entry) => entry.style.display === "grid")).toBe(false);
     });
+
+    describe("click-to-navigate menu", () => {
+        function renderWithPersonalDetails() {
+            const resume = createEmptyResume();
+            resume.basics.name = "Jane Doe";
+            resume.basics.email = "jane.doe@example.com";
+            resume.basics.summary = "Product designer with eight years of experience.";
+            resume.settings.contentSections = [];
+            useResumeStore.setState({ resume, paperSize: "a4" });
+            const { container } = render(<ResumePreview />);
+            return container.querySelector(".resume-page") as HTMLElement;
+        }
+
+        it("makes the summary a selectable block that belongs to the personal details", async () => {
+            const page = renderWithPersonalDetails();
+
+            const summary = await waitFor(() => {
+                const node = page.querySelector<HTMLElement>('[data-testid="resume-preview-summary"]');
+                expect(node).not.toBeNull();
+                return node as HTMLElement;
+            });
+            // [data-nav-section] is what draws the hover box and opens the menu.
+            expect(summary).toHaveAttribute("data-nav-section", "basics");
+        });
+
+        it("offers Customize section for personal details and opens that panel", async () => {
+            const page = renderWithPersonalDetails();
+            const name = await waitFor(() => {
+                const node = page.querySelector<HTMLElement>('[data-testid="resume-preview-name"]');
+                expect(node).not.toBeNull();
+                return node as HTMLElement;
+            });
+
+            fireEvent.click(name);
+            const customize = await waitFor(() => {
+                const button = document.body.querySelector<HTMLButtonElement>("button");
+                const match = Array.from(document.body.querySelectorAll<HTMLButtonElement>("button"))
+                    .find((candidate) => candidate.textContent?.includes("Customize section"));
+                expect(match ?? button).toBeTruthy();
+                expect(match).toBeTruthy();
+                return match as HTMLButtonElement;
+            });
+
+            fireEvent.click(customize);
+
+            const state = useResumeStore.getState();
+            expect(state.sidebarTab).toBe("customize");
+            expect(state.customizeScope).toBe("resume");
+            expect(state.pendingCustomizeNav).toMatchObject({ scope: "resume", panel: "personalDetails" });
+        });
+    });
 });

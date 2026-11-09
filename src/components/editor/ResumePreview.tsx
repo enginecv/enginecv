@@ -489,6 +489,7 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
     const [navMenu, setNavMenu] = useState<{ x: number; y: number; section: string; entryIndex: number | null; kind: string } | null>(null);
     const requestEditorNav = useResumeStore((state) => state.requestEditorNav);
     const requestCustomizeSection = useResumeStore((state) => state.requestCustomizeSection);
+    const requestCustomizePanel = useResumeStore((state) => state.requestCustomizePanel);
     const pendingPreviewCommand = useResumeStore((state) => state.pendingPreviewCommand);
     const consumePreviewCommand = useResumeStore((state) => state.consumePreviewCommand);
     const updateBasics = useResumeStore((state) => state.updateBasics);
@@ -1663,6 +1664,9 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
             <section
                 data-testid="resume-preview-summary"
                 data-preview-section="summary"
+                // The summary is edited with the personal details, so it navigates there.
+                data-nav-section="basics"
+                data-nav-kind="heading"
                 data-summary-layout={layout}
                 style={{ marginBottom: `${trailingGap}px` }}
             >
@@ -3005,7 +3009,7 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
                     null, // location
                     (hasDescription || hasRepos) ? (
                         <>
-                            {hasRepos && <RepoBadgeList repos={proj.repos} settings={projectsStyle.repoBadge as any} accentColor={projectsStyle.colors.accent} textColor={projectsStyle.colors.text} />}
+                            {hasRepos && <RepoBadgeList repos={proj.repos} settings={projectsStyle.repoBadge as any} accentColor={projectsStyle.colors.accent} textColor={projectsStyle.colors.text} pageBackground={projectsStyle.colors.background} />}
                             {hasDescription && (
                                 <ReactMarkdown components={markdownComponents} remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw, rehypeSanitize]}>{proj.description}</ReactMarkdown>
                             )}
@@ -3364,7 +3368,7 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
                             null, // location
                             (hasDescription || hasRepos) ? (
                                 <>
-                                    {hasRepos && <RepoBadgeList repos={proj.repos} settings={projectsStyle.repoBadge as any} accentColor={projectsStyle.colors.accent} textColor={projectsStyle.colors.text} />}
+                                    {hasRepos && <RepoBadgeList repos={proj.repos} settings={projectsStyle.repoBadge as any} accentColor={projectsStyle.colors.accent} textColor={projectsStyle.colors.text} pageBackground={projectsStyle.colors.background} />}
                                     {hasDescription && (
                                         <ReactMarkdown components={markdownComponents} remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw, rehypeSanitize]}>{proj.description}</ReactMarkdown>
                                     )}
@@ -4115,12 +4119,13 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
                     y={navMenu.y}
                     kind={navMenu.kind}
                     onGo={() => { requestEditorNav(navMenu.section, navMenu.entryIndex); setNavMenu(null); }}
-                    onCustomize={navMenu.section === "basics"
-                        ? undefined
-                        : () => {
-                            requestCustomizeSection(navMenu.section);
-                            setNavMenu(null);
-                        }}
+                    onCustomize={() => {
+                        // Personal details (name, contact items, summary) are styled in the
+                        // header panel; every other section has its own section scope.
+                        if (navMenu.section === "basics") requestCustomizePanel("personalDetails");
+                        else requestCustomizeSection(navMenu.section);
+                        setNavMenu(null);
+                    }}
                     onClose={() => setNavMenu(null)}
                 />
             )}

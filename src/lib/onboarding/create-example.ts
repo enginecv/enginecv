@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { recordResumeHistory } from "@/lib/history";
 import { createId } from "@/lib/id";
 import type { Locale } from "@/lib/i18n/locales";
+import { withDefaultDesign } from "@/lib/templates/default-design";
 import { resumeSchema, type Resume } from "@/lib/schema";
 import { getExampleRole, resolveExampleContent, type ExampleContent, type ExampleResumeInput, type ExampleRoleId } from "./examples";
 
@@ -23,7 +24,7 @@ function filledSections(input: ExampleResumeInput): string[] {
 export function buildExampleResume(input: ExampleResumeInput, contentLocale: Locale, title: string, now: number, id = createId()): Resume {
     const sections = filledSections(input);
     const { description, ...content } = input;
-    return resumeSchema.parse({
+    const resume = resumeSchema.parse({
         ...content,
         id,
         createdAt: now,
@@ -37,6 +38,13 @@ export function buildExampleResume(input: ExampleResumeInput, contentLocale: Loc
             sectionDisplay: { languages: { languageLayout: "cefr" } },
         },
     });
+    // Examples open in the default design; their language, sections, section order
+    // and CEFR grid stay exactly as set above.
+    const designed = withDefaultDesign(resume);
+    return {
+        ...designed,
+        settings: { ...designed.settings, layout: { ...designed.settings.layout, sectionOrder: resume.settings.layout.sectionOrder } },
+    };
 }
 
 /**

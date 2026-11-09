@@ -1,7 +1,8 @@
 import { z } from "zod";
 import { markdownToPlainText } from "@/lib/export-plaintext";
 import { createId } from "@/lib/id";
-import { createEmptyResume, createUngroupedSkillGroup, resumeSchema, type Resume } from "@/lib/schema";
+import { createUngroupedSkillGroup, resumeSchema, type Resume } from "@/lib/schema";
+import { createNewResume } from "@/lib/templates/default-design";
 import { deriveOverallCefrLevel, emptyCefrSkillLevels, type CefrSkillLevels } from "@/lib/cefr";
 import { uniqueImportId } from "../ids";
 import type { EuropassLanguage, ParsedEuropassCv } from "./parse";
@@ -35,7 +36,7 @@ export function mapEuropassLanguage(language: EuropassLanguage): {
 }
 
 export function mapEuropassToResume(cv: ParsedEuropassCv): Resume {
-    const base = createEmptyResume();
+    const base = createNewResume();
     const { person } = cv;
     const name = joinNonEmpty([person.givenName, person.familyName], " ");
 

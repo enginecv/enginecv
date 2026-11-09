@@ -1,4 +1,5 @@
-import { createEmptyResume, createUngroupedSkillGroup, resumeSchema, type Resume } from "@/lib/schema";
+import { createUngroupedSkillGroup, resumeSchema, type Resume } from "@/lib/schema";
+import { createNewResume } from "@/lib/templates/default-design";
 import { uniqueImportId } from "../ids";
 import type { ParsedLinkedinArchive } from "./archive";
 import { parseLinkedinDate } from "./dates";
@@ -25,7 +26,7 @@ function joinNonEmpty(parts: string[], separator: string): string {
 }
 
 export function mapLinkedinToResume(parsed: ParsedLinkedinArchive): Resume {
-    const base = createEmptyResume();
+    const base = createNewResume();
 
     const experienceIds = new Set<string>();
     const experience = parsed.positions.map((position) => ({

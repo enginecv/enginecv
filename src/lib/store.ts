@@ -19,6 +19,7 @@ import {
     TEMPLATE_DOCUMENT_VERSION,
 } from "./templates/template-schema";
 import { getBuiltinTemplateById, getTemplatePreviewOptions, isBuiltinTemplateId } from "./templates/enginecv-templates";
+import { createNewResume, DEFAULT_TEMPLATE_ID } from "./templates/default-design";
 import { applyTemplateToResume } from "./templates/template-apply";
 import { getSampleResumeForTemplatePreview } from "./templates/template-preview";
 import { mergeCustomizationValue, withoutSectionStyleOverride } from "./customization";
@@ -171,9 +172,6 @@ interface ResumeStore {
     applyTemplateById: (templateId: string, options?: { applyPaperSize?: boolean }) => Promise<boolean>;
     clearTemplateMode: () => void;
 }
-
-/** Template a brand-new blank resume is based on. */
-const DEFAULT_NEW_RESUME_TEMPLATE_ID = "enginecv-modern";
 
 const DEFAULT_RESUME_SIDEBAR_TAB: SidebarTab = "content";
 
@@ -905,11 +903,9 @@ export const useResumeStore = create<ResumeStore>((set, get) => ({
     },
 
     createNew: async () => {
-        // A blank resume starts from the Modern template, not the bare schema
+        // A blank resume starts from the default template, not the bare schema
         // defaults, so the first thing a user sees is a finished design.
-        const modern = getBuiltinTemplateById(DEFAULT_NEW_RESUME_TEMPLATE_ID);
-        const blank = createEmptyResume();
-        const newResume = modern ? applyTemplateToResume(blank, modern).resume : blank;
+        const newResume = createNewResume();
         const id = createId();
         const now = Date.now();
         newResume.id = id;
@@ -999,7 +995,7 @@ export const useResumeStore = create<ResumeStore>((set, get) => ({
     createNewTemplate: async (initial = {}) => {
         const id = createId();
         const now = Date.now();
-        const sample = getSampleResumeForTemplatePreview();
+        // A new template starts from the default design, not the bare schema defaults.
         const doc: TemplateDocument = {
             kind: "template",
             id,
@@ -1009,9 +1005,9 @@ export const useResumeStore = create<ResumeStore>((set, get) => ({
                 description: initial.description ?? "",
                 tags: initial.tags ?? [],
                 source: "user",
-                basedOnTemplateId: initial.basedOnTemplateId,
+                basedOnTemplateId: initial.basedOnTemplateId ?? DEFAULT_TEMPLATE_ID,
             },
-            settings: sample.settings,
+            settings: createNewResume().settings,
             paperSize: "a4",
             createdAt: now,
             updatedAt: now,
