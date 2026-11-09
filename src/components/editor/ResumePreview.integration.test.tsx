@@ -1,4 +1,4 @@
-import { act, fireEvent, render, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { emptyCefrSkillLevels } from "@/lib/cefr";
 import { createEmptyResume, projectSchema, type Resume } from "@/lib/schema";
@@ -2447,6 +2447,9 @@ describe("ResumePreview", () => {
     });
 
     describe("click-to-navigate menu", () => {
+        // Unmount between tests so no React work is left scheduled when the file ends.
+        afterEach(() => cleanup());
+
         function renderWithPersonalDetails() {
             const resume = createEmptyResume();
             resume.basics.name = "Jane Doe";
