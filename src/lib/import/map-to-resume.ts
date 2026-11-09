@@ -1,4 +1,5 @@
-import { createEmptyResume, createUngroupedSkillGroup, resumeSchema, type Resume } from "@/lib/schema";
+import { createUngroupedSkillGroup, resumeSchema, type Resume } from "@/lib/schema";
+import { createNewResume } from "@/lib/templates/default-design";
 import { repoToProject } from "./github-projects";
 import { uniqueImportId } from "./ids";
 import {
@@ -59,7 +60,7 @@ export function mapToResume(
         selectedOrganizationLogins.has(organization.login),
     );
     const referenceDate = options.referenceDate ?? new Date();
-    const base = createEmptyResume();
+    const base = createNewResume();
     const projectIds = new Set<string>();
     const repoIds = new Set<string>();
 

@@ -5,9 +5,9 @@ export const content: ExampleContent = {
     en: () => ({
         description: "Example CV: data analyst.",
         basics: {
-            name: "Selma Ćatić",
+            name: "Jane Doe",
             headline: "Data Analyst — SQL, Python, Power BI",
-            email: "selma.catic@example.com",
+            email: "jane.doe@example.com",
             phone: "+387 61 000 006",
             location: "Tuzla, Bosnia and Herzegovina (open to relocation)",
             summary:
@@ -91,9 +91,9 @@ export const content: ExampleContent = {
     de: () => ({
         description: "Beispiel-Lebenslauf: Datenanalystin.",
         basics: {
-            name: "Selma Ćatić",
+            name: "Jane Doe",
             headline: "Datenanalystin — SQL, Python, Power BI",
-            email: "selma.catic@example.com",
+            email: "jane.doe@example.com",
             phone: "+387 61 000 006",
             location: "Tuzla, Bosnien und Herzegowina (Umzug möglich)",
             summary:

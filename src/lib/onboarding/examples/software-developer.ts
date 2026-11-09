@@ -4,9 +4,9 @@ export const content: ExampleContent = {
     en: () => ({
         description: "Example CV: full-stack developer.",
         basics: {
-            name: "Emir Hadžić",
+            name: "John Doe",
             headline: "Full-Stack Developer — TypeScript, React, Node.js",
-            email: "emir.hadzic@example.com",
+            email: "john.doe@example.com",
             phone: "+387 61 000 001",
             location: "Sarajevo, Bosnia and Herzegovina (open to remote)",
             summary:

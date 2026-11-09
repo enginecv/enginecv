@@ -8,6 +8,7 @@ import { limitShowcaseTemplates } from "@/lib/landing-template-carousel";
 import { getBuiltinTemplates } from "@/lib/templates/enginecv-templates";
 import { db } from "@/lib/db";
 import { useI18nStore } from "@/lib/i18n";
+import { translate } from "@/lib/i18n/translate";
 import * as useTemplateModule from "@/lib/templates/use-template";
 
 const { pushMock } = vi.hoisted(() => ({
@@ -137,18 +138,42 @@ describe("Hero template showcase", () => {
         expect(container.querySelector('[data-selected="true"]')).toHaveTextContent(templates[templates.length - 1].meta.name);
     });
 
-    it("updates the real resume preview from the workbench content controls", async () => {
+    it("describes the selected template and offers no editing fields", () => {
+        const templates = limitShowcaseTemplates(getBuiltinTemplates());
+        render(<LandingWorkbenchDemo />);
+
+        expect(screen.getByRole("heading", { name: templates[0].meta.name })).toBeInTheDocument();
+        expect(screen.getByRole("link", { name: "All templates" })).toHaveAttribute("href", "/cv-templates");
+        expect(screen.queryByTestId("landing-demo-name")).not.toBeInTheDocument();
+        expect(screen.queryByText("Try the editor")).not.toBeInTheDocument();
+    });
+
+    it("enlarges the centred template in a dialog and closes it with Escape", async () => {
         const user = userEvent.setup();
-        const { container } = render(<LandingWorkbenchDemo />);
+        const templates = limitShowcaseTemplates(getBuiltinTemplates());
+        render(<LandingWorkbenchDemo />);
 
-        const nameInput = screen.getByTestId("landing-demo-name");
-        const previewName = container.querySelector('[data-testid="resume-preview-name"]');
+        expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+        await user.click(screen.getByRole("button", { name: `Enlarge preview: ${templates[0].meta.name}` }));
 
-        expect(previewName).toHaveTextContent("Alex Carter");
-        await user.clear(nameInput);
-        await user.type(nameInput, "Mira Hadzic");
+        const dialog = await screen.findByRole("dialog", { name: templates[0].meta.name });
+        expect(dialog).toHaveAttribute("aria-modal", "true");
 
-        expect(previewName).toHaveTextContent("Mira Hadzic");
+        await user.keyboard("{Escape}");
+        await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+    });
+
+    it("steps through templates from the enlarged view", async () => {
+        const user = userEvent.setup();
+        const templates = limitShowcaseTemplates(getBuiltinTemplates());
+        render(<LandingWorkbenchDemo />);
+
+        await user.click(screen.getByRole("button", { name: `Enlarge preview: ${templates[0].meta.name}` }));
+        const dialog = await screen.findByRole("dialog");
+        await user.keyboard("{ArrowRight}");
+
+        expect(screen.getByTestId("landing-template-counter")).toHaveTextContent(`Template 2/${templates.length}`);
+        expect(dialog).toHaveAttribute("aria-label", templates[1].meta.name);
     });
 
     it("creates exactly one resume from the selected template and opens its editor", async () => {
@@ -175,7 +200,7 @@ describe("Hero template showcase", () => {
         render(<LandingWorkbenchDemo />);
 
         expect(screen.getByRole("button", {
-            name: `Koristi šablon: ${templates[0].meta.name}`,
+            name: `Koristi šablon: ${translate("bs", "template.name.modern")}`,
         })).toBeInTheDocument();
     });
 

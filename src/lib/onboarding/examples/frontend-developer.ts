@@ -5,9 +5,9 @@ export const content: ExampleContent = {
     en: () => ({
         description: "Example CV: frontend developer.",
         basics: {
-            name: "Lejla Mujić",
+            name: "Jane Doe",
             headline: "Frontend Developer — React, TypeScript, Accessibility",
-            email: "lejla.mujic@example.com",
+            email: "jane.doe@example.com",
             phone: "+387 61 000 003",
             location: "Zenica, Bosnia and Herzegovina (open to relocation)",
             summary:
@@ -88,9 +88,9 @@ export const content: ExampleContent = {
     de: () => ({
         description: "Beispiel-Lebenslauf: Frontend-Entwicklerin.",
         basics: {
-            name: "Lejla Mujić",
+            name: "Jane Doe",
             headline: "Frontend-Entwicklerin — React, TypeScript, Barrierefreiheit",
-            email: "lejla.mujic@example.com",
+            email: "jane.doe@example.com",
             phone: "+387 61 000 003",
             location: "Zenica, Bosnien und Herzegowina (Umzug möglich)",
             summary:

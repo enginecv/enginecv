@@ -9,7 +9,7 @@ function DemoPlaceholder() {
         <div
             data-testid="landing-demo-placeholder"
             aria-hidden="true"
-            className="h-[815px] min-w-0 rounded-xl border border-edge-strong bg-surface-1 sm:h-[905px] lg:h-[609px]"
+            className="h-[776px] min-w-0 rounded-xl border border-edge-strong bg-surface-1 sm:h-[670px] lg:h-[720px]"
         />
     );
 }

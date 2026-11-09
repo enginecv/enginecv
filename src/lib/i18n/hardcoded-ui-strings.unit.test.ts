@@ -31,10 +31,10 @@ const ALLOWED = new Set([
     "src/components/landing/ProductStory.tsx: resume.json",
     "src/components/landing/ProductStory.tsx: 24.8 KB",
     "src/components/landing/ProductStory.tsx: history/07",
-    "src/components/landing/ProductStory.tsx: alex-carter-resume",
+    "src/components/landing/ProductStory.tsx: john-doe-resume",
     "src/components/landing/SupportSection.tsx: Safet",
     // Sample resume content, not interface labels.
-    "src/components/templates/TemplatePreviewCard.tsx: Alex Carter",
+    "src/components/templates/TemplatePreviewCard.tsx: John Doe",
     "src/components/templates/TemplatePreviewCard.tsx: Senior Product Designer",
     "src/components/templates/TemplatePreviewCard.tsx: Experience",
     "src/components/templates/TemplatePreviewCard.tsx: Education",

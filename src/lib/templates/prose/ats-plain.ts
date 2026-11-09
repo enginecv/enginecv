@@ -8,7 +8,7 @@ export const prose: TemplateProse = {
     ],
     build: [
         "Everything runs in a single column, so the reading order on the page is the same as the order in the file. Section icons are switched off, because an icon is decoration that text extraction cannot read. Entries use a single-column layout rather than a separate date column, so each job reads as a title, an employer and a date line followed by its bullets.",
-        "The type is Inter at 10.5 points, slightly larger than most of the other templates, and your name is set at 24 points, smaller than elsewhere so the page does not open with a large banner. The accent colour is applied only to the lines under the section headings, and those are near black, so the page is effectively monochrome. Photo support exists, but a plain CV for a portal rarely needs one.",
+        "The type is Inter at 10.5 points, a little smaller than the serif templates so a full career fits on a page, and your name is set at 24 points, left-aligned, so the page does not open with a large banner. Everything is black on white, with a thin rule under each section heading as the only graphic. Photo support exists, but a plain CV for a portal rarely needs one.",
     ],
     tips: [
         "Use the standard section names the template provides, such as Experience, Education and Skills. Renaming them to something creative gains little and can make automatic reading harder.",

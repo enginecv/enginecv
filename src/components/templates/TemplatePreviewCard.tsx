@@ -216,7 +216,7 @@ function SkeletonBody({
                             lineHeight: 1.05,
                         }}
                     >
-                        Alex Carter
+                        John Doe
                     </div>
                     <div style={{ fontSize: isHero ? 10 : 7, opacity: 0.58, marginTop: isHero ? 5 : 2 }}>
                         Senior Product Designer

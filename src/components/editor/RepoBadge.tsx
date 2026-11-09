@@ -13,6 +13,7 @@ import {
 import type { ProjectRepo } from "@/lib/schema";
 import { buildBoxBorderStyles, hexToRgba } from "@/lib/preview/box-style";
 import { fontFamilyInlineValue } from "@/lib/fonts";
+import { contrastRatio, ensureReadableAccent, normalizeHex } from "@/lib/color-contrast";
 
 type IconComponent = ComponentType<SVGProps<SVGSVGElement> & { className?: string }>;
 
@@ -127,11 +128,23 @@ export function RepoIcon({ platform, className, style }: { platform: RepoPlatfor
     return <Icon className={className} style={style} />;
 }
 
+/** A platform colour that reads on the resume page: kept if it has enough contrast, else adjusted. */
+function readableOnPage(color: string, pageBackground: string, fallbackText: string): string {
+    const fg = normalizeHex(color);
+    const bg = normalizeHex(pageBackground);
+    if (!fg || !bg) return fallbackText;
+    if (contrastRatio(fg, bg) >= 3) return fg;
+    // A light page can take a darker shade of the same hue; on a dark or tinted
+    // page fall back to the resume's own text colour.
+    return contrastRatio("#ffffff", bg) < 2 ? ensureReadableAccent(fg) : fallbackText;
+}
+
 function resolveColors(
     platform: RepoPlatform,
     settings: RepoBadgeSettings,
     accent: string,
     fallbackText: string,
+    pageBackground: string,
 ): { text: string; background: string; border: string } {
     if (settings.colorMode === "custom") {
         const text = settings.textColor || fallbackText;
@@ -157,10 +170,11 @@ function resolveColors(
             border: hexToRgba(fallbackText, settings.borderOpacity),
         };
     }
+    const platformColor = readableOnPage(platform.accent, pageBackground, fallbackText);
     return {
-        text: platform.accent,
-        background: hexToRgba(platform.accent, settings.backgroundOpacity),
-        border: hexToRgba(platform.accent, settings.borderOpacity),
+        text: platformColor,
+        background: hexToRgba(platformColor, settings.backgroundOpacity),
+        border: hexToRgba(platformColor, settings.borderOpacity),
     };
 }
 
@@ -169,10 +183,12 @@ export interface RepoBadgeProps {
     settings?: RepoBadgeSettings;
     accentColor?: string;
     textColor?: string;
+    /** Colour of the resume page the badge sits on, used to keep platform colours readable. */
+    pageBackground?: string;
     variant?: "preview" | "editor";
 }
 
-export function RepoBadge({ repo, settings, accentColor = "#ffaa8d", textColor = "#111827", variant = "preview" }: RepoBadgeProps) {
+export function RepoBadge({ repo, settings, accentColor = "#ffaa8d", textColor = "#111827", pageBackground = "#ffffff", variant = "preview" }: RepoBadgeProps) {
     const effectiveSettings = settings ?? DEFAULT_REPO_BADGE_SETTINGS;
     const platform =
         repo.platform && repo.platform !== "auto"
@@ -190,7 +206,7 @@ export function RepoBadge({ repo, settings, accentColor = "#ffaa8d", textColor =
         );
     }
 
-    const colors = resolveColors(platform, effectiveSettings, accentColor, textColor);
+    const colors = resolveColors(platform, effectiveSettings, accentColor, textColor, pageBackground);
     const borderForBadge = {
         ...effectiveSettings.border,
         color: colors.border,
@@ -244,9 +260,10 @@ export interface RepoBadgeListProps {
     settings?: RepoBadgeSettings;
     accentColor?: string;
     textColor?: string;
+    pageBackground?: string;
 }
 
-export function RepoBadgeList({ repos, settings, accentColor, textColor }: RepoBadgeListProps) {
+export function RepoBadgeList({ repos, settings, accentColor, textColor, pageBackground }: RepoBadgeListProps) {
     if (!repos || repos.length === 0) return null;
     const valid = repos.filter((r) => r && (r.url || "").trim().length > 0);
     if (valid.length === 0) return null;
@@ -267,6 +284,7 @@ export function RepoBadgeList({ repos, settings, accentColor, textColor }: RepoB
                     settings={effectiveSettings}
                     accentColor={accentColor}
                     textColor={textColor}
+                    pageBackground={pageBackground}
                 />
             ))}
         </div>

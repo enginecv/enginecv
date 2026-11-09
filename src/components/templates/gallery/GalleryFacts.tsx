@@ -8,7 +8,7 @@ export function GalleryFactChips({ entry }: { entry: GalleryTemplate }) {
     const { t } = useTranslation();
     const facts = [
         entry.columns === "two" ? t("gallery.factTwoColumns") : t("gallery.factOneColumn"),
-        entry.photo ? t("gallery.factPhoto") : t("gallery.factNoPhoto"),
+        entry.photo ? t("gallery.factPhoto") : t("gallery.factPhotoOptional"),
     ];
     return (
         <ul className="flex flex-wrap gap-2">

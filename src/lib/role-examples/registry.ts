@@ -107,7 +107,7 @@ export const ROLE_EXAMPLES: readonly RoleExample[] = [
                 slug: "nurse",
                 status: "published",
                 name: "Nurse",
-                title: "Nurse CV Example for Germany and Abroad (Free Template)",
+                title: "Nurse CV Example for Germany and Abroad",
                 description:
                     "A registered nurse CV example you can edit for free: what employers in Germany expect, how to list clinical skills and how to show your German level.",
                 date: "2026-11-02",

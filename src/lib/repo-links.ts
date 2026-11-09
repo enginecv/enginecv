@@ -19,7 +19,9 @@ export const REPO_PLATFORMS: RepoPlatform[] = [
         key: "github",
         label: "GitHub",
         hostPatterns: [/(^|\.)github\.com$/i],
-        accent: "#f0f6fc",
+        // Brand colours here must read on a white resume page, so GitHub is its
+        // dark ink rather than the near-white used on dark UIs.
+        accent: "#24292f",
     },
     {
         key: "gitlab",
@@ -43,7 +45,7 @@ export const REPO_PLATFORMS: RepoPlatform[] = [
         key: "sourcehut",
         label: "SourceHut",
         hostPatterns: [/(^|\.)sr\.ht$/i],
-        accent: "#ffffff",
+        accent: "#111111",
     },
     {
         key: "azure-devops",
@@ -57,7 +59,7 @@ const OTHER_PLATFORM: RepoPlatform = {
     key: "other",
     label: "Repository",
     hostPatterns: [],
-    accent: "#ffaa8d",
+    accent: "#57606a",
 };
 
 export function getPlatform(key: string | undefined | null): RepoPlatform {

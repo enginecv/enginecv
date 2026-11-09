@@ -36,7 +36,7 @@ export function Hero() {
         <div className="absolute right-0 top-0 h-2 w-px bg-edge-strong" />
       </div>
 
-      <div className="relative mx-auto grid max-w-7xl items-center gap-14 xl:grid-cols-[minmax(0,0.76fr)_minmax(680px,1.24fr)] xl:gap-10">
+      <div className="relative mx-auto grid max-w-7xl items-center gap-14 xl:grid-cols-[minmax(0,0.62fr)_minmax(760px,1.38fr)] xl:gap-10">
         <div className="min-w-0 text-left xl:pr-4">
           <div className="mb-8 flex items-center gap-3 font-[family-name:var(--font-geist-mono)] text-[11px] uppercase tracking-[0.18em] text-accent">
             <span className="h-px w-8 bg-accent" aria-hidden="true" />

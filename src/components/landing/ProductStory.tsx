@@ -5,7 +5,7 @@ import { useTranslation } from "@/lib/i18n";
 
 const EXPORT_FORMATS = ["PDF", "HTML", "PNG", "SVG", "JSON"];
 const SAMPLE_PROFILE = {
-    name: "Alex Carter",
+    name: "John Doe",
     headline: "Senior Product Designer",
     summary: "Accessible products and scalable design systems.",
 };
@@ -203,7 +203,7 @@ function ExportVisual() {
             <div className="flex items-center justify-between gap-4">
                 <span className="flex items-center gap-2 text-sm font-medium text-strong">
                     <ArrowDownToLine className="h-4 w-4 text-accent" aria-hidden="true" />
-                    alex-carter-resume
+                    john-doe-resume
                 </span>
                 <FileJson2 className="h-4 w-4 text-faint" aria-hidden="true" />
             </div>

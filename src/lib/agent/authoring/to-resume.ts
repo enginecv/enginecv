@@ -1,5 +1,6 @@
 import { deriveOverallCefrLevel, CEFR_SKILLS, isCefrLevel } from "@/lib/cefr";
 import { createId } from "@/lib/id";
+import { createNewResume } from "@/lib/templates/default-design";
 import {
     basicsSchema,
     createEmptyResume,
@@ -857,7 +858,8 @@ export function authoringToResume(document: unknown, options: { now?: number } =
         key.startsWith("custom:") || (key === "skills" ? counts.skills > 0 : counts[key as AuthoringSectionKey] > 0),
     );
     const name = typeof (resume.basics as Obj).name === "string" ? ((resume.basics as Obj).name as string) : "";
-    const base = createEmptyResume();
+    // Pasted documents start from the default design; their own design hints apply on top.
+    const base = createNewResume();
 
     const parsed = resumeSchema.safeParse({
         ...resume,

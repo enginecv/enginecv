@@ -17,12 +17,18 @@ const SAMPLE_SIGNATURE = `data:image/svg+xml,${encodeURIComponent(
  * to render against — hard-coded here so it never drifts with user data.
  */
 export function getSampleResumeForTemplatePreview(options: TemplatePreviewOptions = {}): Resume {
-    const sample = buildEnglishSample();
+    // Photo templates show Jane, the rest John, so the gallery reads as two people.
+    const sample = buildEnglishSample(options.photo ? SAMPLE_PEOPLE.jane : SAMPLE_PEOPLE.john);
     const withLanguage = options.language === "de" ? toGermanSample(sample) : sample;
     return options.photo ? { ...withLanguage, basics: { ...withLanguage.basics, photo: SAMPLE_PHOTO } } : withLanguage;
 }
 
-function buildEnglishSample(): Resume {
+const SAMPLE_PEOPLE = {
+    john: { name: "John Doe", email: "john.doe@example.com", website: "https://johndoe.example" },
+    jane: { name: "Jane Doe", email: "jane.doe@example.com", website: "https://janedoe.example" },
+};
+
+function buildEnglishSample(person: (typeof SAMPLE_PEOPLE)["john"]): Resume {
     const base = createEmptyResume();
     const now = Date.now();
 
@@ -37,19 +43,19 @@ function buildEnglishSample(): Resume {
         },
         settings: {
             ...base.settings,
-            // Flag plus national number ("030 12345678"), as DACH CVs show it.
-            phoneDisplay: "flag",
-            // One line per language keeps every section on page one.
-            languagesSection: { ...base.settings.languagesSection, fluencyPlacement: "sameLine" },
+            // The national number alone ("030 12345678"), with no flag or country name.
+            phoneDisplay: "hide",
+            // One plain line per language ("English, Native") keeps every section on page one.
+            languagesSection: { ...base.settings.languagesSection, fluencyDisplay: "text", fluencySize: 1, fluencyPlacement: "sameLine" },
         },
         basics: {
             ...base.basics,
-            name: "Alex Carter",
+            name: person.name,
             headline: "Senior Product Designer",
-            email: "alex.carter@example.com",
+            email: person.email,
             phone: "+49 30 12345678",
             location: "Berlin, Germany",
-            website: "https://alexcarter.example",
+            website: person.website,
             linkedin: "https://www.linkedin.com/in/example",
             github: "https://github.com/example",
             summary:
