@@ -1964,7 +1964,7 @@ export const es: Translations = {
   "gallery.factOneColumn": "Una columna",
   "gallery.factTwoColumns": "Dos columnas",
   "gallery.factPhoto": "Foto en la cabecera",
-  "gallery.factNoPhoto": "Sin foto",
+  "gallery.factPhotoOptional": "Foto opcional",
   "gallery.factText": "El texto del PDF sigue siendo seleccionable y legible por máquinas",
   "gallery.factFree": "Gratis y sin cuenta",
   "gallery.related": "Más plantillas",

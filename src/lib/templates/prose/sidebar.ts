@@ -8,7 +8,7 @@ export const prose: TemplateProse = {
     ],
     build: [
         "The page has two columns, with the left column set to roughly a third of the width. Skills, languages and certificates are placed in the left column. Experience, education and projects go in the right column, and the order within it follows the editor, with experience first. Your name and contact details sit in a header across the top, with an optional square photo with rounded corners on the right of it.",
-        "A burgundy accent colours your name and job title, the underline below the header block and the small level indicators. Each section heading sits on a pale rose band so it is easy to find, and the type is Inter at 10.5 points with your name at 32. Because the columns are fixed by section type, you do not have to arrange anything yourself: add a skill and it appears in the side column.",
+        "A burgundy accent colours the section headings, the thin rules beneath them, the underline below the header block and the bullet markers, while your name stays dark. Dates sit beside each title so the narrow column never wraps them, and the type is Inter at 10.5 points with your name at 32. Because the columns are fixed by section type, you do not have to arrange anything yourself: add a skill and it appears in the side column.",
     ],
     tips: [
         "Keep skills to the ones you could talk about in an interview. A long side column is easy to fill and easy to skim past, so a shorter, honest list reads better than an exhaustive one.",

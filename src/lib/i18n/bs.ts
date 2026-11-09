@@ -1964,7 +1964,7 @@ export const bs: Translations = {
   "gallery.factOneColumn": "Jedna kolona",
   "gallery.factTwoColumns": "Dvije kolone",
   "gallery.factPhoto": "Fotografija u zaglavlju",
-  "gallery.factNoPhoto": "Bez fotografije",
+  "gallery.factPhotoOptional": "Fotografija po želji",
   "gallery.factText": "Tekst u PDF-u ostaje označiv i mašinski čitljiv",
   "gallery.factFree": "Besplatno i bez računa",
   "gallery.related": "Još šablona",

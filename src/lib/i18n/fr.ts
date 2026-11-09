@@ -1963,7 +1963,7 @@ export const fr: Translations = {
   "gallery.factOneColumn": "Une colonne",
   "gallery.factTwoColumns": "Deux colonnes",
   "gallery.factPhoto": "Photo dans l'en-tête",
-  "gallery.factNoPhoto": "Sans photo",
+  "gallery.factPhotoOptional": "Photo facultative",
   "gallery.factText": "Le texte reste sélectionnable et lisible par les logiciels dans le PDF",
   "gallery.factFree": "Gratuit et sans compte",
   "gallery.related": "Autres modèles",

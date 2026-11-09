@@ -8,7 +8,7 @@ export const prose: TemplateProse = {
     ],
     build: [
         "Every entry uses a fixed date column on the left, about a quarter of the width, with the title, employer and details to its right. That is what gives the page its tabular look, and it makes the sequence of stations easy to check. Your name is set in Roboto, the contact details are arranged in two columns, and the photo sits on the right in a 3 to 4 portrait shape of the kind used for a German Bewerbungsfoto.",
-        "Headings are in capitalised words rather than all capitals, on a pale grey band that separates the sections without heavy lines, and the spacing is compact so a full career fits a normal A4 page. The editor also offers a signature option, which you can use for the closing line that many applicants add; the template does not add a signature for you.",
+        "Headings are in capitalised words rather than all capitals, with a thin navy rule beneath each one, and the spacing is compact so a full career fits a normal A4 page. The editor also offers a signature option, which you can use for the closing line that many applicants add; the template does not add a signature for you.",
     ],
     tips: [
         "List stations in reverse chronological order, most recent first, and leave no unexplained gaps. A short note such as a period of study, parental leave or travel is better than a silent hole in the dates.",

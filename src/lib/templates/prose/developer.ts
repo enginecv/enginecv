@@ -8,7 +8,7 @@ export const prose: TemplateProse = {
     ],
     build: [
         "The default section order is projects, experience, skills, education, languages and certificates, so a reader meets what you built before where you were employed. You can reorder sections in the editor, and the template follows. Your name and the section headings are set in JetBrains Mono, with the name at 28 points and the headings at 11 points in uppercase, while the body text stays in Inter at 10.5 points so longer descriptions remain easy to read.",
-        "The accent is a green that colours your name, job title and section headings; each heading sits on a pale green band with a solid green bar on its left edge, which makes the sections easy to scan. Contact details sit in two columns, which leaves room for links such as a GitHub profile and a personal site, and a photo can be placed on the left.",
+        "The accent is a green used for the section headings, each marked by a solid green bar on its left edge, which makes the sections easy to scan, while your name stays dark. Contact details sit in two columns, which leaves room for links such as a GitHub profile and a personal site, and a photo can be placed on the left.",
     ],
     tips: [
         "Describe each project in terms of the problem, your part and the result, and link to the repository or the running service. A link someone can open is more persuasive than a long description.",

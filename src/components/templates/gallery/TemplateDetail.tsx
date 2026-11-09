@@ -17,7 +17,7 @@ export function TemplateDetail({ entry, related }: { entry: GalleryTemplate; rel
     const pending = templateAction.pendingTemplateId !== null;
     const facts = [
         entry.columns === "two" ? t("gallery.factTwoColumns") : t("gallery.factOneColumn"),
-        entry.photo ? t("gallery.factPhoto") : t("gallery.factNoPhoto"),
+        entry.photo ? t("gallery.factPhoto") : t("gallery.factPhotoOptional"),
         t("gallery.factText"),
         t("gallery.factFree"),
     ];

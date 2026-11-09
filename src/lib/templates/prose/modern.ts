@@ -4,7 +4,7 @@ export const prose: TemplateProse = {
     slug: "modern",
     overview: [
         "Modern is the template to start from when you have no strong reason to pick another. It is a single column in one sans-serif family, with the section headings in uppercase and a thin line under each one. Nothing on the page competes with your content, which makes it a good fit for the wide middle of the job market: product, marketing, operations, sales, customer success and similar roles.",
-        "The look is deliberately quiet. The accent is a restrained slate, used for the section headings, the line beneath them, your job title and the small icons, so the page has a little colour without becoming busy, and it prints cleanly in greyscale. If you later want a stronger identity, you can change the accent colour and fonts in the editor without leaving the template.",
+        "The look is deliberately quiet. The accent is a restrained slate, used only for the section headings, the line beneath them and the bullet markers, so the page has a little colour without becoming busy, and it prints cleanly in greyscale. If you later want a stronger identity, you can change the accent colour and fonts in the editor without leaving the template.",
     ],
     build: [
         "The body text is set in Inter at 10.5 points with generous line spacing, and your name is the largest thing on the page at 34 points in bold. Section headings are slate, uppercase with a little letter spacing, with a thin rule beneath, which gives the page a clear rhythm: heading, rule, entries. Dates sit in their own column on the left of each entry, so a reader can run an eye down the left edge and see your career as a sequence before reading a word of detail.",

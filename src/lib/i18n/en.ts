@@ -1966,7 +1966,7 @@ export const en: Translations = {
   "gallery.factOneColumn": "One column",
   "gallery.factTwoColumns": "Two columns",
   "gallery.factPhoto": "Photo in the header",
-  "gallery.factNoPhoto": "No photo",
+  "gallery.factPhotoOptional": "Optional photo",
   "gallery.factText": "Text stays selectable and machine-readable in the PDF",
   "gallery.factFree": "Free, with no account",
   "gallery.related": "More templates",
