@@ -7,8 +7,8 @@ export const prose: TemplateProse = {
         "Whether to include a photo is your decision. If you do, this layout gives it a considered place instead of squeezing it into a corner, and if you leave it out the header still reads well.",
     ],
     build: [
-        "The header is a row: a round photo about 104 points across on the left, then your name at 30 points, then your contact details arranged in two columns. A teal ring surrounds the photo, and the same teal colours the section headings and the thin rules beneath them, so the top of the page and the section headings feel connected.",
-        "Below the header the page is a single column of sections in Inter at 10.5 points, each introduced by an uppercase teal heading with a thin teal rule. A thin grey line separates the header from the body. Spacing is a little tighter than the Modern template, which helps when you also have a photo taking up vertical space.",
+        "The header is a row: a round photo about 100 points across on the left with a thin dark outline, then your name at 26 points, then your contact details arranged in two columns. The rest of the page stays black and white, so the portrait is the only thing that draws the eye.",
+        "Below the header the page is a single column of sections in Source Serif Pro at 11 points, each introduced by a bold uppercase heading with a thin rule beneath. Dates sit on the right of each entry, in the same way as on the Modern template.",
     ],
     tips: [
         "Choose a photo that is recent, evenly lit and shows your face clearly against a plain background. Crop it as a head and shoulders shot, since the round frame will cut the corners off anything wider.",

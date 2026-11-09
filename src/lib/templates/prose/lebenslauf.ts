@@ -7,8 +7,8 @@ export const prose: TemplateProse = {
         "You can fill it in in any language, and the template does not change what you write. Its job is the structure and the look, which many readers in these markets read as a sign that you know the conventions.",
     ],
     build: [
-        "Every entry uses a fixed date column on the left, about a quarter of the width, with the title, employer and details to its right. That is what gives the page its tabular look, and it makes the sequence of stations easy to check. Your name is set in Roboto, the contact details are arranged in two columns, and the photo sits on the right in a 3 to 4 portrait shape of the kind used for a German Bewerbungsfoto.",
-        "Headings are in capitalised words rather than all capitals, with a thin navy rule beneath each one, and the spacing is compact so a full career fits a normal A4 page. The editor also offers a signature option, which you can use for the closing line that many applicants add; the template does not add a signature for you.",
+        "Every entry uses a fixed date column on the left, about a quarter of the width, with the title, employer and details to its right. That is what gives the page its tabular look, and it makes the sequence of stations easy to check. Your name is set in Source Serif Pro, the contact details are arranged in two columns, and the photo sits on the right in a 3 to 4 portrait shape of the kind used for a German Bewerbungsfoto.",
+        "Headings are in capitalised words rather than all capitals, with a thin rule beneath each one, and the spacing is compact so a full career fits a normal A4 page. The editor also offers a signature option, which you can use for the closing line that many applicants add; the template does not add a signature for you.",
     ],
     tips: [
         "List stations in reverse chronological order, most recent first, and leave no unexplained gaps. A short note such as a period of study, parental leave or travel is better than a silent hole in the dates.",
@@ -18,6 +18,6 @@ export const prose: TemplateProse = {
     alternatives: [
         "If you are applying in English to an international employer, Modern or ATS Plain are a closer match to the conventions there.",
         "For a regional application where a photo is common but you do not want the full German format, Photo Header is lighter.",
-        "If you have no photo and want the date column anyway, Modern uses the same idea in a more neutral style.",
+        "If you have no photo and want something less tabular, Modern keeps the dates in a column on the right and suits most applications outside the German-speaking countries.",
     ],
 };

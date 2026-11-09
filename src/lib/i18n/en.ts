@@ -1972,7 +1972,7 @@ export const en: Translations = {
   "gallery.related": "More templates",
   "gallery.backToAll": "All templates",
   "gallery.previewAlt": "Preview of the {name} CV template with sample content",
-  "gallery.summary.modern": "Clean sans-serif with a date column and quiet heading rules.",
+  "gallery.summary.modern": "Clean serif type with a centred name, a rule under every heading and dates on the right.",
   "gallery.summary.ats-plain": "One plain column with no icons, built for applicant tracking systems.",
   "gallery.summary.sidebar": "Skills, languages and certificates in a side column; experience gets the wide one.",
   "gallery.summary.photo-header": "A round photo beside your name and a two-column contact block.",
