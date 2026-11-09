@@ -2,7 +2,7 @@
 
 import { ChevronLeft, ChevronRight, LayoutTemplate, Maximize2, X } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from "@/components/ui/carousel";
 import { useTemplateResume } from "@/components/templates/useTemplateResume";
 import { Button } from "@/components/ui/button";
@@ -98,35 +98,37 @@ function TemplateLightbox({
     onNext: () => void;
 }) {
     const { t } = useTranslation();
-    const [mounted, setMounted] = useState(open);
+    const [mounted, setMounted] = useState(false);
     const [shown, setShown] = useState(false);
-    const [fromTransform, setFromTransform] = useState("scale(0.92)");
     const dialogRef = useDialogFocus<HTMLDivElement>(open, onClose);
 
-    // Work out where the page starts (the clicked card) before the first paint.
-    useLayoutEffect(() => {
-        if (!open) return;
-        if (originRect) {
-            const finalHeight = Math.min(window.innerHeight * 0.9, (window.innerWidth * 0.94) / PAGE_RATIO);
-            const finalWidth = finalHeight * PAGE_RATIO;
-            const dx = originRect.left + originRect.width / 2 - window.innerWidth / 2;
-            const dy = originRect.top + originRect.height / 2 - window.innerHeight / 2;
-            setFromTransform(`translate(${dx}px, ${dy}px) scale(${originRect.width / finalWidth})`);
-        } else {
-            setFromTransform("scale(0.92)");
-        }
+    // Where the page starts: the clicked card's position and size, so it grows out of it.
+    const fromTransform = useMemo(() => {
+        if (!open || !originRect || typeof window === "undefined") return "scale(0.92)";
+        const finalHeight = Math.min(window.innerHeight * 0.9, (window.innerWidth * 0.94) / PAGE_RATIO);
+        const finalWidth = finalHeight * PAGE_RATIO;
+        const dx = originRect.left + originRect.width / 2 - window.innerWidth / 2;
+        const dy = originRect.top + originRect.height / 2 - window.innerHeight / 2;
+        return `translate(${dx}px, ${dy}px) scale(${originRect.width / finalWidth})`;
     }, [open, originRect]);
 
+    // State changes happen in frame and timer callbacks: the first frame paints the
+    // start position, the second releases it; on close the page stays rendered
+    // until its exit transition has finished.
     useEffect(() => {
         if (open) {
-            setMounted(true);
-            // Two frames: the first paints the start position, the second releases it.
-            const frame = requestAnimationFrame(() => requestAnimationFrame(() => setShown(true)));
+            const frame = requestAnimationFrame(() => requestAnimationFrame(() => {
+                setMounted(true);
+                setShown(true);
+            }));
             return () => cancelAnimationFrame(frame);
         }
-        setShown(false);
+        const frame = requestAnimationFrame(() => setShown(false));
         const timer = window.setTimeout(() => setMounted(false), LIGHTBOX_MS);
-        return () => window.clearTimeout(timer);
+        return () => {
+            cancelAnimationFrame(frame);
+            window.clearTimeout(timer);
+        };
     }, [open]);
 
     useEffect(() => {
