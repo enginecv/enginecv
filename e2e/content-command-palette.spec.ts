@@ -53,7 +53,7 @@ test("mobile content overview keeps present and available commands readable", as
     await expect(page.getByText("On resume", { exact: true })).toBeVisible();
     await expect(page.getByText("Available", { exact: true })).toBeVisible();
     await expect(page.getByTestId("add-content-experience")).toContainText("Add Professional Experience");
-    await expect(page.getByTestId("import-resume-content")).toBeVisible();
+    await expect(page.getByTestId("import-data-content")).toBeVisible();
 
     const hasHorizontalOverflow = await page.evaluate(
         () => document.documentElement.scrollWidth > document.documentElement.clientWidth,

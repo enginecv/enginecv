@@ -9,9 +9,6 @@ import { CefrSkillGrid } from "./CefrSkillGrid";
 import { useAI } from "@/hooks/useAI";
 import { createId } from "@/lib/id";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
-import { SecretKeyDialog } from "@/components/ui/SecretKeyDialog";
-import { ConversionLossSummary } from "@/components/import/ConversionLossSummary";
-import type { ConversionReport } from "@/lib/json-resume/report";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { EntryForm } from "./EntryForm";
 import { GetTipsLink } from "./GetTipsLink";
@@ -38,13 +35,17 @@ import {
 } from "@/components/ui/sortable";
 
 // Loaded on demand: only used when adding projects from GitHub.
+const ImportDataDialog = dynamic(
+    () => import("@/components/import/hub/ImportDataDialog").then((m) => m.ImportDataDialog),
+    { ssr: false },
+);
 const GithubProjectsImportDialog = dynamic(
     () => import("@/components/import/GithubProjectsImportDialog").then((m) => m.GithubProjectsImportDialog),
     { ssr: false },
 );
 import { PhotoCropModal } from "./PhotoCropModal";
 import { SignatureModal } from "./SignatureModal";
-import { getResumeImportErrorDetails, importResumeFromJsonText } from "@/lib/export";
+import { persistImportedResume } from "@/lib/import/persist-imported-resume";
 import {
     Sparkles,
     Loader2,
@@ -3071,14 +3072,7 @@ export function EditorSidebar({ onMobilePreview }: EditorSidebarProps = {}) {
     const [entryDeleteTarget, setEntryDeleteTarget] = useState<{ sectionKey: string; indices: number[]; label: string } | null>(null);
     // Multi-select: section key -> selected entry indices.
     const [selectedEntries, setSelectedEntries] = useState<Record<string, number[]>>({});
-    const [decryptionKey, setDecryptionKey] = useState("");
-    const [decryptionDialogError, setDecryptionDialogError] = useState<string | null>(null);
-    const [decryptionDialogOpen, setDecryptionDialogOpen] = useState(false);
-    const [importError, setImportError] = useState<string | null>(null);
-    const [importErrorDetails, setImportErrorDetails] = useState<string | null>(null);
-    const [importReport, setImportReport] = useState<ConversionReport | null>(null);
-    const importFileRef = useRef<HTMLInputElement>(null);
-    const decryptionResolverRef = useRef<((value: string | null) => void) | null>(null);
+    const [importDataOpen, setImportDataOpen] = useState(false);
 
     const switchSidebarTab = (tab: "content" | "customize" | "json") => {
         setActiveSection(null);
@@ -3594,23 +3588,6 @@ export function EditorSidebar({ onMobilePreview }: EditorSidebarProps = {}) {
         setEntryDeleteTarget(null);
     };
 
-    const closeDecryptionDialog = (value: string | null) => {
-        decryptionResolverRef.current?.(value);
-        decryptionResolverRef.current = null;
-        setDecryptionDialogOpen(false);
-        setDecryptionDialogError(null);
-        setDecryptionKey("");
-    };
-
-    const requestDecryptionKey = (errorMessage?: string | null) => {
-        setDecryptionKey("");
-        setDecryptionDialogError(errorMessage ?? null);
-        setDecryptionDialogOpen(true);
-
-        return new Promise<string | null>((resolve) => {
-            decryptionResolverRef.current = resolve;
-        });
-    };
     const deleteConfirmModal = (
         <ConfirmModal
             open={!!deleteTarget}
@@ -3639,66 +3616,6 @@ export function EditorSidebar({ onMobilePreview }: EditorSidebarProps = {}) {
             onConfirm={confirmEntryDeletion}
         />
     );
-
-    const importMessages = useMemo(() => ({
-        secureEncryptedImportUnavailable: t("export.secureEncryptedImportUnavailable"),
-        decryptionFailed: t("export.decryptionFailed"),
-        resumeReadFailed: t("editor.couldNotReadFile"),
-        encryptedFileNeedsKey: t("export.encryptedFileNeedsKey"),
-        decryptedFileInvalidJson: t("export.decryptedFileInvalidJson"),
-        invalidResumeFile: t("editor.invalidResumeFile"),
-        importErrorCheckConsole: t("export.importErrorCheckConsole"),
-    }), [t]);
-
-    const handleImportResume = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-        setImportError(null);
-        setImportErrorDetails(null);
-        setImportReport(null);
-        try {
-            const result = await importResumeFromJsonText(await file.text(), requestDecryptionKey, importMessages);
-
-            if (!result) {
-                return;
-            }
-            if (result.kind === "data-export") {
-                // Holds several CVs; replacing this one with it makes no sense.
-                setImportError(t("editor.dataExportUseDashboard"));
-                return;
-            }
-
-            const importedResume = result.resume;
-
-            setResume({
-                ...importedResume,
-                id: resume.id,
-                createdAt: resume.createdAt,
-                updatedAt: Date.now(),
-                settings: {
-                    ...importedResume.settings,
-                    contentSections: importedResume.settings?.contentSections?.length
-                        ? importedResume.settings.contentSections
-                        : [],
-                },
-            } as any);
-            setContentSearch("");
-            setImportError(null);
-            setImportErrorDetails(null);
-            if (result.kind === "json-resume" && result.report.items.length > 0) setImportReport(result.report);
-        } catch (error) {
-            const details = getResumeImportErrorDetails(error);
-            if (!details) {
-                console.error("[EngineCV] Resume import failed.", error);
-            }
-
-            const fallbackMessage = `${t("editor.couldNotReadFile")} ${t("export.importErrorCheckConsole")}`;
-            setImportError(error instanceof Error ? error.message : fallbackMessage);
-            setImportErrorDetails(details ?? (error instanceof Error ? error.stack ?? error.message : null));
-        } finally {
-            if (importFileRef.current) importFileRef.current.value = "";
-        }
-    };
 
     // If active section is 'basics', render the form without tabs visible
     if (activeTab !== "json" && activeSection === "basics") {
@@ -4259,61 +4176,20 @@ export function EditorSidebar({ onMobilePreview }: EditorSidebarProps = {}) {
                         )}
 
                     <div className="mx-1 mt-3 shrink-0 border-t border-edge py-2">
-                        <input
-                            ref={importFileRef}
-                            type="file"
-                            accept=".json,application/json"
-                            onChange={handleImportResume}
-                            className="hidden"
-                        />
                         <button
                             type="button"
-                            onClick={() => importFileRef.current?.click()}
-                            data-testid="import-resume-content"
+                            onClick={() => setImportDataOpen(true)}
+                            data-testid="import-data-content"
                             className="flex min-h-11 w-full items-center gap-2.5 rounded-md px-2.5 py-2 text-left outline-none transition-colors hover:bg-surface-4 focus-visible:bg-surface-4 focus-visible:ring-1 focus-visible:ring-accent"
                         >
                             <FileText className="h-4 w-4 shrink-0 text-faint" />
                             <span className="min-w-0 flex-1">
-                                <span className="block truncate text-sm text-bright">{t("editor.importResume")}</span>
-                                <span className="block truncate text-xs text-faint">{t("editor.quickStartImportDesc")}</span>
+                                <span className="block truncate text-sm text-bright">{t("editor.importData")}</span>
+                                <span className="block truncate text-xs text-faint">{t("editor.importDataDesc")}</span>
                             </span>
                             <ChevronRight className="h-3.5 w-3.5 shrink-0 text-dim" />
                         </button>
                     </div>
-
-                    {importReport && <ConversionLossSummary report={importReport} defaultOpen className="mx-1 mb-3" />}
-
-                    {importError && (
-                        <div className="mx-1 mb-3 rounded-md border border-red-500/30 bg-red-500/10 p-3 text-sm text-danger-soft">
-                            <div className="flex items-start gap-3">
-                                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-                                <div className="min-w-0 flex-1">
-                                    <p>{importError}</p>
-                                    {importErrorDetails && (
-                                        <details className="mt-3 rounded-md border border-red-500/20 bg-black/20">
-                                            <summary className="cursor-pointer px-3 py-2 text-xs font-medium text-danger-soft hover:text-strong">
-                                                {t("export.importErrorDetails")}
-                                            </summary>
-                                            <pre className="max-h-48 overflow-auto whitespace-pre-wrap break-words border-t border-red-500/20 px-3 py-2 text-[11px] leading-5 text-danger-soft">
-                                                {importErrorDetails}
-                                            </pre>
-                                        </details>
-                                    )}
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        setImportError(null);
-                                        setImportErrorDetails(null);
-                                    }}
-                                    className="shrink-0 text-danger transition-colors hover:text-strong"
-                                    aria-label={t("signature.close")}
-                                >
-                                    <X className="h-4 w-4" />
-                                </button>
-                            </div>
-                        </div>
-                    )}
                 </div>
             )}
 
@@ -4329,26 +4205,18 @@ export function EditorSidebar({ onMobilePreview }: EditorSidebarProps = {}) {
                 />
             )}
 
-            <SecretKeyDialog
-                open={decryptionDialogOpen}
-                title={t("secretKey.unlockTitle")}
-                description={t("secretKey.unlockDescription")}
-                warning={t("secretKey.unlockWarning")}
-                inputLabel={t("secretKey.inputLabel")}
-                placeholder={t("secretKey.placeholder")}
-                confirmLabel={t("secretKey.confirmLabel")}
-                value={decryptionKey}
-                onValueChange={(value) => {
-                    setDecryptionKey(value);
-                    if (decryptionDialogError) {
-                        setDecryptionDialogError(null);
-                    }
-                }}
-                error={decryptionDialogError}
-                confirmDisabled={!decryptionKey.trim()}
-                onCancel={() => closeDecryptionDialog(null)}
-                onConfirm={() => closeDecryptionDialog(decryptionKey)}
-            />
+            {importDataOpen && (
+                <ImportDataDialog
+                    current={resume}
+                    onApply={(next) => {
+                        setResume({ ...next, id: resume.id, createdAt: resume.createdAt, updatedAt: Date.now() });
+                        setContentSearch("");
+                    }}
+                    onUndo={(previous) => setResume(previous)}
+                    onCreateNew={persistImportedResume}
+                    onClose={() => setImportDataOpen(false)}
+                />
+            )}
         </div>
     );
 }
