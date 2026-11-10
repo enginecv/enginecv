@@ -1,10 +1,12 @@
 import { expect, test, type Page, type Route } from "@playwright/test";
 import { corsHeaders, mockGithubHappyPath } from "./helpers/github-mocks";
+import { createCvFromHub, hubDialog } from "./helpers/import-hub";
 
 async function openGithubImport(page: Page) {
     // The nav button is gone; the create menu and start links still open the import.
     await page.goto("/dashboard?start=github");
-    await expect(page.getByTestId("github-import-dialog")).toBeVisible();
+    await expect(hubDialog(page)).toBeVisible();
+    await expect(page.getByTestId("github-import-input")).toBeVisible();
 }
 
 test("imports a GitHub profile into a new resume and opens the editor", async ({ page }) => {
@@ -15,11 +17,12 @@ test("imports a GitHub profile into a new resume and opens the editor", async ({
     await page.getByTestId("github-import-submit").click();
     await expect(page.getByText("engine-cv")).toBeVisible();
     await expect(page.getByText("framework-fork")).toBeVisible();
-    await expect(page.getByText("GitHub", { exact: true })).toBeVisible();
+    await expect(page.getByTestId("github-import-organization-row").getByText("GitHub", { exact: true })).toBeVisible();
     await expect(page.getByText("Fork", { exact: true })).toBeVisible();
     await page.getByTestId("github-import-confirm").click();
-
-    await expect(page).toHaveURL(/\/editor\/[^/]+$/, { timeout: 15_000 });
+    // The profile is held as a source; review it and create the CV.
+    await expect(page.getByTestId("import-hub-batch")).toContainText("The Octocat");
+    await createCvFromHub(page);
     await expect(page.getByText("The Octocat").first()).toBeVisible();
     await expect(page.locator(".resume-page").first().getByText("engine-cv", { exact: true })).toBeVisible();
 
@@ -42,7 +45,7 @@ test("shows a specific not-found error and lets the user correct the input", asy
     await page.getByTestId("github-import-submit").click();
 
     await expect(page.getByText(/No GitHub profile found for "missing-user"/)).toBeVisible();
-    await page.getByRole("button", { name: "Back" }).click();
+    await page.getByRole("button", { name: "Back", exact: true }).click();
     await expect(page.getByTestId("github-import-input")).toBeVisible();
 });
 

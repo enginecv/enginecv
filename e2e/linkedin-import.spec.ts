@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { zipSync } from "fflate";
 import { canonicalCsvEntries } from "../src/lib/import/linkedin/__fixtures__/canonical";
+import { addHubFiles, createCvFromHub, hubDialog } from "./helpers/import-hub";
 
 function zipBuffer(entries: Record<string, string>): Buffer {
     const encoder = new TextEncoder();
@@ -37,13 +38,14 @@ async function openLinkedinImport(page: Page) {
     await page.goto("/dashboard");
     await page.getByTestId("dashboard-new-resume").click();
     await page.getByTestId("create-resume-from-linkedin").click();
-    await expect(page.getByTestId("linkedin-import-dialog")).toBeVisible();
+    await expect(hubDialog(page)).toBeVisible();
 }
 
 test("imports a LinkedIn archive into a new resume entirely offline from LinkedIn", async ({ page }) => {
     const externalRequests = await blockExternalRequests(page);
     await openLinkedinImport(page);
 
+    await page.getByTestId("import-hub-linkedin-guide").locator("summary").click();
     await expect(page.getByTestId("linkedin-import-guide")).toBeVisible();
     await expect(page.getByTestId("linkedin-export-link")).toHaveAttribute(
         "href",
@@ -52,20 +54,19 @@ test("imports a LinkedIn archive into a new resume entirely offline from LinkedI
     await expect(page.getByTestId("linkedin-trademark-disclaimer")).toBeVisible();
 
     const parseStart = Date.now();
-    await page.getByTestId("linkedin-file-input").setInputFiles({
+    await addHubFiles(page, {
         name: "Basic_LinkedInDataExport.zip",
         mimeType: "application/zip",
         buffer: zipBuffer(canonicalCsvEntries()),
     });
-
-    // SC-006: preview presents in under 10 seconds for a profile-only export.
-    await expect(page.getByText("Here's what we found")).toBeVisible({ timeout: 10_000 });
+    // SC-006: the archive is read in under 10 seconds for a profile-only export.
     expect(Date.now() - parseStart).toBeLessThan(10_000);
 
-    await expect(page.getByTestId("linkedin-preview-profile")).toContainText("Amina Kovačević");
-    await expect(page.getByTestId("linkedin-preview-section-positions")).toContainText("2 entries");
+    await page.getByTestId("import-hub-review").click();
+    await expect(page.getByTestId("import-hub-section-experience").getByTestId("import-hub-row")).toHaveCount(2);
+    await page.getByTestId("import-hub-apply").click();
+    await page.getByTestId("import-hub-open-created").click();
 
-    await page.getByTestId("linkedin-import-confirm").click();
     await expect(page).toHaveURL(/\/editor\/[^/]+$/);
     await expect(page.getByText("Amina Kovačević").first()).toBeVisible();
 
@@ -83,7 +84,7 @@ test("imports a LinkedIn archive into a new resume entirely offline from LinkedI
 test("shows the no-profile-data message for a connections-only export and recovers", async ({ page }) => {
     await openLinkedinImport(page);
 
-    await page.getByTestId("linkedin-file-input").setInputFiles({
+    await page.getByTestId("import-hub-file-input").setInputFiles({
         name: "Connections.zip",
         mimeType: "application/zip",
         buffer: zipBuffer({
@@ -91,15 +92,20 @@ test("shows the no-profile-data message for a connections-only export and recove
         }),
     });
 
-    const error = page.getByTestId("linkedin-import-error");
+    const error = page.getByTestId("import-hub-error");
     await expect(error).toBeVisible();
     await expect(error).toContainText("doesn't contain profile data");
 
-    await page.getByTestId("linkedin-import-retry").click();
-    await expect(page.getByTestId("linkedin-import-guide")).toBeVisible();
+    // The window stays open and a good archive can follow.
+    await addHubFiles(page, {
+        name: "Basic_LinkedInDataExport.zip",
+        mimeType: "application/zip",
+        buffer: zipBuffer(canonicalCsvEntries()),
+    });
 
-    // Dashboard stays fully usable after dismissing the failed import.
-    await page.getByRole("button", { name: "Close import dialog" }).click();
-    await expect(page.getByTestId("linkedin-import-dialog")).not.toBeVisible();
+    // Dashboard stays fully usable after dismissing the window.
+    await page.getByTestId("import-hub-close").click();
+    await page.getByRole("button", { name: "Discard" }).click();
+    await expect(hubDialog(page)).not.toBeVisible();
     await expect(page.getByTestId("dashboard-new-resume")).toBeVisible();
 });

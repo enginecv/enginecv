@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { allSkills, createUngroupedSkillGroup } from "@/lib/schema";
 import { applyMergePlan, summarizeSelection } from "./apply";
 import { buildMergePlan } from "./plan";
+import { createQaFullResume } from "@/lib/qa/sample-resumes";
 import { batchOf, resumeWith } from "./test-helpers";
 import type { Selection } from "./types";
 
@@ -132,5 +133,24 @@ describe("summarizeSelection", () => {
         const existing = plan.rows.find((row) => row.existing)!;
         const picked = { rows: { [existing.id]: true }, fields: { [existing.id]: { description: "a" } }, basics: { headline: "a" } };
         expect(summarizeSelection(plan, picked)).toEqual({ add: 1, update: 2 });
+    });
+});
+
+describe("a single source comes back whole in a new CV", () => {
+    it("keeps ids, hidden state, skill groups and section order", () => {
+        const source = createQaFullResume();
+        source.experience[0].hidden = true;
+        const plan = buildMergePlan(resumeWith(), [{ id: "file", sourceId: "enginecv", label: "qa.json", resume: source }]);
+        const next = applyMergePlan(resumeWith(), plan, none, "new");
+
+        const brief = (resume: typeof source) => ({
+            experience: resume.experience.map((entry) => [entry.id, entry.hidden, entry.company]),
+            education: resume.education.map((entry) => [entry.id, entry.institution]),
+            groups: resume.skillGroups.map((group) => [group.id, group.name, group.skills.map((skill) => skill.name)]),
+            order: resume.settings.layout.sectionOrder,
+            sections: resume.settings.contentSections,
+            title: resume.meta.title,
+        });
+        expect(brief(next)).toEqual(brief(source));
     });
 });

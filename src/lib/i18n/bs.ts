@@ -405,7 +405,7 @@ export const bs: Translations = {
   "authoring.copyForAi.fallback": "Kopiranje je blokirano. Tekst je označen ispod: pritisnite Ctrl+C (⌘C na Macu).",
   "authoring.drop.overlay": "Spustite datoteku životopisa da je uvezete",
   "authoring.drop.overlayHint": ".enginecv.json datoteka od AI-ja ili skripte, ili EngineCV izvoz",
-  "authoring.drop.unsupported": "Ovdje se mogu spustiti samo .json datoteke. Ništa nije uvezeno.",
+  "authoring.drop.unsupported": "Ovdje se mogu spustiti samo JSON, ZIP, CSV, PDF i XML datoteke. Ništa nije uvezeno.",
   // GitHub Import
   "githubImport.entry": "Novi sa GitHub-a",
   "githubImport.entryDesc": "Popunite životopis iz javnog GitHub profila — bez AI, bez naloga",
@@ -1037,6 +1037,7 @@ export const bs: Translations = {
   "importHub.github.add": "Dodaj sa GitHuba",
   "importHub.github.cancel": "Zatvori GitHub",
   "importHub.supported": "Podržane datoteke",
+  "importHub.linkedin.howTo": "Kako dobiti LinkedIn arhivu",
   "importHub.paste.label": "Zalijepi odgovor ovdje",
   "importHub.paste.add": "Dodaj",
   "importHub.paste.invalid": "U ovom tekstu nije pronađen CV. Zalijepi cijeli odgovor, zajedno s JSON-om.",

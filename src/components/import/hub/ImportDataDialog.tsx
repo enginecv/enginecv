@@ -11,6 +11,7 @@ import { useTranslation } from "@/lib/i18n";
 import type { ImportProvider } from "@/lib/import/provider";
 import type { ReadSourceHelpers } from "@/lib/import/read-source";
 import { applyMergePlan } from "@/lib/import/staging/apply";
+import type { StagedBatch } from "@/lib/import/staging/types";
 import type { Resume } from "@/lib/schema";
 import { ApplyBar } from "./ApplyBar";
 import { ReviewStep } from "./ReviewStep";
@@ -36,6 +37,13 @@ export interface ImportDataDialogProps {
     initialFiles?: File[];
     /** Tests inject a fake GitHub provider. */
     githubProvider?: ImportProvider;
+    /** Opens the GitHub panel straight away. */
+    initialSource?: "github";
+    /**
+     * A "Download my data" file holds several CVs. When given, they go here
+     * (each becomes its own CV) instead of being combined into one.
+     */
+    onImportDataExport?: (resumes: Resume[]) => Promise<void>;
 }
 
 type Outcome =
@@ -64,6 +72,8 @@ export function ImportDataDialog({
     onClose,
     initialFiles,
     githubProvider,
+    initialSource,
+    onImportDataExport,
 }: ImportDataDialogProps) {
     const { t } = useTranslation();
     const router = useRouter();
@@ -93,6 +103,25 @@ export function ImportDataDialog({
         keyResolver.current?.(value);
         keyResolver.current = null;
         setKeyOpen(false);
+    };
+
+    const addBatches = (added: StagedBatch[]) => {
+        const exported = added.filter((batch) => batch.fromDataExport);
+        if (!onImportDataExport || exported.length === 0) {
+            hub.addBatches(added);
+            return;
+        }
+        // Several CVs from one file: each is saved as its own CV, nothing is combined.
+        hub.addBatches(added.filter((batch) => !batch.fromDataExport));
+        setBusy(true);
+        onImportDataExport(exported.map((batch) => batch.resume))
+            .then(onClose)
+            .catch((error: unknown) => {
+                console.error("[EngineCV] Importing a data export failed.", error);
+                setOutcome({ kind: "failed" });
+                hub.setStep("done");
+            })
+            .finally(() => setBusy(false));
     };
 
     const hasStaged = hub.batches.length > 0 && hub.step !== "done";
@@ -180,7 +209,7 @@ export function ImportDataDialog({
                     {hub.step === "sources" && (
                         <>
                             <p className="text-sm text-faint">{t("importHub.intro")}</p>
-                            <SourcePicker onAdd={hub.addBatches} helpers={helpers} initialFiles={initialFiles} githubProvider={githubProvider} />
+                            <SourcePicker onAdd={addBatches} helpers={helpers} initialFiles={initialFiles} githubProvider={githubProvider} initialGithubOpen={initialSource === "github"} />
                             <StagedSources batches={hub.batches} onRemove={hub.removeBatch} />
                             <p className="text-xs text-faint">{t("importHub.privacy")}</p>
                         </>
@@ -213,7 +242,7 @@ export function ImportDataDialog({
                                         type="button"
                                         onClick={() => (onOpenCreated ? onOpenCreated(outcome.id) : router.push(`/editor/${outcome.id}`))}
                                         data-testid="import-hub-open-created"
-                                        className="min-h-11 rounded-md bg-accent px-4 text-sm font-medium text-white outline-none focus-visible:ring-2 focus-visible:ring-accent"
+                                        className="min-h-11 rounded-md bg-accent px-4 text-sm font-medium text-surface-2 outline-none focus-visible:ring-2 focus-visible:ring-accent"
                                     >
                                         {t("importHub.done.open")}
                                     </button>
@@ -237,7 +266,7 @@ export function ImportDataDialog({
                             disabled={hub.batches.length === 0}
                             onClick={() => hub.setStep("review")}
                             data-testid="import-hub-review"
-                            className="min-h-11 rounded-md bg-accent px-5 text-sm font-medium text-white outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-50"
+                            className="min-h-11 rounded-md bg-accent px-5 text-sm font-medium text-surface-2 outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-50"
                         >
                             {t("importHub.review")}
                         </button>

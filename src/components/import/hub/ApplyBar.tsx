@@ -68,7 +68,7 @@ export function ApplyBar({ hub, fixedNew = false, canReplace, busy, onApply }: A
                     onClick={onApply}
                     disabled={nothing || busy}
                     data-testid="import-hub-apply"
-                    className="inline-flex min-h-11 items-center gap-2 rounded-md bg-accent px-5 text-sm font-medium text-white outline-none transition-opacity focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 disabled:opacity-50"
+                    className="inline-flex min-h-11 items-center gap-2 rounded-md bg-accent px-5 text-sm font-medium text-surface-2 outline-none transition-opacity focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 disabled:opacity-50"
                 >
                     {busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
                     {t("importHub.apply")}

@@ -27,9 +27,9 @@ function isEmptyValue(value: unknown): boolean {
     return false;
 }
 
-/** Is the row ticked? A new or replacement CV has nothing to match, so only a name-only row starts unticked. */
+/** Is the row ticked? A new or replacement CV has nothing to match, so everything starts ticked. */
 export function isRowSelected(row: MergeRow, selection: Selection, mode: ApplyMode = "merge"): boolean {
-    return selection.rows[row.id] ?? (mode === "merge" ? row.defaultSelected : !row.thin);
+    return selection.rows[row.id] ?? (mode === "merge" ? row.defaultSelected : true);
 }
 
 /** The raw value a choice stands for: the CV's own, or the one a source brought. */
@@ -42,10 +42,20 @@ function chosenId(row: MergeRow, field: string, selection: Selection, fallback: 
     return selection.fields[row.id]?.[field] ?? fallback;
 }
 
-/** A fresh entry from the row's sources: the first one, gaps filled from the others, then the person's choices. */
-function buildEntry(row: MergeRow, selection: Selection): StagedEntry {
+/**
+ * A new entry from the row's sources: the first one, gaps filled from the others,
+ * then the person's choices. Merging gives it a fresh id and shows it; a new or
+ * replacement CV keeps the source's id and hidden state so a single file comes back whole.
+ */
+function buildEntry(row: MergeRow, selection: Selection, keepIdentity: boolean, usedIds: Set<string>): StagedEntry {
     const [first, ...others] = row.origins;
-    const entry: StagedEntry = { ...structuredClone(first.entry), id: createId(), hidden: false };
+    const keepId = keepIdentity && !usedIds.has(first.entry.id);
+    const entry: StagedEntry = {
+        ...structuredClone(first.entry),
+        id: keepId ? first.entry.id : createId(),
+        hidden: keepIdentity ? Boolean(first.entry.hidden) : false,
+    };
+    usedIds.add(entry.id);
 
     for (const other of others) {
         for (const [field, value] of Object.entries(other.entry)) {
@@ -80,11 +90,21 @@ function updateExisting(draft: Draft, row: MergeRow, selection: Selection) {
     }
 }
 
-function addEntry(draft: Draft, section: StageSection, entry: StagedEntry) {
+/** The group a skill sat in inside its source, so a new CV keeps the source's skill groups. */
+function sourceGroup(plan: MergePlan, row: MergeRow) {
+    const origin = row.origins[0];
+    const batch = plan.batches.find((candidate) => candidate.id === origin.batchId);
+    return batch?.resume.skillGroups.find((group) => group.skills.some((skill) => skill.id === origin.entry.id));
+}
+
+function addEntry(draft: Draft, section: StageSection, entry: StagedEntry, group?: { id: string; name: string; hidden: boolean }) {
     if (section === "skills") {
         const groups = normalizeSkillGroups(draft.skillGroups);
-        const ungrouped = groups.find((group) => group.id === UNGROUPED_SKILL_GROUP_ID) ?? createUngroupedSkillGroup();
-        ungrouped.skills.push(entry as never);
+        const target = group && group.id !== UNGROUPED_SKILL_GROUP_ID
+            ? (groups.find((candidate) => candidate.id === group.id)
+                ?? (groups.push({ id: group.id, name: group.name, hidden: group.hidden, skills: [] }), groups[groups.length - 1]))
+            : (groups.find((candidate) => candidate.id === UNGROUPED_SKILL_GROUP_ID) ?? createUngroupedSkillGroup());
+        target.skills.push(entry as never);
         draft.skillGroups = groups;
         return;
     }
@@ -96,9 +116,13 @@ function clearSections(draft: Draft) {
         if (section === "skills") draft.skillGroups = [createUngroupedSkillGroup()];
         else (draft as Record<string, unknown>)[section] = [];
     }
-    const stage = new Set<string>(STAGE_SECTIONS);
-    draft.settings.contentSections = draft.settings.contentSections.filter((key) => !stage.has(key));
-    draft.settings.layout.sectionOrder = draft.settings.layout.sectionOrder.filter((key) => !stage.has(key));
+}
+
+/** A new or replacement CV lists only the sections that ended up with entries. */
+function pruneEmptySections(draft: Draft) {
+    const empty = new Set<string>(STAGE_SECTIONS.filter((section) => entriesOf(draft, section).length === 0));
+    draft.settings.contentSections = draft.settings.contentSections.filter((key) => !empty.has(key));
+    draft.settings.layout.sectionOrder = draft.settings.layout.sectionOrder.filter((key) => !empty.has(key));
 }
 
 function applyBasics(draft: Draft, plan: MergePlan, selection: Selection, mode: ApplyMode) {
@@ -136,7 +160,8 @@ function revealSections(draft: Draft, gained: Set<StageSection>) {
  *   chosen, leaves everything else alone.
  * - `replace`: adopts the first source's CV with only the ticked rows in it,
  *   keeping this CV's id and creation time.
- * - `new`: a fresh CV holding only the ticked rows.
+ * - `new`: a new CV that starts from the first source's CV (design and settings)
+ *   and holds only the ticked rows.
  */
 export function applyMergePlan(current: Resume, plan: MergePlan, selection: Selection, mode: ApplyMode = "merge"): Resume {
     let draft: Draft;
@@ -147,19 +172,30 @@ export function applyMergePlan(current: Resume, plan: MergePlan, selection: Sele
         draft = { ...structuredClone(source), id: current.id, createdAt: current.createdAt } as Draft;
         clearSections(draft);
     } else {
-        draft = createNewResume() as Draft;
+        // The first source is the starting point, so a single file comes back whole:
+        // its design, settings and custom sections. Ticked rows then fill the sections.
+        const source = plan.batches[0]?.resume;
+        if (source) {
+            draft = { ...structuredClone(source), id: undefined } as Draft;
+            clearSections(draft);
+        } else {
+            draft = createNewResume() as Draft;
+        }
     }
 
     const gained = new Set<StageSection>();
+    const usedIds = new Set<string>(STAGE_SECTIONS.flatMap((section) => entriesOf(draft, section).map((entry) => entry.id)));
     for (const row of plan.rows) {
         if (!isRowSelected(row, selection, mode)) continue;
         if (mode === "merge" && row.existing) {
             updateExisting(draft, row, selection);
         } else {
-            addEntry(draft, row.section, buildEntry(row, selection));
+            const group = mode !== "merge" && row.section === "skills" ? sourceGroup(plan, row) : undefined;
+            addEntry(draft, row.section, buildEntry(row, selection, mode !== "merge", usedIds), group);
             gained.add(row.section);
         }
     }
+    if (mode !== "merge") pruneEmptySections(draft);
 
     applyBasics(draft, plan, selection, mode);
     revealSections(draft, gained);

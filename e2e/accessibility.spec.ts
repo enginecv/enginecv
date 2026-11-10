@@ -76,7 +76,7 @@ for (const theme of ["dark", "light"] as const) {
             await page.goto("/dashboard");
             await page.getByTestId("dashboard-new-resume").click();
             await page.getByTestId("create-resume-from-europass").click();
-            await expect(page.getByTestId("europass-drop-zone")).toBeVisible();
+            await expect(page.getByTestId("import-hub-dropzone")).toBeVisible();
             await expectNoA11yViolations(page, { label: `${theme}-europass-dialog` });
         });
 
@@ -91,13 +91,14 @@ for (const theme of ["dark", "light"] as const) {
 
         test("Paste from AI dialog, empty and with notes", async ({ page }) => {
             await page.goto("/dashboard?start=ai");
-            await expect(page.getByTestId("paste-from-ai-dialog")).toBeVisible();
+            await expect(page.getByTestId("import-hub-dialog")).toBeVisible();
             await expectNoA11yViolations(page, { label: `${theme}-paste-from-ai-empty` });
 
             await page.getByTestId("paste-from-ai-input").fill(
                 "Here you go:\n```json\n{\"basics\":{\"name\":\"A\",\"photo\":\"x\"},"
                 + "\"experience\":[{\"position\":\"P\",\"start\":\"spring 2021\",\"end\":\"heute\",}],\"hobbies\":[\"Chess\"]}\n```",
             );
+            await page.getByTestId("paste-from-ai-add").click();
             await expect(page.getByTestId("paste-from-ai-notice").first()).toBeVisible();
             await expectNoA11yViolations(page, { label: `${theme}-paste-from-ai-notices` });
         });

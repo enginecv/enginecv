@@ -5,6 +5,7 @@ import { useTranslation } from "@/lib/i18n";
 import { getImportSource, type SourceId } from "@/lib/import/sources";
 import { countBatchEntries } from "@/lib/import/staging/plan";
 import type { StagedBatch } from "@/lib/import/staging/types";
+import { AuthoringImportSummary } from "../AuthoringImportSummary";
 import { ConversionLossSummary } from "../ConversionLossSummary";
 
 interface StagedSourcesProps {
@@ -50,7 +51,9 @@ export function StagedSources({ batches, onRemove }: StagedSourcesProps) {
                                     <X className="h-4 w-4" aria-hidden="true" />
                                 </button>
                             </div>
-                            {batch.losses && <ConversionLossSummary report={batch.losses} className="mt-2" />}
+                            {batch.authoring
+                                ? <div className="mt-2"><AuthoringImportSummary result={batch.authoring.result} parseNotices={batch.authoring.parseNotices} /></div>
+                                : batch.losses && <ConversionLossSummary report={batch.losses} className="mt-2" />}
                         </li>
                     );
                 })}

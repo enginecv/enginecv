@@ -60,7 +60,10 @@ export function readAuthoringText(text: string, label: string, sourceId: SourceI
     const parsed = parseAuthoringText(text);
     if (parsed.status !== "ok") throw new SourceReadError("unreadable", { sourceId });
     const converted = authoringToResume(parsed.document);
-    return batch(sourceId, label, converted.resume, noticesToReport([...parsed.notices, ...converted.notices]));
+    return {
+        ...batch(sourceId, label, converted.resume, noticesToReport([...parsed.notices, ...converted.notices])),
+        authoring: { result: converted, parseNotices: parsed.notices },
+    };
 }
 
 async function readJson(file: File, sourceId: SourceId, helpers: ReadSourceHelpers): Promise<StagedBatch[]> {

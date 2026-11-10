@@ -1,11 +1,14 @@
 "use client";
 
-import { Github, Loader2, Upload } from "lucide-react";
-import { useEffect, useRef, useState, type DragEvent } from "react";
+import { ExternalLink, Github, Loader2, Upload } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, type DragEvent } from "react";
+import { AUTHORING_SCHEMA_URL, MAX_AUTHORING_TEXT_BYTES, buildAiInstructions } from "@/lib/agent/authoring";
+import { copyTextToClipboard } from "@/lib/export-clipboard";
 import { createId } from "@/lib/id";
 import type { ImportProvider } from "@/lib/import/provider";
 import type { Resume } from "@/lib/schema";
 import { GithubImportPanel } from "../GithubImportPanel";
+import { LinkedinImportGuide } from "../LinkedinImportGuide";
 import { useTranslation } from "@/lib/i18n";
 import { SourceReadError, readAuthoringText, readSourceFile, type ReadSourceHelpers } from "@/lib/import/read-source";
 import { IMPORT_SOURCES, type ImportSource } from "@/lib/import/sources";
@@ -32,6 +35,8 @@ interface SourcePickerProps {
     initialFiles?: File[];
     /** Tests inject a fake GitHub provider. */
     githubProvider?: ImportProvider;
+    /** Opens the GitHub panel straight away. */
+    initialGithubOpen?: boolean;
 }
 
 /** Sources listed as plain cards; GitHub has its own button and panel. */
@@ -40,7 +45,7 @@ function isListed(source: ImportSource): boolean {
 }
 
 /** Lists the sources, takes dropped or chosen files and pasted AI answers, and stages what they hold. */
-export function SourcePicker({ onAdd, helpers, initialFiles, githubProvider }: SourcePickerProps) {
+export function SourcePicker({ onAdd, helpers, initialFiles, githubProvider, initialGithubOpen = false }: SourcePickerProps) {
     const { t } = useTranslation();
     const inputRef = useRef<HTMLInputElement>(null);
     const [busy, setBusy] = useState(false);
@@ -48,7 +53,9 @@ export function SourcePicker({ onAdd, helpers, initialFiles, githubProvider }: S
     const [error, setError] = useState<string | null>(null);
     const [pasted, setPasted] = useState("");
     const startedRef = useRef(false);
-    const [githubOpen, setGithubOpen] = useState(false);
+    const [copyState, setCopyState] = useState<"idle" | "copied" | "denied">("idle");
+    const instructions = useMemo(() => buildAiInstructions(t), [t]);
+    const [githubOpen, setGithubOpen] = useState(initialGithubOpen);
     const stagedGithub = useRef<Resume | null>(null);
 
     const messageFor = (cause: unknown): string => {
@@ -93,10 +100,28 @@ export function SourcePicker({ onAdd, helpers, initialFiles, githubProvider }: S
         void readFiles(Array.from(event.dataTransfer.files));
     };
 
-    const addPasted = () => {
+    const copyInstructions = async () => {
+        try {
+            await copyTextToClipboard(instructions);
+            setCopyState("copied");
+        } catch {
+            // Denied, or no clipboard at all: show the text to copy by hand.
+            setCopyState("denied");
+        }
+    };
+
+    const addPasted = async () => {
         setError(null);
         try {
             onAdd([readAuthoringText(pasted, t("importHub.paste.name"), "paste-ai")]);
+            setPasted("");
+            return;
+        } catch {
+            // A full EngineCV export pasted as text is read like the file would be.
+        }
+        try {
+            const batches = await readSourceFile(new File([pasted], "pasted.json", { type: "application/json" }), helpers);
+            onAdd(batches);
             setPasted("");
         } catch {
             setError(t("importHub.paste.invalid"));
@@ -147,6 +172,13 @@ export function SourcePicker({ onAdd, helpers, initialFiles, githubProvider }: S
                     {error}
                 </p>
             )}
+
+            <details className="rounded-xl border border-edge p-3" data-testid="import-hub-linkedin-guide">
+                <summary className="cursor-pointer text-sm text-bright">{t("importHub.linkedin.howTo")}</summary>
+                <div className="mt-3">
+                    <LinkedinImportGuide />
+                </div>
+            </details>
 
             <section aria-label={t("importHub.supported")}>
                 <h3 className="mb-2 text-xs font-medium uppercase tracking-wide text-faint">{t("importHub.supported")}</h3>
@@ -200,9 +232,47 @@ export function SourcePicker({ onAdd, helpers, initialFiles, githubProvider }: S
             </section>
 
             <section className="space-y-2">
-                <label htmlFor="import-hub-paste" className="block text-sm text-bright">{t("importHub.paste.label")}</label>
+                <div className="flex flex-wrap items-center gap-3">
+                    <label htmlFor="import-hub-paste" className="min-w-0 flex-1 text-sm text-bright">{t("importHub.paste.label")}</label>
+                    <button
+                        type="button"
+                        onClick={() => void copyInstructions()}
+                        data-testid="paste-from-ai-copy-instructions"
+                        className="min-h-11 rounded-md px-2 text-xs text-accent outline-none hover:underline focus-visible:ring-1 focus-visible:ring-accent"
+                    >
+                        {t("authoring.copyInstructions")}
+                    </button>
+                </div>
+                <a
+                    href={new URL(AUTHORING_SCHEMA_URL).pathname}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    data-testid="paste-from-ai-format-link"
+                    className="inline-flex items-center gap-1.5 text-xs text-faint underline-offset-4 hover:text-strong hover:underline"
+                >
+                    {t("authoring.formatLink")}
+                    <ExternalLink className="h-3 w-3" aria-hidden="true" />
+                </a>
+                <p role="status" data-testid="paste-from-ai-copy-status" className={copyState === "copied" ? "text-xs text-accent" : "sr-only"}>
+                    {copyState === "copied" ? t("authoring.copyInstructionsDone") : ""}
+                </p>
+                {copyState === "denied" && (
+                    <div>
+                        <p className="mb-1 text-xs text-faint">{t("authoring.copyInstructionsFallback")}</p>
+                        <textarea
+                            readOnly
+                            value={instructions}
+                            rows={4}
+                            aria-label={t("authoring.copyInstructions")}
+                            onFocus={(event) => event.currentTarget.select()}
+                            className="w-full rounded-md border border-edge bg-surface-1 p-2 text-xs text-bright"
+                        />
+                    </div>
+                )}
                 <textarea
                     id="import-hub-paste"
+                    data-testid="paste-from-ai-input"
+                    maxLength={MAX_AUTHORING_TEXT_BYTES * 2}
                     value={pasted}
                     onChange={(event) => setPasted(event.target.value)}
                     rows={4}
@@ -211,12 +281,18 @@ export function SourcePicker({ onAdd, helpers, initialFiles, githubProvider }: S
                 <button
                     type="button"
                     disabled={!pasted.trim()}
-                    onClick={addPasted}
+                    onClick={() => void addPasted()}
+                    data-testid="paste-from-ai-add"
                     className="min-h-11 rounded-md border border-edge px-4 text-sm text-bright outline-none transition-colors hover:bg-surface-4 focus-visible:ring-1 focus-visible:ring-accent disabled:opacity-50"
                 >
                     {t("importHub.paste.add")}
                 </button>
             </section>
+
+            <div className="space-y-1 border-t border-edge pt-3 text-[11px] leading-4 text-faint">
+                <p data-testid="linkedin-trademark-disclaimer">{t("linkedinImport.trademarkDisclaimer")}</p>
+                <p data-testid="europass-trademark-disclaimer">{t("europassImport.trademarkDisclaimer")}</p>
+            </div>
         </div>
     );
 }

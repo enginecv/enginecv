@@ -405,7 +405,7 @@ export const de: Translations = {
   "authoring.copyForAi.fallback": "Das Kopieren wurde blockiert. Der Text ist unten markiert: Drücke Strg+C (⌘C auf dem Mac).",
   "authoring.drop.overlay": "Lebenslauf-Datei zum Importieren hier ablegen",
   "authoring.drop.overlayHint": "Eine .enginecv.json-Datei von einer KI oder einem Skript oder ein EngineCV-Export",
-  "authoring.drop.unsupported": "Hier können nur .json-Dateien abgelegt werden. Es wurde nichts importiert.",
+  "authoring.drop.unsupported": "Hier können nur JSON-, ZIP-, CSV-, PDF- und XML-Dateien abgelegt werden. Es wurde nichts importiert.",
   // GitHub Import
   "githubImport.entry": "Neu von GitHub",
   "githubImport.entryDesc": "Lebenslauf aus einem öffentlichen GitHub-Profil vorbefüllen — ohne KI, ohne Konto",
@@ -1037,6 +1037,7 @@ export const de: Translations = {
   "importHub.github.add": "Von GitHub hinzufügen",
   "importHub.github.cancel": "GitHub schließen",
   "importHub.supported": "Unterstützte Dateien",
+  "importHub.linkedin.howTo": "So bekommst du ein LinkedIn-Archiv",
   "importHub.paste.label": "Antwort hier einfügen",
   "importHub.paste.add": "Hinzufügen",
   "importHub.paste.invalid": "In diesem Text wurde kein Lebenslauf gefunden. Füge die ganze Antwort samt JSON ein.",

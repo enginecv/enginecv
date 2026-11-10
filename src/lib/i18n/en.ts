@@ -405,7 +405,7 @@ export const en: Translations = {
   "authoring.copyForAi.fallback": "Copying was blocked. The text is selected below: press Ctrl+C (⌘C on a Mac).",
   "authoring.drop.overlay": "Drop your CV file to import it",
   "authoring.drop.overlayHint": "A .enginecv.json file from an AI or a script, or an EngineCV export",
-  "authoring.drop.unsupported": "Only .json files can be dropped here. Nothing was imported.",
+  "authoring.drop.unsupported": "Only JSON, ZIP, CSV, PDF and XML files can be dropped here. Nothing was imported.",
   // GitHub Import
   "githubImport.entry": "New from GitHub",
   "githubImport.entryDesc": "Pre-fill a resume from a public GitHub profile — no AI, no account",
@@ -1037,6 +1037,7 @@ export const en: Translations = {
   "importHub.github.add": "Add from GitHub",
   "importHub.github.cancel": "Close GitHub",
   "importHub.supported": "Supported files",
+  "importHub.linkedin.howTo": "How to get a LinkedIn archive",
   "importHub.paste.label": "Paste the answer here",
   "importHub.paste.add": "Add",
   "importHub.paste.invalid": "No CV found in this text. Paste the whole answer, including the JSON.",

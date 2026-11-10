@@ -1,3 +1,4 @@
+import type { ImportResult, Notice } from "@/lib/agent/authoring";
 import type { Resume } from "@/lib/schema";
 import type { ConversionReport } from "@/lib/json-resume/report";
 
@@ -30,6 +31,8 @@ export interface StagedBatch {
     resume: Resume;
     /** Came from a "Download my data" file, which cannot replace a single CV. */
     fromDataExport?: boolean;
+    /** An AI-written document: what was read and every value touched, shown as the Paste from AI summary. */
+    authoring?: { result: ImportResult; parseNotices: Notice[] };
     /** What the source could not carry, when it can say. */
     losses?: ConversionReport;
 }

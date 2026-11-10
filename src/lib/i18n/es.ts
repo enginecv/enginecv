@@ -405,7 +405,7 @@ export const es: Translations = {
   "authoring.copyForAi.fallback": "Se bloqueó la copia. El texto está seleccionado abajo: pulsa Ctrl+C (⌘C en Mac).",
   "authoring.drop.overlay": "Suelta tu archivo de currículum para importarlo",
   "authoring.drop.overlayHint": "Un archivo .enginecv.json de una IA o un script, o una exportación de EngineCV",
-  "authoring.drop.unsupported": "Aquí solo se pueden soltar archivos .json. No se importó nada.",
+  "authoring.drop.unsupported": "Aquí solo se pueden soltar archivos JSON, ZIP, CSV, PDF y XML. No se importó nada.",
   // GitHub Import
   "githubImport.entry": "Nuevo desde GitHub",
   "githubImport.entryDesc": "Rellena un currículum desde un perfil público de GitHub — sin IA, sin cuenta",
@@ -1037,6 +1037,7 @@ export const es: Translations = {
   "importHub.github.add": "Añadir desde GitHub",
   "importHub.github.cancel": "Cerrar GitHub",
   "importHub.supported": "Archivos admitidos",
+  "importHub.linkedin.howTo": "Cómo obtener un archivo de LinkedIn",
   "importHub.paste.label": "Pega la respuesta aquí",
   "importHub.paste.add": "Añadir",
   "importHub.paste.invalid": "No se encontró ningún CV en este texto. Pega la respuesta completa, con el JSON.",

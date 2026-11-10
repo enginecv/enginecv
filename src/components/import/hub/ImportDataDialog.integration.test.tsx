@@ -4,6 +4,8 @@ import { db } from "@/lib/db";
 import { loadResumeHistory } from "@/lib/history";
 import { useI18nStore } from "@/lib/i18n";
 import { resumeWith } from "@/lib/import/staging/test-helpers";
+import { createQaFullResume } from "@/lib/qa/sample-resumes";
+import { DATA_EXPORT_FORMAT } from "@/lib/storage-registry/export-file";
 import type { Resume } from "@/lib/schema";
 vi.mock("next/navigation", () => ({
     useRouter: () => ({ push: vi.fn() }),
@@ -229,5 +231,20 @@ describe("ImportDataDialog", () => {
         const resume = { basics: { name: "John Doe", label: "Dev", image: "https://example.com/photo.png" }, work: [{ name: "Acme", position: "Dev", startDate: "2020-01" }] };
         await addFiles(new File([JSON.stringify(resume)], "resume.json"));
         expect(within(screen.getByTestId("import-hub-batch")).getByTestId("conversion-loss-summary")).toBeInTheDocument();
+    });
+
+    it("saves every CV of a Download my data file as its own CV when the caller asks for that", async () => {
+        const onImportDataExport = vi.fn().mockResolvedValue(undefined);
+        const props = setup({ target: "new", onImportDataExport });
+        const file = new File(
+            [JSON.stringify({ format: DATA_EXPORT_FORMAT, data: { indexedDB: { EngineCVDatabase: { resumes: [createQaFullResume(), createQaFullResume()] } } } })],
+            "my-data.json",
+        );
+        fireEvent.change(screen.getByTestId("import-hub-file-input"), { target: { files: [file] } });
+        await waitFor(() => expect(onImportDataExport).toHaveBeenCalledTimes(1));
+        expect(onImportDataExport.mock.calls[0][0]).toHaveLength(2);
+        // Nothing is combined: no source is staged, and the window closes.
+        await waitFor(() => expect(props.onClose).toHaveBeenCalled());
+        expect(screen.queryByTestId("import-hub-batch")).not.toBeInTheDocument();
     });
 });

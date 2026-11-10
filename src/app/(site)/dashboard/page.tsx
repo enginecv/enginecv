@@ -23,17 +23,11 @@ import { useTranslation } from "@/lib/i18n";
 import { localizedPath } from "@/lib/i18n/locales";
 import { LanguageSwitcher } from "@/components/ui/LanguageSwitcher";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
-import { downloadBlob, exportToJson, getResumeImportErrorDetails, importResumeFromJsonText } from "@/lib/export";
-import { SecretKeyDialog } from "@/components/ui/SecretKeyDialog";
+import { downloadBlob, exportToJson } from "@/lib/export";
 import { createEmptyResume, resumeSchema, type Resume } from "@/lib/schema";
 import { LiveResumeThumbnail } from "@/components/dashboard/LiveResumeThumbnail";
 import { DashboardCard, LastUpdatedTooltipContent } from "@/components/dashboard/DashboardCard";
 import { DashboardTemplateCard } from "@/components/dashboard/DashboardTemplateCard";
-import { GithubImportDialog } from "@/components/import/GithubImportDialog";
-import { EuropassImportDialog } from "@/components/import/EuropassImportDialog";
-import { ConversionLossSummary } from "@/components/import/ConversionLossSummary";
-import { LinkedinImportDialog } from "@/components/import/LinkedinImportDialog";
-import type { ConversionReport } from "@/lib/json-resume/report";
 import { CreateModal } from "@/components/dashboard/CreateModal";
 import { StartPanel } from "@/components/dashboard/StartPanel";
 import { PageSizeSelect, Pager, SortSelect } from "@/components/dashboard/ListControls";
@@ -68,7 +62,7 @@ type DashboardTab = "resumes" | "letters" | "templates";
 
 // Example content and the picker load when someone opens it, not with the dashboard.
 const ExamplePickerDialog = dynamic(() => import("@/components/dashboard/ExamplePickerDialog"), { ssr: false });
-const PasteFromAiDialog = dynamic(() => import("@/components/import/PasteFromAiDialog"), { ssr: false });
+const ImportDataDialog = dynamic(() => import("@/components/import/hub/ImportDataDialog").then((m) => m.ImportDataDialog), { ssr: false });
 type GridDensity = "large" | "normal" | "compact";
 
 const GRID_DENSITY_CLASS: Record<GridDensity, string> = {
@@ -840,12 +834,9 @@ function Dashboard() {
     });
 
     const [showCreateModal, setShowCreateModal] = useState(false);
-    const [showGithubImportDialog, setShowGithubImportDialog] = useState(false);
-    const [showLinkedinImportDialog, setShowLinkedinImportDialog] = useState(false);
-    const [showEuropassImportDialog, setShowEuropassImportDialog] = useState(false);
     const [showExamplePicker, setShowExamplePicker] = useState(false);
-    const [showPasteFromAi, setShowPasteFromAi] = useState(false);
-    const [pasteInitialText, setPasteInitialText] = useState<string | undefined>(undefined);
+    // The Import data window, with a file or source it should start from.
+    const [hub, setHub] = useState<{ files?: File[]; source?: "github" } | null>(null);
     const [fileDragActive, setFileDragActive] = useState(false);
     // The start path whose action is running (blank creation), and where focus goes for `?start=json`.
     const [pendingStart, setPendingStart] = useState<StartPathId | null>(null);
@@ -855,8 +846,6 @@ function Dashboard() {
     const [importError, setImportError] = useState<string | null>(null);
     const [importErrorDetails, setImportErrorDetails] = useState<string | null>(null);
     const [importWarning, setImportWarning] = useState<string | null>(null);
-    // A JSON Resume import that lost something: the CV is saved, the person sees what changed before opening it.
-    const [importReport, setImportReport] = useState<{ report: ConversionReport; id: string } | null>(null);
     // A data-export import reports a count, not adjusted values, so it gets no "adjusted" title.
     const [importWarningIsClamp, setImportWarningIsClamp] = useState(true);
     const [search, setSearch] = useState("");
@@ -870,10 +859,6 @@ function Dashboard() {
     const setGridDensity = useCallback((density: GridDensity) => {
         updateClientPreferenceSection("dashboard", { density });
     }, [updateClientPreferenceSection]);
-    const [decryptionKey, setDecryptionKey] = useState("");
-    const [decryptionDialogError, setDecryptionDialogError] = useState<string | null>(null);
-    const [decryptionDialogOpen, setDecryptionDialogOpen] = useState(false);
-    const decryptionResolverRef = useRef<((value: string | null) => void) | null>(null);
 
     const pageSize = dashboardPreferences.pageSize;
     const setPageSize = useCallback((next: DashboardPageSize) => {
@@ -923,24 +908,17 @@ function Dashboard() {
 
     const handleOpenGithubImport = useCallback(() => {
         setShowCreateModal(false);
-        setShowGithubImportDialog(true);
-    }, [setShowCreateModal, setShowGithubImportDialog]);
+        setHub({ source: "github" });
+    }, [setShowCreateModal]);
 
-    const handleOpenLinkedinImport = useCallback(() => {
+    // LinkedIn, Europass and paste-from-AI all start in the same window: drop the file or paste the text.
+    const handleOpenImportHub = useCallback(() => {
         setShowCreateModal(false);
-        setShowLinkedinImportDialog(true);
-    }, [setShowCreateModal, setShowLinkedinImportDialog]);
-
-    const handleOpenEuropassImport = useCallback(() => {
-        setShowCreateModal(false);
-        setShowEuropassImportDialog(true);
-    }, [setShowCreateModal, setShowEuropassImportDialog]);
-
-    const handleOpenPasteFromAi = useCallback((initialText?: string) => {
-        setShowCreateModal(false);
-        setPasteInitialText(initialText);
-        setShowPasteFromAi(true);
-    }, [setShowCreateModal, setShowPasteFromAi]);
+        setHub({});
+    }, [setShowCreateModal]);
+    const handleOpenLinkedinImport = handleOpenImportHub;
+    const handleOpenEuropassImport = handleOpenImportHub;
+    const handleOpenPasteFromAi = handleOpenImportHub;
 
     const handleOpenExamplePicker = useCallback(() => {
         setShowCreateModal(false);
@@ -958,114 +936,30 @@ function Dashboard() {
         }
     }, [handleCreateBlank, handleOpenExamplePicker, handleOpenEuropassImport, handleOpenGithubImport, handleOpenLinkedinImport, handleOpenPasteFromAi]);
 
-    const closeDecryptionDialog = useCallback((value: string | null) => {
-        decryptionResolverRef.current?.(value);
-        decryptionResolverRef.current = null;
-        setDecryptionDialogOpen(false);
-        setDecryptionDialogError(null);
-        setDecryptionKey("");
-    }, [setDecryptionDialogError, setDecryptionDialogOpen, setDecryptionKey]);
-
-    const requestDecryptionKey = useCallback((errorMessage?: string | null) => {
-        setDecryptionKey("");
-        setDecryptionDialogError(errorMessage ?? null);
-        setDecryptionDialogOpen(true);
-
-        return new Promise<string | null>((resolve) => {
-            decryptionResolverRef.current = resolve;
-        });
-    }, [setDecryptionDialogError, setDecryptionDialogOpen, setDecryptionKey]);
-
-    const importMessages = useMemo(() => ({
-        secureEncryptedImportUnavailable: t("export.secureEncryptedImportUnavailable"),
-        decryptionFailed: t("export.decryptionFailed"),
-        resumeReadFailed: t("editor.couldNotReadFile"),
-        encryptedFileNeedsKey: t("export.encryptedFileNeedsKey"),
-        decryptedFileInvalidJson: t("export.decryptedFileInvalidJson"),
-        invalidResumeFile: t("editor.invalidResumeFile"),
-        importErrorCheckConsole: t("export.importErrorCheckConsole"),
-    }), [t]);
-
-    const persistImportedResume = useCallback(async (resume: Resume, clampedFields: string[]) => {
-        const id = createId();
-        const now = Date.now();
-        resume.id = id;
-        resume.createdAt = now;
-        resume.updatedAt = now;
-
-        await db.resumes.add(resume);
-
-        if (clampedFields.length > 0) {
-            setImportWarningIsClamp(true);
-            setImportWarning(
-                tn("dashboard.importClamped", clampedFields.length)
-                + "\n" + clampedFields.join(", ")
-            );
-            return;
-        }
-
-        router.push(`/editor/${id}`);
-    }, [router, setImportWarning, tn]);
-
+    // Any file (dropped, chosen, or from the toolbar) goes to the Import data window.
     const handleImportJson = useCallback(async (file: File) => {
         setShowCreateModal(false);
         setImportError(null);
         setImportErrorDetails(null);
         setImportWarning(null);
-        setImportReport(null);
-        try {
-            const text = await file.text();
-            // Authoring documents (an AI or a script wrote them) go through the
-            // Paste from AI summary; full exports keep the importer below.
-            const authoring = await import("@/lib/agent/authoring");
-            const parsed = authoring.parseAuthoringText(text);
-            if (parsed.status === "ok" && authoring.isAuthoringDocument(parsed.document)) {
-                handleOpenPasteFromAi(text);
-                return;
-            }
-            const result = await importResumeFromJsonText(text, requestDecryptionKey, importMessages);
+        setHub({ files: [file] });
+    }, [setImportError, setImportErrorDetails, setImportWarning, setShowCreateModal]);
 
-            if (!result) {
-                return;
-            }
-            if (result.kind === "data-export") {
-                // A "Download my data" file: every CV in it becomes a new CV.
-                // Saved versions and templates stay in the file.
-                const now = Date.now();
-                await db.resumes.bulkAdd(result.resumes.map((resume) => ({ ...resume, id: createId(), createdAt: now, updatedAt: now })));
-                setImportWarningIsClamp(false);
-                setImportWarning(tn("dashboard.importedDataExport", result.resumes.length));
-                return;
-            }
-            if (result.kind === "json-resume" && result.report.items.length > 0) {
-                const id = createId();
-                const now = Date.now();
-                await db.resumes.add({ ...result.resume, id, createdAt: now, updatedAt: now });
-                setImportReport({ report: result.report, id });
-                return;
-            }
-            await persistImportedResume(result.resume, result.clampedFields);
-        } catch (error) {
-            const details = getResumeImportErrorDetails(error);
-            if (!details) {
-                console.error("[EngineCV] Resume import failed.", error);
-            }
+    // The window always creates new CVs on the dashboard; nothing existing is touched.
+    const saveHubResume = useCallback(async (resume: Resume) => {
+        const id = createId();
+        const now = Date.now();
+        await db.resumes.add({ ...resume, id, createdAt: now, updatedAt: now });
+        return id;
+    }, []);
 
-            const fallbackMessage = `${t("dashboard.jsonParseError")} ${t("export.importErrorCheckConsole")}`;
-            setImportError(error instanceof Error ? error.message : fallbackMessage);
-            setImportErrorDetails(details ?? (error instanceof Error ? error.stack ?? error.message : null));
-        }
-    }, [
-        handleOpenPasteFromAi,
-        importMessages,
-        persistImportedResume,
-        requestDecryptionKey,
-        setImportError,
-        setImportErrorDetails,
-        setImportWarning,
-        setShowCreateModal,
-        t,
-    ]);
+    // A "Download my data" file: every CV in it becomes a new CV. Saved versions and templates stay in the file.
+    const saveDataExportResumes = useCallback(async (resumes: Resume[]) => {
+        const now = Date.now();
+        await db.resumes.bulkAdd(resumes.map((resume) => ({ ...resume, id: createId(), createdAt: now, updatedAt: now })));
+        setImportWarningIsClamp(false);
+        setImportWarning(tn("dashboard.importedDataExport", resumes.length));
+    }, [setImportWarning, tn]);
 
     const handleSaveMeta = useCallback(async (resumeId: string, meta: Resume["meta"]) => {
         const currentResume = resumes?.find((entry) => entry.id === resumeId);
@@ -1223,7 +1117,7 @@ function Dashboard() {
             setFileDragActive(false);
             const file = event.dataTransfer?.files[0];
             if (!file) return;
-            if (!/.json$/i.test(file.name) && file.type !== "application/json") {
+            if (!/\.(json|zip|csv|pdf|xml)$/i.test(file.name) && file.type !== "application/json") {
                 setImportWarning(null);
                 setImportErrorDetails(null);
                 setImportError(t("authoring.drop.unsupported"));
@@ -1407,7 +1301,7 @@ function Dashboard() {
                                                 <span className="hidden lg:inline">{t("dashboard.import")}</span>
                                                 <input
                                                     type="file"
-                                                    accept=".json,application/json"
+                                                    accept=".json,.zip,.csv,.pdf,.xml,application/json"
                                                     className="hidden"
                                                     data-testid="dashboard-import-resume-input"
                                                     onChange={(e) => {
@@ -1458,23 +1352,6 @@ function Dashboard() {
                                         }} className="text-danger hover:text-strong transition-colors shrink-0">
                                             <X className="w-4 h-4" />
                                         </button>
-                                    </div>
-                                )}
-
-                                {importReport && (
-                                    <div className="mb-6 space-y-3 rounded-xl border border-edge bg-surface-4 p-4" data-testid="json-resume-import-result">
-                                        <div className="flex items-center justify-between gap-3">
-                                            <p className="text-sm font-medium text-strong">{t("conversion.importedTitle")}</p>
-                                            <div className="flex shrink-0 items-center gap-2">
-                                                <Link href={`/editor/${importReport.id}`} className="rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-surface-2 transition-colors hover:bg-accent-soft">
-                                                    {t("conversion.openCv")}
-                                                </Link>
-                                                <button onClick={() => setImportReport(null)} aria-label={t("common.close")} className="text-faint hover:text-strong transition-colors">
-                                                    <X className="w-4 h-4" />
-                                                </button>
-                                            </div>
-                                        </div>
-                                        <ConversionLossSummary report={importReport.report} defaultOpen />
                                     </div>
                                 )}
 
@@ -1851,32 +1728,18 @@ function Dashboard() {
                 </div>
             )}
 
-            {showPasteFromAi && (
-                <PasteFromAiDialog
-                    open
-                    initialText={pasteInitialText}
-                    onClose={() => {
-                        setShowPasteFromAi(false);
-                        setPasteInitialText(undefined);
-                    }}
-                    onFullExport={(text) => void handleImportJson(new File([text], "pasted.json", { type: "application/json" }))}
+            {hub && (
+                <ImportDataDialog
+                    current={createEmptyResume()}
+                    target="new"
+                    initialFiles={hub.files}
+                    initialSource={hub.source}
+                    onCreateNew={saveHubResume}
+                    onImportDataExport={saveDataExportResumes}
+                    onOpenCreated={(id) => router.push(`/editor/${id}`)}
+                    onClose={() => setHub(null)}
                 />
             )}
-
-            <GithubImportDialog
-                open={showGithubImportDialog}
-                onClose={() => setShowGithubImportDialog(false)}
-            />
-
-            <LinkedinImportDialog
-                open={showLinkedinImportDialog}
-                onClose={() => setShowLinkedinImportDialog(false)}
-            />
-
-            <EuropassImportDialog
-                open={showEuropassImportDialog}
-                onClose={() => setShowEuropassImportDialog(false)}
-            />
 
             {/* Delete confirmation */}
             <ConfirmModal
@@ -1900,26 +1763,6 @@ function Dashboard() {
                 onCancel={() => setTemplateDeleteTarget(null)}
             />
 
-            <SecretKeyDialog
-                open={decryptionDialogOpen}
-                title={t("secretKey.unlockTitle")}
-                description={t("secretKey.unlockDescription")}
-                warning={t("secretKey.unlockWarning")}
-                inputLabel={t("secretKey.inputLabel")}
-                placeholder={t("secretKey.placeholder")}
-                confirmLabel={t("secretKey.confirmLabel")}
-                value={decryptionKey}
-                onValueChange={(value) => {
-                    setDecryptionKey(value);
-                    if (decryptionDialogError) {
-                        setDecryptionDialogError(null);
-                    }
-                }}
-                error={decryptionDialogError}
-                confirmDisabled={!decryptionKey.trim()}
-                onCancel={() => closeDecryptionDialog(null)}
-                onConfirm={() => closeDecryptionDialog(decryptionKey)}
-            />
             </SidebarInset>
         </SidebarProvider>
     );

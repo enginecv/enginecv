@@ -405,7 +405,7 @@ export const fr: Translations = {
   "authoring.copyForAi.fallback": "La copie a été bloquée. Le texte est sélectionné ci-dessous : appuyez sur Ctrl+C (⌘C sur Mac).",
   "authoring.drop.overlay": "Déposez votre fichier CV pour l'importer",
   "authoring.drop.overlayHint": "Un fichier .enginecv.json créé par une IA ou un script, ou un export EngineCV",
-  "authoring.drop.unsupported": "Seuls les fichiers .json peuvent être déposés ici. Rien n'a été importé.",
+  "authoring.drop.unsupported": "Seuls les fichiers JSON, ZIP, CSV, PDF et XML peuvent être déposés ici. Rien n'a été importé.",
   // GitHub Import
   "githubImport.entry": "Nouveau depuis GitHub",
   "githubImport.entryDesc": "Préremplissez un CV depuis un profil GitHub public — sans IA, sans compte",
@@ -1037,6 +1037,7 @@ export const fr: Translations = {
   "importHub.github.add": "Ajouter depuis GitHub",
   "importHub.github.cancel": "Fermer GitHub",
   "importHub.supported": "Fichiers pris en charge",
+  "importHub.linkedin.howTo": "Comment obtenir une archive LinkedIn",
   "importHub.paste.label": "Collez la réponse ici",
   "importHub.paste.add": "Ajouter",
   "importHub.paste.invalid": "Aucun CV trouvé dans ce texte. Collez toute la réponse, JSON compris.",

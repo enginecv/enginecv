@@ -18,6 +18,7 @@ with date-based sections.
 - JSON editor: if a browser extension such as Vimium takes the Esc key away in Vim mode, the editor says so and suggests excluding the site in that extension.
 
 ### Changed
+- The dashboard's imports (LinkedIn, Europass, GitHub, Paste from AI and JSON files) now open the same Import data window as the editor, with the new CV as the only target. Drop or choose a file, add more sources if you like, review, and create the CV; each source says what it could not carry. A "Download my data" file still brings back every CV in it as its own CV. The LinkedIn how-to and the trademark notices moved into the window, and so did the copy-instructions button for AI assistants.
 - The cookie and storage policy now lists exactly what EngineCV stores, from the same list the Your data page uses, so it can no longer fall behind. It now also names two small choices that were missing: the "made with EngineCV" line in the GitHub README export and the dismissed language hint.
 - JSON editor: Apply, Ctrl+S and Vim `:w` save straight away instead of opening a review dialog, and saving with nothing changed does nothing. Undo apply still reverts a whole apply, and a CV changed elsewhere still asks first. The Apply button is quieter, and Ctrl+S inside the editor applies your changes instead of opening the browser's save dialog.
 
