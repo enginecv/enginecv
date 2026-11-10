@@ -1,7 +1,7 @@
 "use client";
 
 import { useTranslation } from "@/lib/i18n";
-import { CURRENT, type BasicsChoice, type BasicsField, type MergePlan, type Selection } from "@/lib/import/staging/types";
+import { CURRENT, NONE, type BasicsChoice, type BasicsField, type MergePlan, type Selection } from "@/lib/import/staging/types";
 import { fieldLabelKey, optionLabel, shorten } from "./labels";
 
 interface BasicsChoicesProps {
@@ -41,8 +41,8 @@ export function BasicsChoices({ plan, selection, onPick }: BasicsChoicesProps) {
                                         className="mt-1"
                                     />
                                     <span className="min-w-0 flex-1">
-                                        <span className="block text-xs text-faint">{option.id === CURRENT ? t("importHub.currentValue") : optionLabel(option.id, plan.batches, t)}</span>
-                                        {choice.field === "photo"
+                                        <span className="block text-xs text-faint">{optionLabel(option.id, plan.batches, t)}</span>
+                                        {option.id === NONE ? null : choice.field === "photo"
                                             ? <img src={option.value} alt="" className="mt-1 h-14 w-14 rounded-md object-cover" />
                                             : <span className="block break-words text-bright">{shorten(option.value) || t("importHub.empty")}</span>}
                                     </span>

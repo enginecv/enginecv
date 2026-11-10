@@ -63,3 +63,36 @@ test("closing with staged data asks to discard, and keeping it leaves the dialog
     await page.getByRole("button", { name: "Discard" }).click();
     await expect(page.getByTestId("import-hub-dialog")).toHaveCount(0);
 });
+
+test("an applied import is still there after a reload", async ({ page }) => {
+    await createBlankResume(page);
+    await page.getByTestId("import-data-content").click();
+    await page.getByTestId("import-hub-file-input").setInputFiles(authoring("Kept after reload."));
+    await expect(page.getByTestId("import-hub-batch")).toHaveCount(1);
+    await page.getByTestId("import-hub-review").click();
+    await page.getByTestId("import-hub-apply").click();
+    await expect(page.getByTestId("import-hub-done")).toBeVisible();
+    await page.getByRole("button", { name: "Close", exact: true }).last().click();
+    await expect(page.getByTestId("section-card-experience")).toBeVisible();
+
+    // Autosave writes the change; wait for it, then reload.
+    await expect(page.getByText(/Saved at/)).toBeVisible();
+    await page.waitForTimeout(1500);
+    await page.reload();
+    await expect(page.getByTestId("section-card-experience")).toBeVisible();
+});
+
+test("None can be chosen for a detail such as the headline", async ({ page }) => {
+    await createBlankResume(page);
+    await page.getByTestId("import-data-content").click();
+    await page.getByTestId("import-hub-file-input").setInputFiles({
+        name: "ai.json",
+        mimeType: "application/json",
+        buffer: Buffer.from(JSON.stringify({ format: "enginecv.authoring/v1", basics: { name: "Jane Doe", headline: "Staff Engineer" }, experience: [{ company: "Acme", position: "Dev", start: "2020-01" }] })),
+    });
+    await expect(page.getByTestId("import-hub-batch")).toHaveCount(1);
+    await page.getByTestId("import-hub-review").click();
+    await page.getByRole("radio", { name: "Use for Headline: None" }).check();
+    await page.getByTestId("import-hub-apply").click();
+    await expect(page.getByTestId("import-hub-done")).toBeVisible();
+});

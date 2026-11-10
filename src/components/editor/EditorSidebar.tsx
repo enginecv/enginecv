@@ -2819,7 +2819,7 @@ export function EditorSidebar({ onMobilePreview }: EditorSidebarProps = {}) {
     const CONTENT_SECTION_DEFS = getContentSectionDefs(t);
     const updateSettings = useResumeStore((state) => state.updateSettings);
     const requestCustomizePanel = useResumeStore((state) => state.requestCustomizePanel);
-    const setResume = useResumeStore((state) => state.setResume);
+    const applyContentTransform = useResumeStore((state) => state.applyContentTransform);
     const updateResumePatch = useResumeStore((state) => state.updateResumePatch);
     const aiProposals = useResumeStore((state) => state.aiProposals);
     const acceptAIProposal = useResumeStore((state) => state.acceptAIProposal);
@@ -4209,10 +4209,11 @@ export function EditorSidebar({ onMobilePreview }: EditorSidebarProps = {}) {
                 <ImportDataDialog
                     current={resume}
                     onApply={(next) => {
-                        setResume({ ...next, id: resume.id, createdAt: resume.createdAt, updatedAt: Date.now() });
+                        // Marks the CV as changed, so autosave writes it.
+                        applyContentTransform(() => ({ ...next, id: resume.id, createdAt: resume.createdAt, updatedAt: Date.now() }));
                         setContentSearch("");
                     }}
-                    onUndo={(previous) => setResume(previous)}
+                    onUndo={(previous) => applyContentTransform(() => previous)}
                     onCreateNew={persistImportedResume}
                     onClose={() => setImportDataOpen(false)}
                 />

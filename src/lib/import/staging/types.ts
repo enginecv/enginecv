@@ -40,6 +40,9 @@ export interface StagedBatch {
 /** An id for "the value already in the CV" in a choice list. */
 export const CURRENT = "current";
 
+/** An id for "leave this empty" in a choice list for the person's own details. */
+export const NONE = "none";
+
 export interface Origin {
     batchId: string;
     label: string;

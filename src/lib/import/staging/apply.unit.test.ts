@@ -154,3 +154,23 @@ describe("a single source comes back whole in a new CV", () => {
         expect(brief(next)).toEqual(brief(source));
     });
 });
+
+describe("choosing None for a detail", () => {
+  it("offers None for every detail and clears the CV's value when chosen", () => {
+    const current = resumeWith({ basics: { name: "Jane Doe", headline: "Engineer", photo: "data:image/png;base64,AAAA" } });
+    const plan = buildMergePlan(current, [batchOf("a", { basics: { name: "Jane Doe", headline: "Staff Engineer", photo: "data:image/png;base64,BBBB" } })]);
+    for (const choice of plan.basics) expect(choice.options.at(-1)).toEqual({ id: "none", value: "" });
+
+    const next = applyMergePlan(current, plan, { ...none, basics: { headline: "none", photo: "none" } });
+    expect(next.basics.headline).toBe("");
+    expect(next.basics.photo).toBe("");
+    expect(next.basics.photoEdit).toBeNull();
+    expect(next.basics.name).toBe("Jane Doe");
+  });
+
+  it("is not picked as a fallback for a new CV", () => {
+    const plan = buildMergePlan(resumeWith({ basics: { headline: "Engineer" } }), [batchOf("a", { basics: { headline: "Staff Engineer" } })]);
+    const next = applyMergePlan(resumeWith(), plan, none, "new");
+    expect(next.basics.headline).toBe("Staff Engineer");
+  });
+});

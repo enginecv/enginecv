@@ -1055,6 +1055,7 @@ export const es: Translations = {
   "importHub.review.details": "Tus datos",
   "importHub.review.detailsHint": "Elige qué valor usar para cada dato.",
   "importHub.currentValue": "En tu CV",
+  "importHub.none": "Ninguno",
   "importHub.fromSource": "De {source}",
   "importHub.foundIn": "Encontrado en {count} fuentes",
   "importHub.alreadyInCv": "Ya está en tu CV",

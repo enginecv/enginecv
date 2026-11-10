@@ -3,6 +3,7 @@ import { entriesOf, entryTitle, isEmptyEntry, isThinEntry, matchKey, sameItem } 
 import {
     BASICS_FIELDS,
     CURRENT,
+    NONE,
     STAGE_SECTIONS,
     type BasicsChoice,
     type FieldConflict,
@@ -121,7 +122,10 @@ function buildBasics(current: Resume, batches: StagedBatch[]): BasicsChoice[] {
         }
         // Nothing to choose when no source adds a value that differs from the CV.
         if (options.length < 2 && (options.length === 0 || options[0].id === CURRENT)) continue;
-        choices.push({ field, options, defaultId: mine ? CURRENT : options[0].id });
+        // Leaving a detail empty is always a choice.
+        const defaultId = mine ? CURRENT : options[0].id;
+        options.push({ id: NONE, value: "" });
+        choices.push({ field, options, defaultId });
     }
     return choices;
 }

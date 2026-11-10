@@ -1055,6 +1055,7 @@ export const bs: Translations = {
   "importHub.review.details": "Tvoji podaci",
   "importHub.review.detailsHint": "Izaberi koju vrijednost koristiti za svaki podatak.",
   "importHub.currentValue": "U tvom CV-u",
+  "importHub.none": "Nijedna",
   "importHub.fromSource": "Iz izvora {source}",
   "importHub.foundIn": "Pronađeno u {count} izvora",
   "importHub.alreadyInCv": "Već u tvom CV-u",

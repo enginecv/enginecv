@@ -1055,6 +1055,7 @@ export const de: Translations = {
   "importHub.review.details": "Deine Angaben",
   "importHub.review.detailsHint": "Wähle für jede Angabe den Wert, der gelten soll.",
   "importHub.currentValue": "In deinem Lebenslauf",
+  "importHub.none": "Keine",
   "importHub.fromSource": "Aus {source}",
   "importHub.foundIn": "In {count} Quellen gefunden",
   "importHub.alreadyInCv": "Schon in deinem Lebenslauf",

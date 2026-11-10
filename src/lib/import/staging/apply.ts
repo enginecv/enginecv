@@ -9,6 +9,7 @@ import { createNewResume } from "@/lib/templates/default-design";
 import { entriesOf } from "./keys";
 import {
     CURRENT,
+    NONE,
     STAGE_SECTIONS,
     type ApplyMode,
     type MergePlan,
@@ -129,11 +130,12 @@ function applyBasics(draft: Draft, plan: MergePlan, selection: Selection, mode: 
     for (const choice of plan.basics) {
         let id = selection.basics[choice.field] ?? choice.defaultId;
         // A new or replaced CV has no "current" value to keep.
-        if (id === CURRENT && mode !== "merge") id = choice.options.find((option) => option.id !== CURRENT)?.id ?? id;
+        if (id === CURRENT && mode !== "merge") id = choice.options.find((option) => option.id !== CURRENT && option.id !== NONE)?.id ?? id;
         if (id === CURRENT) continue;
         const option = choice.options.find((candidate) => candidate.id === id);
         if (!option) continue;
         draft.basics[choice.field] = option.value;
+        if (choice.field === "photo" && id === NONE) draft.basics.photoEdit = null;
         if (choice.field === "location") {
             const batch = plan.batches.find((candidate) => candidate.id === id);
             draft.basics.locationParts = batch
