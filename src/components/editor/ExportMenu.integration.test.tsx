@@ -134,13 +134,69 @@ describe("ExportDialog new formats", () => {
 
     it("lists every registry format and hides encryption for formats without it", () => {
         renderDialog();
-        for (const id of ["json", "pdf", "docx", "md", "txt", "html", "png", "svg"]) {
+        for (const id of ["json", "jsonresume", "pdf", "docx", "md", "txt", "html", "png", "svg"]) {
             expect(screen.getByTestId(`export-format-${id}`)).toBeInTheDocument();
         }
         fireEvent.click(screen.getByTestId("export-format-json"));
         expect(screen.getByRole("switch", { name: /Encrypt/i })).toBeInTheDocument();
         fireEvent.click(screen.getByTestId("export-format-md"));
         expect(screen.queryByRole("switch", { name: /Encrypt/i })).not.toBeInTheDocument();
+    });
+
+    describe("JSON Resume", () => {
+        function lossyResume() {
+            const resume = sampleResume();
+            resume.basics.nationality = "British";
+            resume.customSections = [{ id: "c1", hidden: false, title: "Talks", icon: "auto", layout: "text", text: "Spoke at a meetup.", tags: [], entries: [] }];
+            resume.settings.contentSections = ["custom:c1"];
+            return resume;
+        }
+
+        it("marks the format as lossy before it is chosen", () => {
+            renderDialog();
+            expect(screen.getByTestId("export-format-lossy-jsonresume")).toHaveAccessibleName("Some data is not included");
+            expect(screen.queryByTestId("export-format-lossy-pdf")).not.toBeInTheDocument();
+        });
+
+        it("lists what this CV loses, with counts, and the photo switch is off", () => {
+            render(<ExportDialog open onClose={vi.fn()} resume={lossyResume()} paperSize="a4" />);
+            fireEvent.click(screen.getByTestId("export-format-jsonresume"));
+
+            const summary = screen.getByTestId("conversion-loss-summary");
+            expect(summary).toHaveTextContent("Personal details such as date of birth or nationality were left out (1).");
+            expect(summary).toHaveTextContent("Custom sections have no place in this format and were left out (1).");
+            expect(screen.getByTestId("export-jsonresume-include-photo")).toHaveAttribute("aria-checked", "false");
+        });
+
+        it("shows no loss list for a CV that loses nothing", () => {
+            renderDialog();
+            fireEvent.click(screen.getByTestId("export-format-jsonresume"));
+            expect(screen.queryByTestId("conversion-loss-summary")).not.toBeInTheDocument();
+        });
+
+        it("changes the list when the photo is included", () => {
+            const resume = sampleResume();
+            resume.basics.photo = "data:image/png;base64,AAAA";
+            render(<ExportDialog open onClose={vi.fn()} resume={resume} paperSize="a4" />);
+            fireEvent.click(screen.getByTestId("export-format-jsonresume"));
+            expect(screen.getByTestId("conversion-loss-summary")).toHaveTextContent("The photo was left out.");
+
+            fireEvent.click(screen.getByTestId("export-jsonresume-include-photo"));
+            expect(screen.queryByTestId("conversion-loss-summary")).not.toBeInTheDocument();
+        });
+
+        it("downloads a JSON Resume file", async () => {
+            const onClose = renderDialog();
+            fireEvent.click(screen.getByTestId("export-format-jsonresume"));
+            fireEvent.click(screen.getByTestId("export-confirm-button"));
+            await waitFor(() => expect(mocks.deliverFile).toHaveBeenCalledTimes(1));
+            const [blob, name] = mocks.deliverFile.mock.calls[0];
+            expect(name).toBe("resume-ada-lovelace.jsonresume.json");
+            const document = JSON.parse(await blobText(blob));
+            expect(document.basics.name).toBe("Ada Lovelace");
+            expect(document.meta.version).toBe("v1.0.0");
+            await waitFor(() => expect(onClose).toHaveBeenCalled());
+        });
     });
 
     it("delivers Markdown and plain text files", async () => {

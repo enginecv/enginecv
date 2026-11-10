@@ -10,6 +10,8 @@ import { useAI } from "@/hooks/useAI";
 import { createId } from "@/lib/id";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { SecretKeyDialog } from "@/components/ui/SecretKeyDialog";
+import { ConversionLossSummary } from "@/components/import/ConversionLossSummary";
+import type { ConversionReport } from "@/lib/json-resume/report";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { EntryForm } from "./EntryForm";
 import { GetTipsLink } from "./GetTipsLink";
@@ -3074,6 +3076,7 @@ export function EditorSidebar({ onMobilePreview }: EditorSidebarProps = {}) {
     const [decryptionDialogOpen, setDecryptionDialogOpen] = useState(false);
     const [importError, setImportError] = useState<string | null>(null);
     const [importErrorDetails, setImportErrorDetails] = useState<string | null>(null);
+    const [importReport, setImportReport] = useState<ConversionReport | null>(null);
     const importFileRef = useRef<HTMLInputElement>(null);
     const decryptionResolverRef = useRef<((value: string | null) => void) | null>(null);
 
@@ -3652,6 +3655,7 @@ export function EditorSidebar({ onMobilePreview }: EditorSidebarProps = {}) {
         if (!file) return;
         setImportError(null);
         setImportErrorDetails(null);
+        setImportReport(null);
         try {
             const result = await importResumeFromJsonText(await file.text(), requestDecryptionKey, importMessages);
 
@@ -3681,6 +3685,7 @@ export function EditorSidebar({ onMobilePreview }: EditorSidebarProps = {}) {
             setContentSearch("");
             setImportError(null);
             setImportErrorDetails(null);
+            if (result.kind === "json-resume" && result.report.items.length > 0) setImportReport(result.report);
         } catch (error) {
             const details = getResumeImportErrorDetails(error);
             if (!details) {
@@ -4275,6 +4280,8 @@ export function EditorSidebar({ onMobilePreview }: EditorSidebarProps = {}) {
                             <ChevronRight className="h-3.5 w-3.5 shrink-0 text-dim" />
                         </button>
                     </div>
+
+                    {importReport && <ConversionLossSummary report={importReport} defaultOpen className="mx-1 mb-3" />}
 
                     {importError && (
                         <div className="mx-1 mb-3 rounded-md border border-red-500/30 bg-red-500/10 p-3 text-sm text-danger-soft">

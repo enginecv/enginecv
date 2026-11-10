@@ -19,9 +19,13 @@ describe("export format registry", () => {
         expect(new Set(extensions).size).toBe(extensions.length);
     });
 
-    it("limits encryption to json and pdf, and the photo option to docx", () => {
+    it("limits encryption to json and pdf, and the photo option to docx and JSON Resume", () => {
         expect(EXPORT_FORMATS.filter((format) => format.supportsEncryption).map((format) => format.id).sort()).toEqual(["json", "pdf"]);
-        expect(EXPORT_FORMATS.filter((format) => format.options.includes("photo")).map((format) => format.id)).toEqual(["docx"]);
+        expect(EXPORT_FORMATS.filter((format) => format.options.includes("photo")).map((format) => format.id).sort()).toEqual(["docx", "jsonresume"]);
+    });
+
+    it("marks only JSON Resume as lossy", () => {
+        expect(EXPORT_FORMATS.filter((format) => format.lossy).map((format) => format.id)).toEqual(["jsonresume"]);
     });
 
     it("references copy that exists in the English dictionary", () => {
@@ -49,6 +53,6 @@ describe("export format registry", () => {
         expect(getExportFormatCount()).toBe(EXPORT_FORMATS.length);
         const labels = getExportFormatLabels((key) => dictionary[key]);
         expect(labels.split(", ")).toHaveLength(getExportFormatCount());
-        expect(labels.startsWith("JSON, PDF, DOCX")).toBe(true);
+        expect(labels.startsWith("JSON, JSON Resume, PDF")).toBe(true);
     });
 });

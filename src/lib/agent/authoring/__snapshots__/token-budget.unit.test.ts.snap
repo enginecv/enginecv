@@ -3,7 +3,7 @@
 exports[`authoring token budget (FR-009) > QA full CV stays within 3,000 tokens and at most half the stored size 1`] = `
 {
   "pretty": 4767,
-  "stored": 6093,
+  "stored": 6110,
   "withIds": 3265,
   "withoutIds": 2905,
 }
@@ -12,7 +12,7 @@ exports[`authoring token budget (FR-009) > QA full CV stays within 3,000 tokens 
 exports[`authoring token budget (FR-009) > QA minimal CV stays within 200 tokens 1`] = `
 {
   "pretty": 30,
-  "stored": 1365,
+  "stored": 1382,
   "withIds": 18,
   "withoutIds": 18,
 }

@@ -114,7 +114,8 @@ describe("uniqueness", () => {
         const pairs = findDuplicates(await loadParagraphs(), DUPLICATE_THRESHOLD);
         const report = pairs.map((pair) => `${pair.a.docId} ~ ${pair.b.docId} (${pair.score.toFixed(2)}): ${pair.a.text.slice(0, 70)}`);
         expect(report).toEqual([]);
-    });
+        // Compares every paragraph with every other, so it grows with the corpus.
+    }, 30_000);
 });
 describe("tool pages", () => {
     const tools = getEnabledTools();

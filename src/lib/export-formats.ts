@@ -7,7 +7,7 @@
  * Kept free of UI imports: icons are mapped by the component layer.
  */
 
-export const EXPORT_FORMAT_IDS = ["json", "pdf", "html", "png", "svg", "docx", "md", "txt"] as const;
+export const EXPORT_FORMAT_IDS = ["json", "jsonresume", "pdf", "html", "png", "svg", "docx", "md", "txt"] as const;
 
 export type ResumeExportFormat = (typeof EXPORT_FORMAT_IDS)[number];
 
@@ -24,10 +24,13 @@ export interface ExportFormatDescriptor {
     options: readonly ExportFormatOption[];
     /** Built from the rendered preview pages, so a phone must show the preview first. */
     needsPreview: boolean;
+    /** The format cannot hold everything in a CV, so the dialog shows what is left out before download. */
+    lossy?: boolean;
 }
 
 export const EXPORT_FORMATS: readonly ExportFormatDescriptor[] = [
     { id: "json", extension: "json", mimeType: "application/json", labelKey: "export.json", descriptionKey: "export.jsonDesc", supportsEncryption: true, options: [], needsPreview: false },
+    { id: "jsonresume", extension: "resume.json", mimeType: "application/json", labelKey: "export.jsonresume", descriptionKey: "export.jsonresumeDesc", supportsEncryption: false, options: ["photo"], needsPreview: false, lossy: true },
     { id: "pdf", extension: "pdf", mimeType: "application/pdf", labelKey: "export.pdf", descriptionKey: "export.pdfDesc", supportsEncryption: true, options: [], needsPreview: true },
     { id: "docx", extension: "docx", mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", labelKey: "export.docx", descriptionKey: "export.docxDesc", supportsEncryption: false, options: ["photo"], needsPreview: false },
     { id: "md", extension: "md", mimeType: "text/markdown;charset=utf-8", labelKey: "export.markdown", descriptionKey: "export.markdownDesc", supportsEncryption: false, options: [], needsPreview: false },
