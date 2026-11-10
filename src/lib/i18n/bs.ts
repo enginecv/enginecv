@@ -1034,6 +1034,8 @@ export const bs: Translations = {
   "importHub.source.github": "GitHub",
   "importHub.source.github.desc": "Tvoj profil i javni repozitoriji kao projekti.",
   "importHub.needsNetwork": "Kontaktira GitHub kad to zatražiš",
+  "importHub.github.add": "Dodaj sa GitHuba",
+  "importHub.github.cancel": "Zatvori GitHub",
   "importHub.supported": "Podržane datoteke",
   "importHub.paste.label": "Zalijepi odgovor ovdje",
   "importHub.paste.add": "Dodaj",

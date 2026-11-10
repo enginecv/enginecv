@@ -1034,6 +1034,8 @@ export const de: Translations = {
   "importHub.source.github": "GitHub",
   "importHub.source.github.desc": "Dein Profil und öffentliche Repositories als Projekte.",
   "importHub.needsNetwork": "Kontaktiert GitHub, wenn du es auslöst",
+  "importHub.github.add": "Von GitHub hinzufügen",
+  "importHub.github.cancel": "GitHub schließen",
   "importHub.supported": "Unterstützte Dateien",
   "importHub.paste.label": "Antwort hier einfügen",
   "importHub.paste.add": "Hinzufügen",

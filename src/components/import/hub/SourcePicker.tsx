@@ -1,7 +1,11 @@
 "use client";
 
-import { Loader2, Upload } from "lucide-react";
+import { Github, Loader2, Upload } from "lucide-react";
 import { useEffect, useRef, useState, type DragEvent } from "react";
+import { createId } from "@/lib/id";
+import type { ImportProvider } from "@/lib/import/provider";
+import type { Resume } from "@/lib/schema";
+import { GithubImportPanel } from "../GithubImportPanel";
 import { useTranslation } from "@/lib/i18n";
 import { SourceReadError, readAuthoringText, readSourceFile, type ReadSourceHelpers } from "@/lib/import/read-source";
 import { IMPORT_SOURCES, type ImportSource } from "@/lib/import/sources";
@@ -26,15 +30,17 @@ interface SourcePickerProps {
     helpers: ReadSourceHelpers;
     /** Files handed in from outside, such as a file dropped on the dashboard. Read once, on mount. */
     initialFiles?: File[];
+    /** Tests inject a fake GitHub provider. */
+    githubProvider?: ImportProvider;
 }
 
-/** Sources the picker can read today; the others join as their phases ship. */
+/** Sources listed as plain cards; GitHub has its own button and panel. */
 function isListed(source: ImportSource): boolean {
     return source.kind === "file" || source.kind === "paste";
 }
 
 /** Lists the sources, takes dropped or chosen files and pasted AI answers, and stages what they hold. */
-export function SourcePicker({ onAdd, helpers, initialFiles }: SourcePickerProps) {
+export function SourcePicker({ onAdd, helpers, initialFiles, githubProvider }: SourcePickerProps) {
     const { t } = useTranslation();
     const inputRef = useRef<HTMLInputElement>(null);
     const [busy, setBusy] = useState(false);
@@ -42,6 +48,8 @@ export function SourcePicker({ onAdd, helpers, initialFiles }: SourcePickerProps
     const [error, setError] = useState<string | null>(null);
     const [pasted, setPasted] = useState("");
     const startedRef = useRef(false);
+    const [githubOpen, setGithubOpen] = useState(false);
+    const stagedGithub = useRef<Resume | null>(null);
 
     const messageFor = (cause: unknown): string => {
         if (cause instanceof SourceReadError) {
@@ -150,6 +158,45 @@ export function SourcePicker({ onAdd, helpers, initialFiles }: SourcePickerProps
                         </li>
                     ))}
                 </ul>
+            </section>
+
+            <section className="space-y-2" data-testid="import-hub-github">
+                <div className="flex flex-wrap items-center gap-3">
+                    <div className="min-w-0 flex-1">
+                        <p className="text-sm text-bright">{t("importHub.source.github")}</p>
+                        <p className="text-xs text-faint">{t("importHub.source.github.desc")} {t("importHub.needsNetwork")}.</p>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={() => setGithubOpen((value) => !value)}
+                        aria-expanded={githubOpen}
+                        data-testid="import-hub-github-toggle"
+                        className="inline-flex min-h-11 items-center gap-2 rounded-md border border-edge px-4 text-sm text-bright outline-none transition-colors hover:bg-surface-4 focus-visible:ring-1 focus-visible:ring-accent"
+                    >
+                        <Github className="h-4 w-4" aria-hidden="true" />
+                        {githubOpen ? t("importHub.github.cancel") : t("importHub.github.add")}
+                    </button>
+                </div>
+                {githubOpen && (
+                    <div className="rounded-xl border border-edge p-3">
+                        <GithubImportPanel
+                            provider={githubProvider}
+                            onCancel={() => setGithubOpen(false)}
+                            // Nothing is saved: the mapped CV is held as one more source.
+                            persistResume={async (resume) => {
+                                stagedGithub.current = resume;
+                                return "staged";
+                            }}
+                            onDone={() => {
+                                const resume = stagedGithub.current;
+                                stagedGithub.current = null;
+                                setGithubOpen(false);
+                                if (!resume) return;
+                                onAdd([{ id: createId(), sourceId: "github", label: resume.basics.name || t("importHub.source.github"), resume }]);
+                            }}
+                        />
+                    </div>
+                )}
             </section>
 
             <section className="space-y-2">

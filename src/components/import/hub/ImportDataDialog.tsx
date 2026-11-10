@@ -8,6 +8,7 @@ import { SecretKeyDialog } from "@/components/ui/SecretKeyDialog";
 import { useDialogFocus } from "@/hooks/useDialogFocus";
 import { recordResumeHistory } from "@/lib/history";
 import { useTranslation } from "@/lib/i18n";
+import type { ImportProvider } from "@/lib/import/provider";
 import type { ReadSourceHelpers } from "@/lib/import/read-source";
 import { applyMergePlan } from "@/lib/import/staging/apply";
 import type { Resume } from "@/lib/schema";
@@ -33,6 +34,8 @@ export interface ImportDataDialogProps {
     onClose: () => void;
     /** Files already in hand, such as one dropped on the dashboard. */
     initialFiles?: File[];
+    /** Tests inject a fake GitHub provider. */
+    githubProvider?: ImportProvider;
 }
 
 type Outcome =
@@ -60,6 +63,7 @@ export function ImportDataDialog({
     onOpenCreated,
     onClose,
     initialFiles,
+    githubProvider,
 }: ImportDataDialogProps) {
     const { t } = useTranslation();
     const router = useRouter();
@@ -176,7 +180,7 @@ export function ImportDataDialog({
                     {hub.step === "sources" && (
                         <>
                             <p className="text-sm text-faint">{t("importHub.intro")}</p>
-                            <SourcePicker onAdd={hub.addBatches} helpers={helpers} initialFiles={initialFiles} />
+                            <SourcePicker onAdd={hub.addBatches} helpers={helpers} initialFiles={initialFiles} githubProvider={githubProvider} />
                             <StagedSources batches={hub.batches} onRemove={hub.removeBatch} />
                             <p className="text-xs text-faint">{t("importHub.privacy")}</p>
                         </>
