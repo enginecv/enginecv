@@ -1,12 +1,14 @@
 import type { BlogPostMeta } from "@/lib/blog";
 import { blogIndexPath } from "@/lib/blog-articles";
 import { translateBlog } from "@/lib/blog-i18n";
+import { GUIDE_COPY } from "@/lib/guides/copy";
+import type { GuideFaqItem, GuideMeta } from "@/lib/guides/guides";
 import { getExportFormatClaimParams } from "@/lib/export-formats";
 import { localizedPath, type Locale } from "@/lib/i18n/locales";
 import { translate } from "@/lib/i18n/translate";
 import { LANDING_FAQ_KEYS } from "@/lib/landing-faq";
 import { entryPath, roleExamplePath, type RoleExampleEntry } from "@/lib/role-examples/rules";
-import { SHARE_IMAGE, SITE_NAME, SITE_URL } from "@/lib/site";
+import { GUIDES_PATH, SHARE_IMAGE, SITE_NAME, SITE_URL } from "@/lib/site";
 import { ENGINECV_KOFI_URL } from "@/lib/support";
 import { GALLERY_PATH, galleryTemplatePath, type GalleryTemplate } from "@/lib/templates/gallery";
 import { TOOLS_PATH, toolPath, type ToolDefinition, type ToolFaqKey } from "@/lib/tools/registry";
@@ -121,6 +123,46 @@ export function blogPostBreadcrumbJsonLd(post: BlogPostMeta): JsonLdNode {
         { name: translateBlog(post.locale, "breadcrumb"), path: blogIndexPath(post.locale) },
         { name: post.title, path: post.path },
     ]);
+}
+
+export function guideArticleJsonLd(guide: GuideMeta): JsonLdNode {
+    const url = absoluteUrl(guide.path);
+    const authorUrl = guide.author.links.website || guide.author.links.linkedin;
+    return {
+        "@type": "Article",
+        headline: guide.title,
+        description: guide.description,
+        url,
+        mainEntityOfPage: url,
+        datePublished: guide.date,
+        dateModified: guide.updated ?? guide.date,
+        inLanguage: "en",
+        keywords: guide.tags,
+        image: absoluteUrl(SHARE_IMAGE.url),
+        author: { "@type": "Person", name: guide.author.name, ...(authorUrl ? { url: authorUrl } : {}) },
+        publisher: { "@id": ORGANIZATION_ID },
+    };
+}
+
+export function guideBreadcrumbJsonLd(guide: GuideMeta): JsonLdNode {
+    return breadcrumbJsonLd([
+        { name: SITE_NAME, path: "/" },
+        { name: GUIDE_COPY.breadcrumb, path: GUIDES_PATH },
+        { name: guide.title, path: guide.path },
+    ]);
+}
+
+/** FAQPage for a guide, from the literal questions and answers the page shows. */
+export function guideFaqJsonLd(faq: readonly GuideFaqItem[]): JsonLdNode {
+    return {
+        "@type": "FAQPage",
+        inLanguage: "en",
+        mainEntity: faq.map(({ q, a }) => ({
+            "@type": "Question",
+            name: q,
+            acceptedAnswer: { "@type": "Answer", text: a },
+        })),
+    };
 }
 
 export function galleryTemplateBreadcrumbJsonLd(locale: Locale, entry: GalleryTemplate): JsonLdNode {

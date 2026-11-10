@@ -8,11 +8,12 @@ import {
     getBlogIndexLocales,
     publishedVersions,
 } from "@/lib/blog-articles";
+import { getPublishedGuideMeta } from "@/lib/guides/guides";
 import { isLegalNoticeReady } from "@/lib/legal-operator";
 import { DEFAULT_LOCALE, PREFIXED_LOCALES, localeAlternates, localizedPath } from "@/lib/i18n/locales";
 import { RESOURCES_PATH } from "@/lib/resources";
 import { entryPath, exampleAlternates, indexAlternates as exampleIndexAlternates, indexLocales as exampleIndexLocales, publishedEntries, roleExamplePath } from "@/lib/role-examples/rules";
-import { PUBLIC_ROUTES, SITE_URL } from "@/lib/site";
+import { GUIDES_PATH, PUBLIC_ROUTES, SITE_URL } from "@/lib/site";
 import { GALLERY_PATH, galleryTemplatePath, getGalleryTemplates } from "@/lib/templates/gallery";
 import { TOOLS_PATH, getEnabledTools, toolPath } from "@/lib/tools/registry";
 
@@ -100,5 +101,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: 0.7,
     }, exampleAlternates(entry.role)));
 
-    return [...pages, ...localizedPages, ...galleryPages, ...toolPages, ...exampleIndexes, ...examplePages, ...blogIndexes, ...posts];
+    // Section guides (feature 079): the hub and published guides only. Drafts stay out.
+    const guides = await getPublishedGuideMeta();
+    const guidePages = guides.length === 0 ? [] : [
+        { url: absolute(GUIDES_PATH), changeFrequency: "weekly", priority: 0.8 } satisfies MetadataRoute.Sitemap[number],
+        ...guides.map((guide) => ({
+            url: absolute(guide.path),
+            lastModified: guide.updated ?? guide.date,
+            changeFrequency: "monthly",
+            priority: 0.7,
+        } satisfies MetadataRoute.Sitemap[number])),
+    ];
+
+    return [...pages, ...localizedPages, ...galleryPages, ...toolPages, ...exampleIndexes, ...examplePages, ...blogIndexes, ...posts, ...guidePages];
 }

@@ -1993,6 +1993,8 @@ export const es: Translations = {
   "footer.tools": "Herramientas gratis",
   "footer.resourcesPage": "Recursos para buscar empleo",
   "footer.about": "Acerca de",
+  "footer.guides": "Guías",
+  "guides.englishOnly": "Esta guía solo está disponible en inglés.",
   "resources.metaTitle": "Recursos para trabajar en Alemania, Austria y Suiza | EngineCV",
   "resources.metaDescription": "Recursos oficiales y gratuitos para buscar empleo en Alemania, Austria o Suiza: cursos y exámenes de alemán, reconocimiento de títulos, la regulación de los Balcanes Occidentales y portales públicos de empleo.",
   "resources.title": "Recursos para trabajar en Alemania, Austria y Suiza",
