@@ -3248,6 +3248,8 @@ export function EditorSidebar({ onMobilePreview }: EditorSidebarProps = {}) {
         // re-added while its entries are still in the resume keeps its data, so
         // open it as-is instead of appending an empty entry.
         const ownsItsListUi = isCustom || id === "skills";
+        // addContentSection only runs from events and effects, after every const below exists.
+        // eslint-disable-next-line react-hooks/immutability
         const entryConfig = ownsItsListUi ? null : getSectionEntryConfig(newKey);
         if (entryConfig && entryConfig.items().length === 0) {
             if (id === "declaration") {
@@ -3255,6 +3257,7 @@ export function EditorSidebar({ onMobilePreview }: EditorSidebarProps = {}) {
                 setActiveSection(newKey);
                 return;
             }
+            // eslint-disable-next-line react-hooks/immutability
             addAndEditEntry(newKey);
             return;
         }

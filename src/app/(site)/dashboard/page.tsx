@@ -909,13 +909,13 @@ function Dashboard() {
     const handleOpenGithubImport = useCallback(() => {
         setShowCreateModal(false);
         setHub({ source: "github" });
-    }, [setShowCreateModal]);
+    }, [setHub, setShowCreateModal]);
 
     // LinkedIn, Europass and paste-from-AI all start in the same window: drop the file or paste the text.
     const handleOpenImportHub = useCallback(() => {
         setShowCreateModal(false);
         setHub({});
-    }, [setShowCreateModal]);
+    }, [setHub, setShowCreateModal]);
     const handleOpenLinkedinImport = handleOpenImportHub;
     const handleOpenEuropassImport = handleOpenImportHub;
     const handleOpenPasteFromAi = handleOpenImportHub;
@@ -943,7 +943,7 @@ function Dashboard() {
         setImportErrorDetails(null);
         setImportWarning(null);
         setHub({ files: [file] });
-    }, [setImportError, setImportErrorDetails, setImportWarning, setShowCreateModal]);
+    }, [setHub, setImportError, setImportErrorDetails, setImportWarning, setShowCreateModal]);
 
     // The window always creates new CVs on the dashboard; nothing existing is touched.
     const saveHubResume = useCallback(async (resume: Resume) => {
