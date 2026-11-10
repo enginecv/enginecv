@@ -5,10 +5,11 @@ import { useTranslation } from "@/lib/i18n";
 import { AI_ENABLED } from "@/lib/features";
 import { Input, AutocompleteInput, LinkInput } from "./FormUtils";
 import { DatePicker } from "@/components/ui/date-picker";
-import { Lightbulb, Eye, EyeOff, Trash2, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Trash2, Loader2 } from "lucide-react";
 import { type ReactNode, useId, useState } from "react";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { useResumeStore } from "@/lib/store";
+import { GetTipsLink } from "./GetTipsLink";
 import { MarkdownField } from "./MarkdownField";
 
 export type EntryConfig = {
@@ -44,6 +45,7 @@ export function EntryForm({
     onChange,
     onRemove,
     config,
+    sectionId,
     locationSuggestions,
     subtitleSuggestions,
     flush,
@@ -52,6 +54,8 @@ export function EntryForm({
     onChange: (updated: any) => void;
     onRemove: () => void;
     config: EntryConfig;
+    /** Editor section id, so Get Tips can open that section's guide. */
+    sectionId?: string;
     locationSuggestions?: string[];
     subtitleSuggestions?: string[];
     // When true, drop the card chrome (border/background/padding) so the form
@@ -104,10 +108,7 @@ export function EntryForm({
             {!flush && (
             <div className="flex items-center justify-end mb-4">
                 <div className="flex items-center gap-2">
-                    <button type="button" className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-surface-4 border border-edge text-strong hover:bg-edge transition-colors shadow-sm">
-                        <Lightbulb className="w-3.5 h-3.5" />
-                        {t("editor.getTips")}
-                    </button>
+                    {sectionId ? <GetTipsLink sectionId={sectionId} className="bg-surface-4" /> : null}
                     <button
                         type="button"
                         data-testid="entry-form-visibility"

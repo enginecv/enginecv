@@ -1993,6 +1993,8 @@ export const de: Translations = {
   "footer.tools": "Kostenlose Tools",
   "footer.resourcesPage": "Ressourcen für die Jobsuche",
   "footer.about": "Über uns",
+  "footer.guides": "Ratgeber",
+  "guides.englishOnly": "Dieser Ratgeber ist nur auf Englisch verfügbar.",
   "resources.metaTitle": "Ressourcen für Arbeit in Deutschland, Österreich und der Schweiz | EngineCV",
   "resources.metaDescription": "Offizielle und kostenlose Ressourcen für Jobsuchende auf dem Weg nach Deutschland, Österreich oder in die Schweiz: Deutschkurse und Prüfungen, Anerkennung von Abschlüssen, Westbalkanregelung und öffentliche Jobbörsen.",
   "resources.title": "Ressourcen für Arbeit in Deutschland, Österreich und der Schweiz",

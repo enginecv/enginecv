@@ -48,6 +48,12 @@ export function blogPostPath(slug: string, locale: Locale = DEFAULT_LOCALE) {
     return localizedPath(`/blog/${slug}`, locale);
 }
 
+export const GUIDES_PATH = "/guides";
+
+export function guidePath(slug: string) {
+    return `${GUIDES_PATH}/${slug}`;
+}
+
 export const SITE_TITLE = "EngineCV — Free Privacy-First Resume Builder";
 export const SITE_DESCRIPTION =
     "Build professional resumes instantly. No account required. Runs entirely in your browser. Unlimited CVs, unlimited downloads, 100% free forever.";

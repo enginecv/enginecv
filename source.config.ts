@@ -31,4 +31,24 @@ export const blog = defineCollections({
     postprocess: { includeProcessedMarkdown: true },
 });
 
+// Section guides (feature 079): one English guide per editor section, served at /guides.
+export const guides = defineCollections({
+    type: "doc",
+    dir: "content/guides",
+    schema: z.object({
+        title: z.string().min(1),
+        description: z.string().min(1),
+        slug: z.string().regex(/^[a-z0-9-]+-section$/),
+        date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+        updated: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+        author: z.string().min(1),
+        tags: z.array(z.string()).default([]),
+        adSlots: z.array(z.enum(allAdSlots)).default([...defaultAdSlots]),
+        faq: z.array(z.object({ q: z.string().min(1), a: z.string().min(1) })).default([]),
+        // Drafts render at their address for reviewers but are noindex and unlisted.
+        draft: z.boolean().default(true),
+    }),
+    postprocess: { includeProcessedMarkdown: true },
+});
+
 export default defineConfig();

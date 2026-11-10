@@ -15,7 +15,7 @@ import { paragraphs, stripMarkdown } from "./word-count";
  * fails with a readable message instead of an import error. Used by tests only.
  */
 
-export type DocKind = "role" | "tool" | "blog" | "about" | "template";
+export type DocKind = "role" | "tool" | "blog" | "about" | "template" | "guide";
 
 export interface CorpusDoc {
     id: string;
@@ -31,6 +31,18 @@ export interface BlogDoc extends CorpusDoc {
 }
 
 const BLOG_DIR = join(process.cwd(), "content", "blog");
+const GUIDES_DIR = join(process.cwd(), "content", "guides");
+
+export interface GuideDoc extends CorpusDoc {
+    kind: "guide";
+    slug: string;
+    file: string;
+    frontMatter: Record<string, unknown>;
+    /** Reader-visible body prose only (the word-count floor measures this). */
+    body: string;
+    /** Raw MDX source, for structure checks such as before/after blocks. */
+    source: string;
+}
 
 /** English roles. Counts intro, tips and sections; skills are chips, not prose. */
 export async function loadRoleDocs(): Promise<CorpusDoc[]> {
@@ -66,6 +78,31 @@ export function loadBlogDocs(): BlogDoc[] {
         });
 }
 
+/** Section guides (feature 079): drafts included, so tests can pick published ones from the front matter. */
+export function loadGuideDocs(): GuideDoc[] {
+    return readdirSync(GUIDES_DIR, { withFileTypes: true })
+        .filter((entry) => entry.isFile() && entry.name.endsWith(".mdx"))
+        .map((entry) => {
+            const source = readFileSync(join(GUIDES_DIR, entry.name), "utf8");
+            const match = source.match(/^---\r?\n([\s\S]*?)\r?\n---/);
+            const frontMatter = (match ? parseYaml(match[1]) : {}) as Record<string, unknown>;
+            const body = stripMarkdown(source);
+            const faq = Array.isArray(frontMatter.faq) ? (frontMatter.faq as Array<{ q?: string; a?: string }>) : [];
+            const faqText = faq.flatMap((item) => [item.q ?? "", item.a ?? ""]).filter(Boolean).join("\n\n");
+            const slug = String(frontMatter.slug ?? entry.name.replace(/\.mdx$/, ""));
+            return {
+                id: `guide:${slug}`,
+                kind: "guide" as const,
+                slug,
+                file: entry.name,
+                frontMatter,
+                body,
+                source,
+                text: faqText ? `${body}\n\n${faqText}` : body,
+            };
+        });
+}
+
 /** Tool long-form prose: the deep-dive text shown under each English tool page. */
 export async function loadToolDocs(): Promise<CorpusDoc[]> {
     return getEnabledTools().flatMap((tool) => {
@@ -90,7 +127,7 @@ export async function loadAboutDocs(): Promise<CorpusDoc[]> {
 
 export async function loadAllDocs(): Promise<CorpusDoc[]> {
     const [roles, tools, templates, about] = await Promise.all([loadRoleDocs(), loadToolDocs(), loadTemplateDocs(), loadAboutDocs()]);
-    return [...roles, ...loadBlogDocs(), ...tools, ...templates, ...about];
+    return [...roles, ...loadBlogDocs(), ...loadGuideDocs(), ...tools, ...templates, ...about];
 }
 
 /** Every paragraph of every doc, tagged with its document id, for the uniqueness check. */

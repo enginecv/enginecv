@@ -4,7 +4,7 @@ import { en } from "@/lib/i18n/en";
 import { getToolProse, toolProseParagraphs } from "@/lib/tools/prose";
 import { getEnabledTools } from "@/lib/tools/registry";
 import { ABOUT_SECTIONS } from "@/lib/about/content";
-import { loadAboutDocs, loadBlogDocs, loadParagraphs, loadRoleDocs } from "./corpus";
+import { loadAboutDocs, loadBlogDocs, loadGuideDocs, loadParagraphs, loadRoleDocs } from "./corpus";
 import { countWords, findDuplicates } from "./word-count";
 
 /**
@@ -66,6 +66,47 @@ describe("blog posts", () => {
     });
 });
 
+describe("section guides", () => {
+    // Floors apply to published guides. A draft is a work in progress and may be short.
+    const published = loadGuideDocs().filter((doc) => doc.frontMatter.draft === false);
+    const GUIDE_MIN = 1200;
+
+    function faqOf(doc: { frontMatter: Record<string, unknown> }) {
+        return Array.isArray(doc.frontMatter.faq) ? (doc.frontMatter.faq as Array<{ q?: string; a?: string }>) : [];
+    }
+
+    it(`has at least ${GUIDE_MIN} words in each published guide`, () => {
+        const short = published
+            .map((doc) => ({ slug: doc.slug, words: countWords(doc.body) }))
+            .filter(({ words }) => words < GUIDE_MIN)
+            .map(({ slug, words }) => `${slug}: ${words} words, minimum ${GUIDE_MIN}`);
+        expect(short).toEqual([]);
+    });
+
+    it("has four to six complete FAQ entries", () => {
+        const off = published.flatMap((doc) => {
+            const faq = faqOf(doc);
+            const complete = faq.every((item) => item.q?.trim() && item.a?.trim());
+            return faq.length >= 4 && faq.length <= 6 && complete ? [] : [`${doc.slug}: ${faq.length} FAQ entries (need 4-6, all filled)`];
+        });
+        expect(off).toEqual([]);
+    });
+
+    it("names an author that exists in the author registry", () => {
+        const unknown = published.filter((doc) => !getBlogAuthor(String(doc.frontMatter.author ?? "")));
+        expect(unknown.map((doc) => `${doc.slug}: unknown author`)).toEqual([]);
+    });
+
+    it("has two or three before/after rewrites", () => {
+        const off = published.flatMap((doc) => {
+            const before = (doc.source.match(/\*\*Before:?\*\*/g) ?? []).length;
+            const after = (doc.source.match(/\*\*After:?\*\*/g) ?? []).length;
+            return before >= 2 && before <= 3 && before === after ? [] : [`${doc.slug}: ${before} Before and ${after} After blocks (need 2-3, matched)`];
+        });
+        expect(off).toEqual([]);
+    });
+});
+
 describe("uniqueness", () => {
     // Containment of 4-word shingles. 0.6 means a paragraph shares most of its
     // wording with another. Tune against the real corpus and record why here.
@@ -73,7 +114,8 @@ describe("uniqueness", () => {
         const pairs = findDuplicates(await loadParagraphs(), DUPLICATE_THRESHOLD);
         const report = pairs.map((pair) => `${pair.a.docId} ~ ${pair.b.docId} (${pair.score.toFixed(2)}): ${pair.a.text.slice(0, 70)}`);
         expect(report).toEqual([]);
-    });
+        // Compares every paragraph with every other, so it grows with the corpus.
+    }, 30_000);
 });
 describe("tool pages", () => {
     const tools = getEnabledTools();

@@ -7,7 +7,7 @@ import { translateBlog } from "@/lib/blog-i18n";
 import { useTranslation } from "@/lib/i18n";
 import styles from "./PostSidebar.module.css";
 
-export function PostSidebar({ post }: { post: BlogPostMeta }) {
+export function PostSidebar({ post }: { post: Pick<BlogPostMeta, "toc" | "adSlots"> }) {
     const { locale } = useTranslation();
 
     return (

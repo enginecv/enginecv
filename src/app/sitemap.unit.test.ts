@@ -15,12 +15,19 @@ vi.mock("@/lib/blog", () => ({
     ],
 }));
 
+vi.mock("@/lib/guides/guides", () => ({
+    getPublishedGuideMeta: async () => [
+        { slug: "work-experience-section", date: "2026-11-10", updated: "2026-11-12", path: "/guides/work-experience-section", draft: false },
+    ],
+}));
+
 /** Static pages that are deliberately not in the sitemap, with the reason. */
 const NOT_INDEXED: Record<string, string> = {
     "/dashboard": "app shell; content lives in the visitor's IndexedDB",
     "/your-data": "tool that reads the visitor's own browser storage; renders empty for crawlers, noindex",
     "/resume-summary-generator": "retired route that returns 404",
     "/impressum": "listed by the sitemap only once LEGAL_OPERATOR is filled in",
+    "/guides": "listed by the sitemap once the first section guide is published",
 };
 
 function staticPageRoutes(dir = path.join(process.cwd(), "src", "app"), base = ""): string[] {
@@ -49,6 +56,13 @@ describe("sitemap", () => {
         const unaccounted = staticPageRoutes().filter((route) => !known.has(route));
 
         expect(unaccounted).toEqual([]);
+    });
+
+    it("lists the guides hub and published guides with their updated date, on the canonical origin", async () => {
+        const byUrl = new Map((await sitemap()).map((entry) => [entry.url, entry]));
+        expect(byUrl.has(`${SITE_URL}/guides`)).toBe(true);
+        expect(byUrl.get(`${SITE_URL}/guides/work-experience-section`)?.lastModified).toBe("2026-11-12");
+        expect([...byUrl.keys()].some((url) => /\/(go|r)\//.test(url))).toBe(false);
     });
 
     it("lists the tools index and each enabled tool in English only", async () => {

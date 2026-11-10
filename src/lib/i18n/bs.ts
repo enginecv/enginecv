@@ -1993,6 +1993,8 @@ export const bs: Translations = {
   "footer.tools": "Besplatni alati",
   "footer.resourcesPage": "Resursi za traženje posla",
   "footer.about": "O nama",
+  "footer.guides": "Vodiči",
+  "guides.englishOnly": "Ovaj vodič je dostupan samo na engleskom jeziku.",
   "resources.metaTitle": "Resursi za rad u Njemačkoj, Austriji i Švicarskoj | EngineCV",
   "resources.metaDescription": "Zvanični i besplatni resursi za one koji traže posao u Njemačkoj, Austriji ili Švicarskoj: kursevi i ispiti njemačkog, priznavanje diploma, Westbalkanregelung i javne berze rada.",
   "resources.title": "Resursi za rad u Njemačkoj, Austriji i Švicarskoj",

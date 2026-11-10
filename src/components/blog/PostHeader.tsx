@@ -9,7 +9,16 @@ import type { BlogPostMeta } from "@/lib/blog";
 import { useTranslation } from "@/lib/i18n";
 
 /** `indexHref`: the blog index for this post's language, or the English one when it has none. */
-export function PostHeader({ post, indexHref }: { post: BlogPostMeta; indexHref: string }) {
+export function PostHeader({
+    post,
+    indexHref,
+    breadcrumbLabel,
+}: {
+    post: Pick<BlogPostMeta, "author" | "date" | "updated" | "readingTimeMinutes" | "sponsored" | "title" | "description" | "toc">;
+    indexHref: string;
+    /** Replaces the translated "Blog" label; section guides pass "Guides". */
+    breadcrumbLabel?: string;
+}) {
     const { locale } = useTranslation();
     const initials = post.author.name
         .split(" ")
@@ -21,7 +30,7 @@ export function PostHeader({ post, indexHref }: { post: BlogPostMeta; indexHref:
         <header className="border-b border-edge pb-10">
             <div className="flex flex-wrap items-center gap-3 text-sm text-faint">
                 <Link href={indexHref} className="transition-colors hover:text-strong">
-                    {translateBlog(locale, "breadcrumb")}
+                    {breadcrumbLabel ?? translateBlog(locale, "breadcrumb")}
                 </Link>
                 <span aria-hidden="true">/</span>
                 {post.sponsored ? (

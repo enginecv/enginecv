@@ -12,6 +12,7 @@ import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { SecretKeyDialog } from "@/components/ui/SecretKeyDialog";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { EntryForm } from "./EntryForm";
+import { GetTipsLink } from "./GetTipsLink";
 import { MarkdownField } from "./MarkdownField";
 import { RepoLinksEditor } from "./RepoLinksEditor";
 import { isGithubProject } from "@/lib/import/github-projects";
@@ -73,7 +74,6 @@ import {
     Briefcase as BriefcaseIcon,
     Code2 as CodeIcon,
     PenLine as PenIcon,
-    Lightbulb,
     Star as StarIcon,
     BookOpen as BookIcon,
     Eye,
@@ -1702,6 +1702,7 @@ function SectionEditForm({
                             <EntryForm
                                 item={item}
                                 config={config}
+                                sectionId={baseId}
                                 onChange={(updated) => {
                                     const next = [...items];
                                     next[index] = updated;
@@ -2599,10 +2600,7 @@ function SectionEditForm({
                     </div>
                     {singleEntryMode && singleEntryItem && (
                         <div className="flex items-center gap-2 shrink-0">
-                            <button type="button" className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-surface-1 border border-edge text-strong hover:bg-edge transition-colors shadow-sm">
-                                <Lightbulb className="w-3.5 h-3.5" />
-                                {t("editor.getTips")}
-                            </button>
+                            <GetTipsLink sectionId={baseId} className="bg-surface-1" />
                             <button
                                 type="button"
                                 data-testid="single-entry-visibility"

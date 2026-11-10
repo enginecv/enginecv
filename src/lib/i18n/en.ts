@@ -1995,6 +1995,8 @@ export const en: Translations = {
   "footer.tools": "Free tools",
   "footer.resourcesPage": "Job seeker resources",
   "footer.about": "About",
+  "footer.guides": "Guides",
+  "guides.englishOnly": "This guide is available in English only.",
   "resources.metaTitle": "Resources for Working in Germany, Austria and Switzerland | EngineCV",
   "resources.metaDescription": "Official and free resources for job seekers moving to Germany, Austria or Switzerland: German courses and exams, recognition of qualifications, the Western Balkans regulation and public job boards.",
   "resources.title": "Resources for working in Germany, Austria and Switzerland",

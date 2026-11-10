@@ -6,6 +6,7 @@ import { IntentPrefetchLink } from "@/components/ui/IntentPrefetchLink";
 import { usePathname } from "next/navigation";
 import {
         Accessibility,
+        BookMarked,
         BookOpen,
         CircleHelp,
         Code,
@@ -42,6 +43,8 @@ import { GALLERY_PATH } from "@/lib/templates/gallery";
 import { TOOLS_PATH } from "@/lib/tools/registry";
 import { RESOURCES_PATH } from "@/lib/resources";
 import { blogIndexPath } from "@/lib/blog-articles";
+import { getPublishedGuideEntries } from "@/lib/guides/registry";
+import { GUIDES_PATH } from "@/lib/site";
 
 export function Footer() {
         const { t, locale } = useTranslation();
@@ -74,6 +77,7 @@ export function Footer() {
                                 { Icon: BookOpen, label: t("footer.blog"), href: blogIndexPath(locale) },
                                 { Icon: Wrench, label: t("footer.tools"), href: localizedPath(TOOLS_PATH, locale) },
                                 { Icon: Library, label: t("footer.resourcesPage"), href: localizedPath(RESOURCES_PATH, locale) },
+                                ...(getPublishedGuideEntries().length > 0 ? [{ Icon: BookMarked, label: t("footer.guides"), href: GUIDES_PATH }] : []),
                                 { Icon: Info, label: t("footer.about"), href: "/about" },
                                 { Icon: History, label: t("footer.changelog"), href: "/changelog" },
                                 { Icon: CircleHelp, label: t("footer.faq"), href: "#faq" },
