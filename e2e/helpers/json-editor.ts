@@ -1,5 +1,6 @@
 import { expect, type Page } from "@playwright/test";
 import { createQaFullResume } from "../../src/lib/qa/sample-resumes";
+import { createCvFromHub } from "./import-hub";
 import type { Resume } from "../../src/lib/schema";
 
 export async function savedResume(page: Page): Promise<Resume> {
@@ -19,8 +20,7 @@ export async function openJsonFixture(page: Page, openJson = true) {
     await page.goto("/dashboard");
     const fixture = createQaFullResume();
     await page.getByTestId("dashboard-import-resume-input").setInputFiles({ name: "qa.json", mimeType: "application/json", buffer: Buffer.from(JSON.stringify(fixture)) });
-    await page.getByRole("button", { name: `Open ${fixture.meta.title}`, exact: true }).first().click();
-    await page.waitForURL(/\/editor\/[^/]+$/);
+    await createCvFromHub(page);
     // The dev-only Next badge overlaps the editor's bottom-left controls.
     await page.addStyleTag({ content: "nextjs-portal { display: none; }" });
     if (openJson) {

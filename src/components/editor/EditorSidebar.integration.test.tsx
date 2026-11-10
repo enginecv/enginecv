@@ -8,6 +8,10 @@ import { useResumeStore } from "@/lib/store";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { EditorSidebar, hasContentSection } from "./EditorSidebar";
 
+vi.mock("next/navigation", () => ({
+    useRouter: () => ({ push: vi.fn() }),
+}));
+
 function resetStore() {
     useI18nStore.setState({ locale: "en", _hydrated: true });
     useResumeStore.setState({
@@ -734,5 +738,51 @@ describe("Languages section customize card", () => {
 
         await user.click(screen.getByRole("button", { name: "Table" }));
         expect((useResumeStore.getState().resume.settings.sectionDisplay as any).languages?.languageLayout).toBe("table");
+    });
+});
+
+describe("Import data in the editor", () => {
+    beforeEach(() => {
+        class MockWorker {
+            addEventListener() { /* no-op */ }
+            removeEventListener() { /* no-op */ }
+            postMessage() { /* no-op */ }
+        }
+        vi.stubGlobal("Worker", MockWorker);
+        resetStore();
+    });
+
+    afterEach(() => {
+        cleanup();
+        vi.unstubAllGlobals();
+    });
+
+    it("marks the CV changed after Apply, so autosave writes it", async () => {
+        const resume = createEmptyResume();
+        resume.id = "cv-1";
+        useResumeStore.setState({ resume, activeResumeId: "cv-1", isDirty: false });
+
+        render(
+            <TooltipProvider>
+                <EditorSidebar />
+            </TooltipProvider>,
+        );
+        fireEvent.click(screen.getByTestId("import-data-content"));
+        const input = await screen.findByTestId("import-hub-file-input", {}, { timeout: 8000 });
+        const file = new File([JSON.stringify({ format: "enginecv.authoring/v1", basics: { name: "Jane Doe" }, experience: [{ company: "Acme", position: "Dev", start: "2020-01" }] })], "ai.json");
+        fireEvent.change(input, { target: { files: [file] } });
+        await screen.findByTestId("import-hub-batch");
+        fireEvent.click(screen.getByTestId("import-hub-review"));
+        fireEvent.click(screen.getByTestId("import-hub-apply"));
+        await screen.findByTestId("import-hub-done");
+
+        const state = useResumeStore.getState();
+        expect(state.resume.experience.map((entry) => entry.company)).toEqual(["Acme"]);
+        expect(state.resume.id).toBe("cv-1");
+        expect(state.isDirty).toBe(true);
+
+        fireEvent.click(screen.getByTestId("import-hub-undo"));
+        expect(useResumeStore.getState().resume.experience).toEqual([]);
+        expect(useResumeStore.getState().isDirty).toBe(true);
     });
 });

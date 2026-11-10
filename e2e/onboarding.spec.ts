@@ -5,6 +5,7 @@ import { candidateXml } from "../src/lib/import/europass/__fixtures__/europass-f
 import { de } from "../src/lib/i18n/de";
 import { expectNoA11yViolations } from "./helpers/a11y";
 import { mockGithubHappyPath } from "./helpers/github-mocks";
+import { createCvFromHub } from "./helpers/import-hub";
 
 // First-run onboarding. Every test starts on a
 // fresh browser context, so the dashboard is empty unless a test adds a resume.
@@ -59,26 +60,26 @@ test.describe("start panel", () => {
     test("LinkedIn archive ends in the editor with the imported profile", async ({ page }) => {
         await openEmptyDashboard(page);
         await page.getByTestId("start-option-linkedin").click();
-        await expect(page.getByTestId("linkedin-import-dialog")).toBeVisible();
-        await page.getByTestId("linkedin-file-input").setInputFiles({
+        await expect(page.getByTestId("import-hub-dialog")).toBeVisible();
+        await page.getByTestId("import-hub-file-input").setInputFiles({
             name: "Basic_LinkedInDataExport.zip",
             mimeType: "application/zip",
             buffer: linkedinZip(),
         });
-        await page.getByTestId("linkedin-import-confirm").click();
+        await createCvFromHub(page);
         await expectEditorWith(page, "Amina Kovačević");
     });
 
     test("Europass XML ends in the editor with the imported profile", async ({ page }) => {
         await openEmptyDashboard(page);
         await page.getByTestId("start-option-europass").click();
-        await expect(page.getByTestId("europass-import-dialog")).toBeVisible();
-        await page.getByTestId("europass-file-input").setInputFiles({
+        await expect(page.getByTestId("import-hub-dialog")).toBeVisible();
+        await page.getByTestId("import-hub-file-input").setInputFiles({
             name: "Europass CV.xml",
             mimeType: "application/xml",
             buffer: Buffer.from(candidateXml()),
         });
-        await page.getByTestId("europass-import-confirm").click();
+        await createCvFromHub(page);
         await expectEditorWith(page, "Amina Kovačević");
     });
 
@@ -86,10 +87,11 @@ test.describe("start panel", () => {
         await mockGithubHappyPath(page);
         await openEmptyDashboard(page);
         await page.getByTestId("start-option-github").click();
-        await expect(page.getByTestId("github-import-dialog")).toBeVisible();
+        await expect(page.getByTestId("import-hub-dialog")).toBeVisible();
         await page.getByTestId("github-import-input").fill("octocat");
         await page.getByTestId("github-import-submit").click();
         await page.getByTestId("github-import-confirm").click();
+        await createCvFromHub(page);
         await expectEditorWith(page, "The Octocat");
     });
 
@@ -100,24 +102,17 @@ test.describe("start panel", () => {
             mimeType: "application/json",
             buffer: Buffer.from(JSON.stringify(JSON_RESUME)),
         });
-        // A file whose settings get clamped stops on the dashboard with a warning first
-        // (existing import behaviour); the resume is saved either way.
-        try {
-            await expect(page).toHaveURL(/\/editor\/[^/]+$/, { timeout: 3_000 });
-        } catch {
-            await expect(page.getByText("Some values were adjusted")).toBeVisible();
-            await page.getByTestId("dashboard-resume-card").filter({ hasText: "JSON start" }).first().click();
-        }
+        await createCvFromHub(page);
         await expectEditorWith(page, "Jasmin Jsonović");
     });
 
     test("cancelling an import returns to the panel with focus on the chosen option", async ({ page }) => {
         await openEmptyDashboard(page);
         await page.getByTestId("start-option-linkedin").click();
-        await expect(page.getByTestId("linkedin-import-dialog")).toBeVisible();
+        await expect(page.getByTestId("import-hub-dialog")).toBeVisible();
         await page.keyboard.press("Escape");
 
-        await expect(page.getByTestId("linkedin-import-dialog")).toBeHidden();
+        await expect(page.getByTestId("import-hub-dialog")).toBeHidden();
         await expect(page.getByTestId("start-option-linkedin")).toBeFocused();
     });
 
@@ -148,9 +143,9 @@ test.describe("start panel", () => {
 
 test.describe("start links", () => {
     const DIALOGS = {
-        linkedin: "linkedin-import-dialog",
-        europass: "europass-import-dialog",
-        github: "github-import-dialog",
+        linkedin: "import-hub-dialog",
+        europass: "import-hub-dialog",
+        github: "import-hub-dialog",
     } as const;
 
     for (const [start, dialog] of Object.entries(DIALOGS)) {
@@ -203,7 +198,7 @@ test.describe("start links", () => {
 
     test("wins over ?tab=templates and keeps other parameters", async ({ page }) => {
         await page.goto("/dashboard?tab=templates&start=github");
-        await expect(page.getByTestId("github-import-dialog")).toBeVisible();
+        await expect(page.getByTestId("import-hub-dialog")).toBeVisible();
         await expect(page).toHaveURL(/\/dashboard\?tab=templates$/);
         await page.keyboard.press("Escape");
         await expect(page.getByTestId("start-panel")).toBeVisible();

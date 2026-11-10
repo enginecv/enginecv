@@ -1,4 +1,12 @@
 import { expect, test, type Page } from "@playwright/test";
+import { createCvFromHub, hubDialog } from "./helpers/import-hub";
+
+/** Types or pastes text into the window and adds it as a source. */
+async function addPasted(page: Page, text: string) {
+    await page.getByTestId("paste-from-ai-input").fill(text);
+    await page.getByTestId("paste-from-ai-add").click();
+    await expect(page.getByTestId("import-hub-batch")).toHaveCount(1);
+}
 
 // What a chat assistant typically answers: prose, a fenced block, a trailing comma.
 const AI_ANSWER = [
@@ -22,7 +30,7 @@ async function openFromCreateMenu(page: Page) {
     await page.goto("/dashboard");
     await page.getByTestId("dashboard-new-resume").click();
     await page.getByTestId("create-resume-from-ai").click();
-    await expect(page.getByTestId("paste-from-ai-dialog")).toBeVisible();
+    await expect(hubDialog(page)).toBeVisible();
 }
 
 test("pastes an AI answer, shows the repairs and opens the new CV in the editor", async ({ page }) => {
@@ -38,7 +46,7 @@ test("pastes an AI answer, shows the repairs and opens the new CV in the editor"
     });
 
     await openFromCreateMenu(page);
-    await page.getByTestId("paste-from-ai-input").fill(AI_ANSWER);
+    await addPasted(page, AI_ANSWER);
 
     const repaired = page.getByTestId("paste-from-ai-notice-group-repaired");
     await expect(repaired).toContainText("Took the CV out of a code block.");
@@ -47,8 +55,7 @@ test("pastes an AI answer, shows the repairs and opens the new CV in the editor"
     await expect(page.getByTestId("paste-from-ai-section-experience")).toContainText("1 entry");
     await expect(page.getByTestId("paste-from-ai-section-skills")).toContainText("2 skills");
 
-    await page.getByTestId("paste-from-ai-import").click();
-    await page.waitForURL(/\/editor\/[^/]+$/);
+    await createCvFromHub(page);
 
     // The preview also renders hidden measuring copies; only the visible text counts.
     for (const text of ["Lejla Paste-Test", "Medicinska sestra", "Wound care"]) {
@@ -120,11 +127,11 @@ test("Copy for AI and Paste from AI round-trip an example CV", async ({ page, co
     expect(copied).toContain("enginecv.authoring/v1");
 
     await page.goto("/dashboard?start=ai");
-    await page.getByTestId("paste-from-ai-input").fill(copied);
+    await addPasted(page, copied);
     await expect(page.getByTestId("paste-from-ai-summary")).toBeVisible();
     await expect(page.getByTestId("paste-from-ai-notice")).toHaveCount(0);
-    await page.getByTestId("paste-from-ai-import").click();
-    await page.waitForURL((url) => url.pathname.startsWith("/editor/") && !url.pathname.endsWith(original.id));
+    await createCvFromHub(page);
+    expect(page.url().endsWith(original.id)).toBe(false);
 
     const copy = (await savedResumes(page)).find((resume) => resume.id !== original.id)!;
     expect(contentOf(copy)).toEqual(contentOf(original));
@@ -154,11 +161,10 @@ test("a dropped .enginecv.json file goes through the same summary into the edito
     await page.goto("/dashboard");
     await dropFile(page, { name: "amina.enginecv.json", type: "application/json", text: FILE_DOCUMENT });
 
-    await expect(page.getByTestId("paste-from-ai-dialog")).toBeVisible();
+    await expect(page.getByTestId("import-hub-dialog")).toBeVisible();
     await expect(page.getByTestId("paste-from-ai-summary-name")).toContainText("Dropped File Person");
     await expect(page.getByTestId("paste-from-ai-section-experience")).toContainText("1 entry");
-    await page.getByTestId("paste-from-ai-import").click();
-    await page.waitForURL(/\/editor\/[^/]+$/);
+    await createCvFromHub(page);
 });
 
 test("Import JSON routes an authoring file to the summary", async ({ page }) => {
@@ -168,15 +174,15 @@ test("Import JSON routes an authoring file to the summary", async ({ page }) => 
         mimeType: "application/json",
         buffer: Buffer.from(FILE_DOCUMENT),
     });
-    await expect(page.getByTestId("paste-from-ai-dialog")).toBeVisible();
+    await expect(hubDialog(page)).toBeVisible();
     await expect(page.getByTestId("paste-from-ai-summary-name")).toContainText("Dropped File Person");
 });
 
 test("a dropped file that is not JSON is refused and creates nothing", async ({ page }) => {
     await page.goto("/dashboard");
     await dropFile(page, { name: "notes.txt", type: "text/plain", text: "just notes" });
-    await expect(page.getByText("Only .json files can be dropped here. Nothing was imported.")).toBeVisible();
-    await expect(page.getByTestId("paste-from-ai-dialog")).toHaveCount(0);
+    await expect(page.getByText("Only JSON, ZIP, CSV, PDF and XML files can be dropped here. Nothing was imported.")).toBeVisible();
+    await expect(hubDialog(page)).toHaveCount(0);
     expect(await savedResumes(page)).toEqual([]);
 });
 
@@ -195,21 +201,20 @@ for (const locale of ["de", "bs"] as const) {
         await page.goto("/dashboard?start=ai");
         await expect(page.locator("html")).toHaveAttribute("lang", locale);
 
-        await page.getByTestId("paste-from-ai-input").fill(MANY_NOTES);
+        await addPasted(page, MANY_NOTES);
         await expect(page.getByTestId("paste-from-ai-notice")).toHaveCount(20);
 
         const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
         expect(overflow).toBeLessThanOrEqual(0);
-        const dialog = await page.getByTestId("paste-from-ai-dialog").boundingBox();
+        const dialog = await hubDialog(page).boundingBox();
         expect(dialog!.width).toBeLessThanOrEqual(360);
-        // Long notes scroll inside their own list, so Create stays reachable.
-        await page.getByTestId("paste-from-ai-import").scrollIntoViewIfNeeded();
-        await expect(page.getByTestId("paste-from-ai-import")).toBeInViewport();
+        // Long notes scroll inside the window, so Review stays reachable.
+        await expect(page.getByTestId("import-hub-review")).toBeInViewport();
     });
 }
 
 test("opens Paste from AI from a ?start=ai link", async ({ page }) => {
     await page.goto("/dashboard?start=ai");
-    await expect(page.getByTestId("paste-from-ai-dialog")).toBeVisible();
+    await expect(page.getByTestId("import-hub-dialog")).toBeVisible();
     await expect(page).toHaveURL(/\/dashboard$/);
 });

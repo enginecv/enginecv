@@ -159,8 +159,11 @@ test("P9: pasted and copied CV text never leaves the browser", async ({ page, co
         basics: { name: `Lejla ${MARKER}`, email: "lejla@example.com" },
         experience: [{ position: `Nurse ${MARKER}`, company: "KCUS", start: "2019-03" }],
     }));
+    await page.getByTestId("paste-from-ai-add").click();
     await expect(page.getByTestId("paste-from-ai-summary")).toBeVisible();
-    await page.getByTestId("paste-from-ai-import").click();
+    await page.getByTestId("import-hub-review").click();
+    await page.getByTestId("import-hub-apply").click();
+    await page.getByTestId("import-hub-open-created").click();
     await page.waitForURL(/\/editor\/[^/]+$/);
 
     await page.getByTestId("export-menu-button").first().click();

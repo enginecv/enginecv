@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { expect, test } from "@playwright/test";
+import { createCvFromHub } from "./helpers/import-hub";
 
 const FIXTURE = path.join(process.cwd(), "src", "lib", "__fixtures__", "json-resume", "full.json");
 
@@ -11,7 +12,7 @@ const CLEAN_RESUME = JSON.stringify({
 });
 
 test.describe("JSON Resume", () => {
-    test("imports a resume.json on the dashboard and shows what did not carry over", async ({ page }) => {
+    test("imports a resume.json through the Import data window and shows what did not carry over", async ({ page }) => {
         await page.goto("/dashboard");
         await page.getByTestId("dashboard-import-resume-input").setInputFiles({
             name: "resume.json",
@@ -19,12 +20,11 @@ test.describe("JSON Resume", () => {
             buffer: readFileSync(FIXTURE),
         });
 
-        const result = page.getByTestId("json-resume-import-result");
-        await expect(result).toBeVisible();
-        await expect(result.getByTestId("conversion-loss-summary")).toContainText("The photo is a web address and was not downloaded");
+        const batch = page.getByTestId("import-hub-batch");
+        await expect(batch).toBeVisible();
+        await expect(batch.getByTestId("conversion-loss-summary")).toContainText("The photo is a web address and was not downloaded");
 
-        await result.getByRole("link", { name: "Open CV" }).click();
-        await expect(page).toHaveURL(/\/editor\/[^/]+$/);
+        await createCvFromHub(page);
         await expect(page.getByText("John Doe").first()).toBeVisible();
     });
 
@@ -35,8 +35,10 @@ test.describe("JSON Resume", () => {
             mimeType: "application/json",
             buffer: Buffer.from(CLEAN_RESUME),
         });
-        // Nothing was lost on the way in, so the editor opens straight away.
-        await expect(page).toHaveURL(/\/editor\/[^/]+$/);
+        // Nothing was lost on the way in, so the source has no loss summary.
+        await expect(page.getByTestId("import-hub-batch")).toBeVisible();
+        await expect(page.getByTestId("conversion-loss-summary")).toHaveCount(0);
+        await createCvFromHub(page);
 
         await page.getByTestId("export-menu-button").click();
         await expect(page.getByTestId("export-format-lossy-jsonresume")).toBeVisible();
@@ -52,8 +54,7 @@ test.describe("JSON Resume", () => {
             mimeType: "application/json",
             buffer: readFileSync(FIXTURE),
         });
-        await page.getByTestId("json-resume-import-result").getByRole("link", { name: "Open CV" }).click();
-        await expect(page).toHaveURL(/\/editor\/[^/]+$/);
+        await createCvFromHub(page);
 
         await page.getByTestId("export-menu-button").click();
         await page.getByTestId("export-format-jsonresume").click();
