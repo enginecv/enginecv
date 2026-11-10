@@ -21,7 +21,14 @@ export function isFullEngineCvExport(json: unknown): boolean {
     if (!isObj(json)) return false;
     if (json.format === "enginecv/encrypted-json") return true;
     if (typeof json.format === "string" && json.format.startsWith(AUTHORING_FORMAT_PREFIX)) return false;
+    // A JSON Resume file has a `meta` key too, but it is not an EngineCV file.
+    if (isJsonResume(json)) return false;
     return STORED_ONLY_KEYS.some((key) => key in json);
+}
+
+/** True for a jsonresume.org document: the JSON Resume importer reads it (feature 080). */
+export function isJsonResumeDocument(json: unknown): boolean {
+    return isObj(json) && isJsonResume(json);
 }
 
 /** jsonresume.org documents look similar but are a different format (#67). */

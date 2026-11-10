@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createQaFullResume, createQaMinimalResume } from "@/lib/qa/sample-resumes";
-import { isAuthoringDocument, isFullEngineCvExport } from "./detect";
+import { isAuthoringDocument, isFullEngineCvExport, isJsonResumeDocument } from "./detect";
 import { resumeToAuthoring } from "./from-resume";
 
 describe("isAuthoringDocument", () => {
@@ -44,6 +44,20 @@ describe("isAuthoringDocument", () => {
         })).toBe(false);
         expect(isAuthoringDocument({ basics: { name: "A", label: "Dev", profiles: [] }, work: [] })).toBe(false);
         expect(isAuthoringDocument({ basics: { name: "A" }, meta: { canonical: "https://x" } })).toBe(false);
+    });
+
+    it("recognises JSON Resume documents and never calls them EngineCV exports", () => {
+        const withMeta = { basics: { name: "A", label: "Dev" }, work: [], meta: { canonical: "https://x", version: "v1.0.0" } };
+        expect(isJsonResumeDocument(withMeta)).toBe(true);
+        expect(isFullEngineCvExport(withMeta)).toBe(false);
+        expect(isJsonResumeDocument({ $schema: "https://raw.githubusercontent.com/jsonresume/resume-schema/v1.0.0/schema.json", meta: { version: "v1.0.0" } })).toBe(true);
+        expect(isJsonResumeDocument({ basics: { name: "A", profiles: [] } })).toBe(true);
+    });
+
+    it("does not mistake EngineCV or authoring documents for JSON Resume", () => {
+        expect(isJsonResumeDocument({ meta: { title: "CV" }, basics: { name: "A", headline: "Dev" }, settings: {} })).toBe(false);
+        expect(isJsonResumeDocument({ format: "enginecv.authoring/v1", basics: { name: "A" } })).toBe(false);
+        for (const value of [null, 1, "x", [], {}]) expect(isJsonResumeDocument(value)).toBe(false);
     });
 
     it("rejects other JSON", () => {

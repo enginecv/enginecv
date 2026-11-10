@@ -31,7 +31,9 @@ import { DashboardCard, LastUpdatedTooltipContent } from "@/components/dashboard
 import { DashboardTemplateCard } from "@/components/dashboard/DashboardTemplateCard";
 import { GithubImportDialog } from "@/components/import/GithubImportDialog";
 import { EuropassImportDialog } from "@/components/import/EuropassImportDialog";
+import { ConversionLossSummary } from "@/components/import/ConversionLossSummary";
 import { LinkedinImportDialog } from "@/components/import/LinkedinImportDialog";
+import type { ConversionReport } from "@/lib/json-resume/report";
 import { CreateModal } from "@/components/dashboard/CreateModal";
 import { StartPanel } from "@/components/dashboard/StartPanel";
 import { PageSizeSelect, Pager, SortSelect } from "@/components/dashboard/ListControls";
@@ -853,6 +855,8 @@ function Dashboard() {
     const [importError, setImportError] = useState<string | null>(null);
     const [importErrorDetails, setImportErrorDetails] = useState<string | null>(null);
     const [importWarning, setImportWarning] = useState<string | null>(null);
+    // A JSON Resume import that lost something: the CV is saved, the person sees what changed before opening it.
+    const [importReport, setImportReport] = useState<{ report: ConversionReport; id: string } | null>(null);
     // A data-export import reports a count, not adjusted values, so it gets no "adjusted" title.
     const [importWarningIsClamp, setImportWarningIsClamp] = useState(true);
     const [search, setSearch] = useState("");
@@ -1008,6 +1012,7 @@ function Dashboard() {
         setImportError(null);
         setImportErrorDetails(null);
         setImportWarning(null);
+        setImportReport(null);
         try {
             const text = await file.text();
             // Authoring documents (an AI or a script wrote them) go through the
@@ -1030,6 +1035,13 @@ function Dashboard() {
                 await db.resumes.bulkAdd(result.resumes.map((resume) => ({ ...resume, id: createId(), createdAt: now, updatedAt: now })));
                 setImportWarningIsClamp(false);
                 setImportWarning(tn("dashboard.importedDataExport", result.resumes.length));
+                return;
+            }
+            if (result.kind === "json-resume" && result.report.items.length > 0) {
+                const id = createId();
+                const now = Date.now();
+                await db.resumes.add({ ...result.resume, id, createdAt: now, updatedAt: now });
+                setImportReport({ report: result.report, id });
                 return;
             }
             await persistImportedResume(result.resume, result.clampedFields);
@@ -1446,6 +1458,23 @@ function Dashboard() {
                                         }} className="text-danger hover:text-strong transition-colors shrink-0">
                                             <X className="w-4 h-4" />
                                         </button>
+                                    </div>
+                                )}
+
+                                {importReport && (
+                                    <div className="mb-6 space-y-3 rounded-xl border border-edge bg-surface-4 p-4" data-testid="json-resume-import-result">
+                                        <div className="flex items-center justify-between gap-3">
+                                            <p className="text-sm font-medium text-strong">{t("conversion.importedTitle")}</p>
+                                            <div className="flex shrink-0 items-center gap-2">
+                                                <Link href={`/editor/${importReport.id}`} className="rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-surface-2 transition-colors hover:bg-accent-soft">
+                                                    {t("conversion.openCv")}
+                                                </Link>
+                                                <button onClick={() => setImportReport(null)} aria-label={t("common.close")} className="text-faint hover:text-strong transition-colors">
+                                                    <X className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <ConversionLossSummary report={importReport.report} defaultOpen />
                                     </div>
                                 )}
 

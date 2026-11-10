@@ -8,7 +8,7 @@ export { NOTICE_CODES, formatPath, type Notice, type NoticeCode, type NoticeKind
 export { authoringToResume, type ImportResult, type SectionCounts } from "./to-resume";
 export { resumeToAuthoring, serializeAuthoring, type ResumeToAuthoringOptions } from "./from-resume";
 export { parseAuthoringText, MAX_AUTHORING_TEXT_BYTES, type ParseResult, type ParseErrorCode } from "./parse-text";
-export { isAuthoringDocument, isFullEngineCvExport } from "./detect";
+export { isAuthoringDocument, isFullEngineCvExport, isJsonResumeDocument } from "./detect";
 export { buildAuthoringJsonSchema } from "./json-schema";
 export { buildAiInstructions, type Translate } from "./instructions";
 export type { DesignApplied } from "./design-hints";

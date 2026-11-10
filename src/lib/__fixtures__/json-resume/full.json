@@ -1,0 +1,112 @@
+{
+  "$schema": "https://raw.githubusercontent.com/jsonresume/resume-schema/v1.0.0/schema.json",
+  "basics": {
+    "name": "John Doe",
+    "label": "Senior Software Engineer",
+    "image": "https://example.com/john.jpg",
+    "email": "john@example.com",
+    "phone": "(912) 555-4321",
+    "url": "https://johndoe.example.com",
+    "summary": "Engineer with ten years of experience building web platforms.",
+    "location": {
+      "address": "2712 Broadway St",
+      "postalCode": "CA 94115",
+      "city": "San Francisco",
+      "countryCode": "US",
+      "region": "California"
+    },
+    "profiles": [
+      { "network": "LinkedIn", "username": "johndoe", "url": "https://www.linkedin.com/in/johndoe" },
+      { "network": "GitHub", "username": "johndoe", "url": "https://github.com/johndoe" },
+      { "network": "Mastodon", "username": "john", "url": "https://mastodon.example/@john" }
+    ]
+  },
+  "work": [
+    {
+      "name": "Acme Systems",
+      "location": "Remote",
+      "description": "Cloud software company",
+      "position": "Senior Engineer",
+      "url": "https://acme.example.com",
+      "startDate": "2019-06-15",
+      "summary": "Led the order platform team.",
+      "highlights": ["Cut export time from nine minutes to forty seconds", "Mentored four engineers"]
+    },
+    {
+      "name": "Globex",
+      "position": "Engineer",
+      "startDate": "2015",
+      "endDate": "2019-05",
+      "summary": "Built internal tools.",
+      "highlights": []
+    }
+  ],
+  "volunteer": [
+    {
+      "organization": "Code for Good",
+      "position": "Mentor",
+      "url": "https://codeforgood.example.org",
+      "startDate": "2018-01",
+      "endDate": "2020-12",
+      "summary": "Taught web basics to beginners.",
+      "highlights": ["Ran 20 workshops"]
+    }
+  ],
+  "education": [
+    {
+      "institution": "Northfield University",
+      "url": "https://northfield.example.edu",
+      "area": "Computer Science",
+      "studyType": "Bachelor",
+      "startDate": "2011-09",
+      "endDate": "2015-06",
+      "score": "3.8",
+      "courses": ["Algorithms", "Databases"]
+    }
+  ],
+  "awards": [
+    { "title": "Engineer of the Year", "date": "2021-03", "awarder": "Acme Systems", "summary": "For the order platform rebuild." }
+  ],
+  "certificates": [
+    { "name": "Certified Kubernetes Administrator", "date": "2020-07", "issuer": "CNCF", "url": "https://cncf.example.org/cka" }
+  ],
+  "publications": [
+    { "name": "Fast exports at scale", "publisher": "Dev Journal", "releaseDate": "2022-02-10", "url": "https://devjournal.example.com/exports", "summary": "How we made exports fast." }
+  ],
+  "skills": [
+    { "name": "Go", "level": "Master", "keywords": ["Concurrency", "gRPC"] },
+    { "name": "PostgreSQL", "level": "Intermediate", "keywords": [] },
+    { "name": "Distributed systems", "level": "Wizard", "keywords": [] }
+  ],
+  "languages": [
+    { "language": "English", "fluency": "Native speaker" },
+    { "language": "German", "fluency": "B2" }
+  ],
+  "interests": [
+    { "name": "Climbing", "keywords": ["Bouldering", "Alpine"] }
+  ],
+  "references": [
+    { "name": "Jane Doe", "reference": "John led our platform team with calm and clarity." }
+  ],
+  "projects": [
+    {
+      "name": "Fast Export",
+      "description": "Open source export library.",
+      "highlights": ["2,000 stars"],
+      "keywords": ["Go", "CSV"],
+      "startDate": "2021-01",
+      "endDate": "2022-06",
+      "url": "https://github.com/johndoe/fast-export",
+      "roles": ["Maintainer"],
+      "entity": "Open source",
+      "type": "library"
+    }
+  ],
+  "meta": {
+    "canonical": "https://raw.githubusercontent.com/jsonresume/resume-schema/master/sample.resume.json",
+    "version": "v1.0.0",
+    "lastModified": "2024-01-01T10:00:00",
+    "theme": "elegant"
+  },
+  "x-custom": true
+}

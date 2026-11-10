@@ -48,6 +48,18 @@ export const basicsSchema = z.object({
     emails: z.array(emailEntrySchema).default([]),
     phone: z.string().default(""),
     location: z.string().default(""),
+    /**
+     * Structured address kept for JSON Resume (feature 080). `location` stays
+     * the display text; these parts are used on export only while `location`
+     * still equals the text built from them.
+     */
+    locationParts: z.object({
+        address: z.string().default(""),
+        postalCode: z.string().default(""),
+        city: z.string().default(""),
+        region: z.string().default(""),
+        countryCode: z.string().default(""),
+    }).default({ address: "", postalCode: "", city: "", region: "", countryCode: "" }),
     website: externalLinkSchema,
     drivingLicense: z.string().default(""),
     linkedin: externalLinkSchema,
@@ -1157,6 +1169,7 @@ export const resumeObjectSchema = z.object({
         emails: [],
         phone: "",
         location: "",
+        locationParts: { address: "", postalCode: "", city: "", region: "", countryCode: "" },
         website: "",
         drivingLicense: "",
         linkedin: "",

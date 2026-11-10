@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { AlertTriangle, AlignLeft, Check, Coffee, Copy, Download, FileCode, FileImage, FileJson, FileText, FileType, Github, Globe, Image as ImageIcon, Loader2, Lock, UserRound, X, type LucideIcon } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
+import { ConversionLossSummary } from "@/components/import/ConversionLossSummary";
+import { resumeToJsonResume } from "@/lib/json-resume/from-resume";
 import type { Resume } from "@/lib/schema";
 import { EXPORT_FORMATS, getExportFormat, type ResumeExportFormat } from "@/lib/export-formats";
 import { ExportModuleLoadError, getResumeExportBaseName, loadDocxExporter, runResumeExport, type ResumeExportNotice } from "@/lib/resume-export";
@@ -64,6 +66,7 @@ const DEFAULT_EXPORT_PREFS: ExportPrefs = {
 
 export const EXPORT_FORMAT_ICONS: Record<ResumeExportFormat, LucideIcon> = {
     json: FileJson,
+    jsonresume: FileJson,
     pdf: FileType,
     docx: FileText,
     md: FileCode,
@@ -104,6 +107,8 @@ export function ExportDialog({ open, onClose, resume, paperSize, onNeedPreview }
     const [prefs] = useState(loadExportPrefs);
     const [pdfIncludeSidecar, setPdfIncludeSidecar] = useState<boolean>(prefs.pdfIncludeSidecar);
     const [docxIncludePhoto, setDocxIncludePhoto] = useState<boolean>(prefs.docxIncludePhoto);
+    // Off by default and not remembered: the photo is written into the file as image data.
+    const [jsonResumeIncludePhoto, setJsonResumeIncludePhoto] = useState(false);
     const [exportNotices, setExportNotices] = useState<ResumeExportNotice[]>([]);
     const [copyStatus, setCopyStatus] = useState<"idle" | "copying" | "copied">("idle");
     const [selectedFormat, setSelectedFormat] = useState<ResumeExportFormat>(prefs.format);
@@ -115,6 +120,12 @@ export function ExportDialog({ open, onClose, resume, paperSize, onNeedPreview }
     const [exportError, setExportError] = useState<string | null>(null);
     const [mobilePdfUnsupported, setMobilePdfUnsupported] = useState(false);
     const [readmeOpen, setReadmeOpen] = useState(false);
+
+    // What the selected format cannot hold for this CV, shown before the download.
+    const lossReport = useMemo(
+        () => (selectedFormat === "jsonresume" ? resumeToJsonResume(resume, { includePhoto: jsonResumeIncludePhoto }).report : null),
+        [selectedFormat, resume, jsonResumeIncludePhoto],
+    );
     // The README dialog replaces this one; it owns focus and Escape while shown.
     const formatsOpen = open && !readmeOpen;
 
@@ -223,6 +234,7 @@ export function ExportDialog({ open, onClose, resume, paperSize, onNeedPreview }
                 encryptionKey: jsonEncrypt ? encryptionKey : undefined,
                 pdfIncludeSidecar,
                 docxIncludePhoto,
+                jsonResumeIncludePhoto,
                 messages: exportMessages,
             });
             saveExportPrefs({ format: selectedFormat, pdfIncludeSidecar, docxIncludePhoto });
@@ -286,7 +298,9 @@ export function ExportDialog({ open, onClose, resume, paperSize, onNeedPreview }
         icon: EXPORT_FORMAT_ICONS[format.id],
         label: t(format.labelKey),
         description: t(format.descriptionKey),
+        lossy: format.lossy === true,
     }));
+
 
     const selectedFormatConfig = formatCards.find((format) => format.id === selectedFormat) ?? formatCards[0];
 
@@ -423,6 +437,20 @@ export function ExportDialog({ open, onClose, resume, paperSize, onNeedPreview }
         "export-docx-include-photo",
     );
 
+    const renderJsonResumeOptions = () => (
+        <div className="space-y-3">
+            {renderToggleRow(
+                jsonResumeIncludePhoto,
+                () => setJsonResumeIncludePhoto(!jsonResumeIncludePhoto),
+                UserRound,
+                t("export.jsonresumeIncludePhoto"),
+                t("export.jsonresumeIncludePhotoHint"),
+                "export-jsonresume-include-photo",
+            )}
+            {lossReport && <ConversionLossSummary report={lossReport} defaultOpen />}
+        </div>
+    );
+
     const renderCopyOptions = (format: CopyableFormat) => (
         <button
             type="button"
@@ -480,7 +508,7 @@ export function ExportDialog({ open, onClose, resume, paperSize, onNeedPreview }
                     </h2>
                     <p className="mt-1 text-xs leading-relaxed text-mid">{t("export.subtitle")}</p>
 
-                    <div className="mt-4 grid grid-cols-4 gap-1 rounded-xl border border-edge bg-surface-2 p-1">
+                    <div className="mt-4 grid grid-cols-3 gap-1 rounded-xl border border-edge bg-surface-2 p-1">
                         {formatCards.map((format) => {
                             const active = selectedFormat === format.id;
                             return (
@@ -498,7 +526,14 @@ export function ExportDialog({ open, onClose, resume, paperSize, onNeedPreview }
                                     }`}
                                 >
                                     <format.icon className={`h-4 w-4 ${active ? "text-accent" : ""}`} />
-                                    {format.label}
+                                    <span className="flex items-center gap-1">
+                                        {format.label}
+                                        {format.lossy && (
+                                            <span role="img" aria-label={t("conversion.marker")} title={t("conversion.marker")} data-testid={`export-format-lossy-${format.id}`}>
+                                                <AlertTriangle className="h-3 w-3 text-accent" aria-hidden="true" />
+                                            </span>
+                                        )}
+                                    </span>
                                 </button>
                             );
                         })}
@@ -526,6 +561,7 @@ export function ExportDialog({ open, onClose, resume, paperSize, onNeedPreview }
 
                     <div className="mt-3">
                         {selectedFormat === "json" ? renderJsonOptions()
+                            : selectedFormat === "jsonresume" ? renderJsonResumeOptions()
                             : selectedFormat === "pdf" ? renderPdfOptions()
                             : selectedFormat === "docx" ? renderDocxOptions()
                             : isCopyableFormat(selectedFormat) ? renderCopyOptions(selectedFormat)

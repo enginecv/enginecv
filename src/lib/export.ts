@@ -1,4 +1,7 @@
 import { toPng, toSvg } from "html-to-image";
+import { isJsonResumeDocument } from "./agent/authoring/detect";
+import { jsonResumeToResume } from "./json-resume/to-resume";
+import { MAX_JSON_RESUME_BYTES } from "./json-resume/schema";
 import { clampResumeSettings, resumeSchema, type Resume } from "./schema";
 import { isDataExport, resumesFromDataExport } from "./storage-registry/export-file";
 import type { ZodIssue } from "zod";
@@ -1011,6 +1014,23 @@ export async function importResumeFromJsonText(
             kind: "data-export" as const,
             resumes,
             skipped: resumesFromDataExport(parsedJson).length - resumes.length,
+        };
+    }
+
+    // A jsonresume.org file: converted, with a report of what did not carry over.
+    if (isJsonResumeDocument(parsedJson)) {
+        if (rawText.length > MAX_JSON_RESUME_BYTES) {
+            throw new ResumeImportError(
+                withConsoleHint(exportMessages.resumeReadFailed, exportMessages),
+                "JSON Resume file is larger than the allowed size.",
+            );
+        }
+        const converted = jsonResumeToResume(parsedJson);
+        return {
+            kind: "json-resume" as const,
+            resume: converted.resume,
+            report: converted.report,
+            clampedFields: [] as string[],
         };
     }
 

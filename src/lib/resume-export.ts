@@ -9,6 +9,8 @@ import {
     type ExportMessages,
 } from "./export";
 import { getExportFormat, type ResumeExportFormat } from "./export-formats";
+import { resumeToJsonResume } from "./json-resume/from-resume";
+import type { ConversionReport } from "./json-resume/report";
 import { toMarkdown } from "./export-markdown";
 import { toPlainText } from "./export-plaintext";
 import type { Resume } from "./schema";
@@ -20,6 +22,8 @@ export type ResumeExportNotice = "docxPhotoSkipped";
 
 export interface RunResumeExportResult {
     notices: ResumeExportNotice[];
+    /** What the format could not hold, for formats that cannot hold everything. */
+    report?: ConversionReport;
 }
 
 /** The lazily loaded DOCX module could not be fetched (offline before first use, stale deploy). */
@@ -38,6 +42,7 @@ interface RunResumeExportOptions {
     encryptionKey?: string;
     pdfIncludeSidecar?: boolean;
     docxIncludePhoto?: boolean;
+    jsonResumeIncludePhoto?: boolean;
     messages?: Partial<ExportMessages>;
 }
 
@@ -75,10 +80,12 @@ export async function runResumeExport({
     encryptionKey,
     pdfIncludeSidecar = false,
     docxIncludePhoto = false,
+    jsonResumeIncludePhoto = false,
     messages,
 }: RunResumeExportOptions): Promise<RunResumeExportResult> {
     const baseName = getResumeExportBaseName(resume);
     const notices: ResumeExportNotice[] = [];
+    let report: ConversionReport | undefined;
 
     switch (format) {
         case "json":
@@ -93,6 +100,12 @@ export async function runResumeExport({
                 exportToJson(resume, `resume-${baseName}.json`);
             }
             break;
+        case "jsonresume": {
+            const converted = resumeToJsonResume(resume, { includePhoto: jsonResumeIncludePhoto });
+            report = converted.report;
+            await deliverFile(textBlob(`${JSON.stringify(converted.document, null, 2)}\n`, format), `resume-${baseName}.jsonresume.json`);
+            break;
+        }
         case "pdf":
             if (pdfIncludeSidecar) {
                 if (encryptionKey) {
@@ -144,5 +157,5 @@ export async function runResumeExport({
         }
     }
 
-    return { notices };
+    return { notices, ...(report ? { report } : {}) };
 }
