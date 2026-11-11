@@ -28,6 +28,7 @@ const NOT_INDEXED: Record<string, string> = {
     "/resume-summary-generator": "retired route that returns 404",
     "/impressum": "listed by the sitemap only once LEGAL_OPERATOR is filled in",
     "/guides": "listed by the sitemap once the first section guide is published",
+    "/supporters": "donate prompt and opt-in name list with little original content; noindex, linked from the footer",
 };
 
 function staticPageRoutes(dir = path.join(process.cwd(), "src", "app"), base = ""): string[] {

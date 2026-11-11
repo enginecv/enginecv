@@ -19,7 +19,6 @@ export const PUBLIC_ROUTES = [
     "/cookies",
     "/terms",
     "/accessibility",
-    "/supporters",
     "/about",
 ] as const;
 
