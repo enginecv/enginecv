@@ -27,7 +27,8 @@
     "test:e2e:headed": "playwright test --headed",
     "test:e2e:ads": "playwright test --project=chromium-ads",
     "test:parse": "playwright test --project=parse --workers=1",
-    "gen:previews": "npx tsx scripts/generate-template-previews.ts"
+    "gen:previews": "npx tsx scripts/generate-template-previews.ts",
+    "indexnow": "node scripts/indexnow.mjs"
   },
   "dependencies": {
     "@codemirror/autocomplete": "6.20.4",
