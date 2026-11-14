@@ -39,6 +39,10 @@ const PANELS: Partial<Record<ToolPanelId, ComponentType<ToolPanelProps>>> = {
         ssr: false,
         loading: PanelSkeleton,
     }),
+    jsonresume: dynamic(() => import("@/components/import/JsonResumeImportPanel").then((m) => m.JsonResumeImportPanel), {
+        ssr: false,
+        loading: PanelSkeleton,
+    }),
     cefr: dynamic(() => import("@/components/tools/CefrAssessmentPanel").then((m) => m.CefrAssessmentPanel), {
         ssr: false,
         loading: PanelSkeleton,

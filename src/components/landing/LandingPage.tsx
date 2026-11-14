@@ -22,7 +22,7 @@ export function LandingPage({ locale }: { locale: Locale }) {
       <div className="flex min-h-screen flex-col overflow-x-clip bg-surface-2 text-strong font-[family-name:var(--font-geist-sans)]">
         <LocaleSuggestion />
         <Navbar />
-        <main className="flex-1">
+        <main id="main-content" className="flex-1">
           <Hero />
           <ProductStory />
           <FreeToolsSection />

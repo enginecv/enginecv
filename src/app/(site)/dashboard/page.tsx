@@ -1226,7 +1226,7 @@ function Dashboard() {
 
                 <div className="w-full pb-8">
 
-                    <main className="min-w-0">
+                    <main id="main-content" className="min-w-0">
                         {/* Resumes tab */}
                         {activeDashboardTab === "resumes" && (
                             <>
