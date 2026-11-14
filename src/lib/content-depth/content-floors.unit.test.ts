@@ -17,7 +17,7 @@ const ROLE_MIN = 600;
 const ROLE_MAX = 900;
 const BLOG_MIN = 1200;
 const EXPECTED_ROLES = 8;
-const EXPECTED_POSTS = 5;
+const EXPECTED_POSTS = 7;
 const TOOL_PAGE_MIN = 700;
 
 /** Paragraph similarity above this counts as reuse. See the note in the uniqueness group. */
