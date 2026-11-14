@@ -16,7 +16,7 @@ export function BlogLayout({ children, title, description }: BlogLayoutProps) {
     return (
         <div className="flex min-h-screen flex-col bg-surface-2 text-strong">
             <Navbar />
-            <main className="flex-1 px-6 pb-20 pt-28">
+            <main id="main-content" className="flex-1 px-6 pb-20 pt-28">
                 <div className="mx-auto max-w-6xl">
                     {title || description ? (
                         <header className="max-w-3xl border-b border-edge pb-10">

@@ -16,7 +16,7 @@ export function SupportersContent() {
     return (
         <div className="min-h-screen bg-surface-2 text-strong">
             <Navbar />
-            <main className="px-6 pb-20 pt-24">
+            <main id="main-content" className="px-6 pb-20 pt-24">
                 <div className="mx-auto max-w-4xl">
                     <section className="border-b border-edge pb-12 pt-8 sm:pb-16 sm:pt-14">
                         <p className="text-sm font-medium uppercase tracking-[0.24em] text-accent">{t("supporters.title")}</p>
