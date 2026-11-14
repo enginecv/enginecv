@@ -15,7 +15,7 @@ export const en: Translations = {
   // Pricing Page
 
   // Landing Page
-  "landing.hero.description1": "Build and export resumes locally with live preview, version history, and deep customization.",
+  "landing.hero.description1": "Build, customize, and export professional résumés for free. No account required, no hidden paywalls, and your data stays under your control.",
   "landing.hero.workbenchKicker": "Local resume workbench",
   "landing.workbench.localStatus": "Saved locally",
   "landing.workbench.contentTab": "Content",
@@ -30,10 +30,9 @@ export const en: Translations = {
   "landing.privacy.deviceNode": "On your device",
   "landing.privacy.exportNode": "Your file",
   "landing.cta.kicker": "Ready / when you are",
-  "landing.hero.description2": "AI chat and provider integrations are not supported yet, so this release focuses on the local-first editor that already works today.",
   "landing.hero.badgeBrowser": "Runs in your browser",
   "landing.hero.badgePdf": "{formatCount} export formats",
-  "landing.hero.badgeAi": "AI integration not supported yet",
+  "landing.hero.badgePdfFree": "PDF export is free",
   "landing.hero.badgeNoLockin": "No lock-in",
   "landing.hero.badgeOpenSource": "Open source (AGPL-3.0)",
   "landing.hero.openSource": "EngineCV is open source. Read the code, check what your browser sends, report a bug or send a fix.",
@@ -142,6 +141,12 @@ export const en: Translations = {
 
   "landing.cta.title": "Start Building Your CV Today",
   "landing.cta.noSignup": "No account required. Start locally and export whenever you want.",
+  "landing.freeTools.kicker": "Free tools",
+  "landing.freeTools.title": "Start from what you already have",
+  "landing.freeTools.description": "Import a Europass file, LinkedIn export or GitHub profile, check your language level, or browse role-specific CV examples. Everything is free and works without an account.",
+  "landing.freeTools.examplesTitle": "CV examples by role",
+  "landing.freeTools.examplesDesc": "Realistic examples with role-specific tips and common mistakes.",
+  "landing.freeTools.allTools": "See all free tools",
 
   "landing.footer.tagline": "Free Resume Builder · Privacy-first · Local-first and portable",
 
@@ -190,9 +195,9 @@ export const en: Translations = {
   "hero.noTermAccount": "Account",
   "hero.noTermPaywall": "Paywall",
   "hero.noTermNonsense": "Nonsense",
-  "hero.noRotationLabel": "No Account. No Paywall. No Nonsense.",
-  "hero.startBuilding": "Start Building Your CV",
-  "hero.viewTemplates": "See all templates",
+  "hero.headline": "The free résumé builder that doesn't hold your CV hostage.",
+  "hero.startBuilding": "Build My Resume — Free",
+  "hero.viewTemplates": "Explore Templates",
   "landing.hero.localNote": "No account needed. Your resume stays on your device.",
 
   // How It Works

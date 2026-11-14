@@ -15,7 +15,7 @@ export const es: Translations = {
   // Pricing Page
 
   // Landing Page
-  "landing.hero.description1": "Crea y exporta currículums localmente con vista previa en vivo, historial de versiones y personalización profunda.",
+  "landing.hero.description1": "Crea, personaliza y exporta currículums profesionales gratis. Sin cuenta, sin muros de pago ocultos y con tus datos bajo tu control.",
   "landing.hero.workbenchKicker": "Taller local de currículums",
   "landing.workbench.localStatus": "Guardado localmente",
   "landing.workbench.contentTab": "Contenido",
@@ -30,10 +30,9 @@ export const es: Translations = {
   "landing.privacy.deviceNode": "En tu dispositivo",
   "landing.privacy.exportNode": "Tu archivo",
   "landing.cta.kicker": "Listo / cuando tú lo estés",
-  "landing.hero.description2": "El chat AI y las integraciones con proveedores aún no son compatibles, así que esta versión se centra en el editor local-first que ya funciona hoy.",
   "landing.hero.badgeBrowser": "Funciona en tu navegador",
   "landing.hero.badgePdf": "{formatCount} formatos de exportación",
-  "landing.hero.badgeAi": "Integración AI aún no compatible",
+  "landing.hero.badgePdfFree": "La exportación a PDF es gratis",
   "landing.hero.badgeNoLockin": "Sin dependencia",
   "landing.hero.badgeOpenSource": "Código abierto (AGPL-3.0)",
   "landing.hero.openSource": "EngineCV es de código abierto. Lee el código, comprueba qué envía tu navegador, informa de un error o envía una corrección.",
@@ -142,6 +141,12 @@ export const es: Translations = {
 
   "landing.cta.title": "Empieza a crear tu CV hoy mismo",
   "landing.cta.noSignup": "No se requiere cuenta. Empieza localmente y exporta cuando quieras.",
+  "landing.freeTools.kicker": "Herramientas gratuitas",
+  "landing.freeTools.title": "Empieza con lo que ya tienes",
+  "landing.freeTools.description": "Importa un archivo de Europass, una exportación de LinkedIn o un perfil de GitHub, comprueba tu nivel de idioma o explora ejemplos de CV por puesto. Todo es gratis y funciona sin cuenta.",
+  "landing.freeTools.examplesTitle": "Ejemplos de CV por puesto",
+  "landing.freeTools.examplesDesc": "Ejemplos realistas con consejos específicos y errores comunes.",
+  "landing.freeTools.allTools": "Ver todas las herramientas gratuitas",
 
   "landing.footer.tagline": "Builder de Currículums Gratis · Privacidad primero · Local-first y portable",
 
@@ -190,9 +195,9 @@ export const es: Translations = {
   "hero.noTermAccount": "cuenta",
   "hero.noTermPaywall": "muro de pago",
   "hero.noTermNonsense": "tonterías",
-  "hero.noRotationLabel": "Sin cuenta. Sin muro de pago. Sin tonterías.",
-  "hero.startBuilding": "Empieza a crear tu CV",
-  "hero.viewTemplates": "Ver todas las plantillas",
+  "hero.headline": "El creador de currículums gratuito que no secuestra tu CV.",
+  "hero.startBuilding": "Crear mi CV gratis",
+  "hero.viewTemplates": "Explorar plantillas",
   "landing.hero.localNote": "Sin cuenta. Tu CV se queda en tu dispositivo.",
 
   // How It Works

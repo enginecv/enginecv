@@ -152,24 +152,11 @@ test("hero showcase is beside the hero copy on desktop", async ({ page }) => {
     await page.goto("/");
     await showLandingDemo(page);
 
-    const headlineBox = await page.getByRole("heading", {
-        name: "No Account. No Paywall. No Nonsense.",
-    }).boundingBox();
-    const prefixBox = await page.getByTestId("hero-no-prefix").boundingBox();
-    const termBox = await page.getByTestId("hero-term-window").boundingBox();
-    const termInkGutter = await page.getByTestId("hero-term-window").evaluate((windowElement) => {
-        const track = windowElement.firstElementChild as HTMLElement | null;
-        return track ? windowElement.clientWidth - track.clientWidth : 0;
-    });
+    const headlineBox = await page.getByTestId("hero-headline").boundingBox();
     const showcaseBox = await page.getByTestId("landing-template-showcase").boundingBox();
 
     expect(headlineBox).not.toBeNull();
-    expect(prefixBox).not.toBeNull();
-    expect(termBox).not.toBeNull();
     expect(showcaseBox).not.toBeNull();
-    expect(termBox!.y).toBeGreaterThan(prefixBox!.y);
-    expect(termBox!.x + termBox!.width).toBeLessThanOrEqual(headlineBox!.x + headlineBox!.width);
-    expect(termInkGutter).toBeGreaterThanOrEqual(6);
     expect(showcaseBox!.x).toBeGreaterThan(headlineBox!.x + headlineBox!.width);
     await expectNoHorizontalOverflow(page);
 });
