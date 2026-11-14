@@ -20,6 +20,10 @@ const nextConfig: NextConfig = {
   // Lets a second dev server (e.g. the ads-enabled e2e project) run alongside the main one.
   distDir: process.env.NEXT_DIST_DIR || ".next",
   allowedDevOrigins: ["localhost", "127.0.0.1", ...localIpv4Hosts],
+  // The in-app changelog page was dropped; send old links to the repository.
+  async redirects() {
+    return [{ source: "/changelog", destination: "https://github.com/enginecv/enginecv", permanent: true }];
+  },
   turbopack: {
     root: projectRoot,
   },

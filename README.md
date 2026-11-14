@@ -19,7 +19,7 @@
 ![TypeScript](https://img.shields.io/badge/TypeScript-5-3178c6?logo=typescript&logoColor=white)
 ![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-38bdf8?logo=tailwindcss&logoColor=white)
 
-[Website](https://enginecv.app) · [Templates](https://enginecv.app/cv-templates) · [CV examples](https://enginecv.app/cv-examples) · [Blog](https://enginecv.app/blog) · [Changelog](./CHANGELOG.md) · [Contributing](./CONTRIBUTING.md)
+[Website](https://enginecv.app) · [Templates](https://enginecv.app/cv-templates) · [CV examples](https://enginecv.app/cv-examples) · [Blog](https://enginecv.app/blog) · [Commit history](https://github.com/enginecv/enginecv/commits/master) · [Contributing](./CONTRIBUTING.md)
 
 <a href="https://enginecv.app">
   <img src="./public/og-image.png" alt="EngineCV resume builder preview" width="720">

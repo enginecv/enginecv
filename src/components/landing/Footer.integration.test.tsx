@@ -15,7 +15,7 @@ vi.mock("next/navigation", () => ({
     useRouter: () => ({ prefetch: vi.fn() }),
 }));
 
-describe("Footer changelog link", () => {
+describe("Footer repository link", () => {
     beforeEach(() => {
         useI18nStore.setState({ locale: "en", _hydrated: true });
     });
@@ -25,23 +25,13 @@ describe("Footer changelog link", () => {
         useI18nStore.setState({ locale: "en", _hydrated: true });
     });
 
-    it("links to /changelog with the English label", () => {
+    it("has no changelog page link and points to the source repository", () => {
         render(<Footer />);
 
-        expect(screen.getByRole("link", { name: "Changelog" })).toHaveAttribute(
+        expect(screen.queryByRole("link", { name: "Changelog" })).not.toBeInTheDocument();
+        expect(screen.getByRole("link", { name: "Source code (open source)" })).toHaveAttribute(
             "href",
-            "/changelog",
-        );
-    });
-
-    it("links to /changelog with the Bosnian label", () => {
-        useI18nStore.setState({ locale: "bs", _hydrated: true });
-
-        render(<Footer />);
-
-        expect(screen.getByRole("link", { name: "Dnevnik promjena" })).toHaveAttribute(
-            "href",
-            "/changelog",
+            "https://github.com/enginecv/enginecv",
         );
     });
 
