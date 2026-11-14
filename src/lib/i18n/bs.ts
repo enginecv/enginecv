@@ -15,7 +15,7 @@ export const bs: Translations = {
   // Pricing Page
 
   // Landing Page
-  "landing.hero.description1": "Kreirajte i izvozite životopise lokalno uz prikaz uživo, historiju verzija i duboke prilagodbe.",
+  "landing.hero.description1": "Kreirajte, prilagodite i izvezite profesionalne životopise besplatno. Bez računa, bez skrivene naplate, a vaši podaci ostaju pod vašom kontrolom.",
   "landing.hero.workbenchKicker": "Lokalna radionica za CV",
   "landing.workbench.localStatus": "Spremljeno lokalno",
   "landing.workbench.contentTab": "Sadržaj",
@@ -30,10 +30,9 @@ export const bs: Translations = {
   "landing.privacy.deviceNode": "Na vašem uređaju",
   "landing.privacy.exportNode": "Vaša datoteka",
   "landing.cta.kicker": "Spremni / kada i vi",
-  "landing.hero.description2": "AI chat i integracije s pružateljima usluga još nisu podržane, pa je ovo izdanje fokusirano na local-first uređivač koji već radi.",
   "landing.hero.badgeBrowser": "Radi u pregledniku",
   "landing.hero.badgePdf": "{formatCount} izvoznih formata",
-  "landing.hero.badgeAi": "AI integracija još nije podržana",
+  "landing.hero.badgePdfFree": "PDF izvoz je besplatan",
   "landing.hero.badgeNoLockin": "Bez vezivanja",
   "landing.hero.badgeOpenSource": "Open source (AGPL-3.0)",
   "landing.hero.openSource": "EngineCV je open source. Pročitajte kod, provjerite šta vaš preglednik šalje, prijavite grešku ili pošaljite ispravku.",
@@ -142,6 +141,12 @@ export const bs: Translations = {
 
   "landing.cta.title": "Počnite izrađivati svoj CV već danas",
   "landing.cta.noSignup": "Račun nije potreban. Počnite lokalno i izvozite kad god želite.",
+  "landing.freeTools.kicker": "Besplatni alati",
+  "landing.freeTools.title": "Počnite od onoga što već imate",
+  "landing.freeTools.description": "Uvezite Europass datoteku, LinkedIn izvoz ili GitHub profil, provjerite nivo jezika ili pregledajte primjere CV-a po zanimanju. Sve je besplatno i radi bez računa.",
+  "landing.freeTools.examplesTitle": "Primjeri CV-a po zanimanju",
+  "landing.freeTools.examplesDesc": "Realistični primjeri sa savjetima za zanimanje i čestim greškama.",
+  "landing.freeTools.allTools": "Pogledaj sve besplatne alate",
 
   "landing.footer.tagline": "Besplatan uređivač CV-a · Privatnost na prvom mjestu · Lokalno i prenosivo",
 
@@ -190,9 +195,9 @@ export const bs: Translations = {
   "hero.noTermAccount": "računa",
   "hero.noTermPaywall": "naplate",
   "hero.noTermNonsense": "gluposti",
-  "hero.noRotationLabel": "Bez računa. Bez naplate. Bez gluposti.",
-  "hero.startBuilding": "Napravite svoj CV",
-  "hero.viewTemplates": "Svi šabloni",
+  "hero.headline": "Besplatan alat za životopis koji ne drži vaš CV kao taoca.",
+  "hero.startBuilding": "Napravi moj CV – besplatno",
+  "hero.viewTemplates": "Pregledaj šablone",
   "landing.hero.localNote": "Bez računa. Vaš CV ostaje na vašem uređaju.",
 
   // How It Works
@@ -226,9 +231,6 @@ export const bs: Translations = {
   "footer.group.resources": "Resursi",
   "footer.group.legal": "Pravne informacije",
   "footer.group.support": "Podrška",
-  "footer.changelog": "Dnevnik promjena",
-  "changelog.title": "Dnevnik promjena",
-  "changelog.subtitle": "Sve vidljive promjene u EngineCV-u, direktno iz repozitorija.",
   "footer.terms": "Uslovi",
   "footer.cookies": "Kolacici",
   "footer.accessibility": "Pristupačnost",

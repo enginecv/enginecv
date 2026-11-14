@@ -15,7 +15,7 @@ export const fr: Translations = {
   // Pricing Page
 
   // Landing Page
-  "landing.hero.description1": "Créez et exportez des CV localement avec aperçu en direct, historique des versions et personnalisation poussée.",
+  "landing.hero.description1": "Créez, personnalisez et exportez des CV professionnels gratuitement. Aucun compte requis, aucun paywall caché, et vos données restent sous votre contrôle.",
   "landing.hero.workbenchKicker": "Atelier CV local",
   "landing.workbench.localStatus": "Enregistré localement",
   "landing.workbench.contentTab": "Contenu",
@@ -30,10 +30,9 @@ export const fr: Translations = {
   "landing.privacy.deviceNode": "Sur votre appareil",
   "landing.privacy.exportNode": "Votre fichier",
   "landing.cta.kicker": "Prêt / quand vous l’êtes",
-  "landing.hero.description2": "Le chat AI et les intégrations de fournisseurs ne sont pas encore pris en charge, donc cette version se concentre sur l'éditeur local-first qui fonctionne déjà aujourd'hui.",
   "landing.hero.badgeBrowser": "Dans votre navigateur",
   "landing.hero.badgePdf": "{formatCount} formats d’export",
-  "landing.hero.badgeAi": "Intégration AI pas encore prise en charge",
+  "landing.hero.badgePdfFree": "L'export PDF est gratuit",
   "landing.hero.badgeNoLockin": "Sans dépendance",
   "landing.hero.badgeOpenSource": "Open source (AGPL-3.0)",
   "landing.hero.openSource": "EngineCV est open source. Lisez le code, vérifiez ce que votre navigateur envoie, signalez un bug ou proposez un correctif.",
@@ -142,6 +141,12 @@ export const fr: Translations = {
 
   "landing.cta.title": "Commencez à créer votre CV dès aujourd'hui",
   "landing.cta.noSignup": "Aucun compte requis. Commencez localement et exportez quand vous voulez.",
+  "landing.freeTools.kicker": "Outils gratuits",
+  "landing.freeTools.title": "Partez de ce que vous avez déjà",
+  "landing.freeTools.description": "Importez un fichier Europass, un export LinkedIn ou un profil GitHub, vérifiez votre niveau de langue ou parcourez des exemples de CV par métier. Tout est gratuit et sans compte.",
+  "landing.freeTools.examplesTitle": "Exemples de CV par métier",
+  "landing.freeTools.examplesDesc": "Des exemples réalistes avec des conseils spécifiques et les erreurs courantes.",
+  "landing.freeTools.allTools": "Voir tous les outils gratuits",
 
   "landing.footer.tagline": "Builder de CV gratuit · Vie privée d'abord · Local-first et portable",
 
@@ -190,9 +195,9 @@ export const fr: Translations = {
   "hero.noTermAccount": "compte",
   "hero.noTermPaywall": "paywall",
   "hero.noTermNonsense": "baratin",
-  "hero.noRotationLabel": "Sans compte. Sans paywall. Sans baratin.",
-  "hero.startBuilding": "Commencez à créer votre CV",
-  "hero.viewTemplates": "Voir tous les modeles",
+  "hero.headline": "Le créateur de CV gratuit qui ne prend pas votre CV en otage.",
+  "hero.startBuilding": "Créer mon CV – gratuit",
+  "hero.viewTemplates": "Explorer les modèles",
   "landing.hero.localNote": "Aucun compte requis. Votre CV reste sur votre appareil.",
 
   // How It Works
@@ -226,9 +231,6 @@ export const fr: Translations = {
   "footer.group.resources": "Ressources",
   "footer.group.legal": "Mentions légales",
   "footer.group.support": "Soutien",
-  "footer.changelog": "Journal des modifications",
-  "changelog.title": "Journal des modifications",
-  "changelog.subtitle": "Toutes les modifications visibles d'EngineCV, directement depuis le dépôt.",
   "footer.terms": "Conditions",
   "footer.cookies": "Cookies",
   "footer.accessibility": "Accessibilité",

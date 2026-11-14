@@ -34,7 +34,7 @@ export const ABOUT_SECTIONS: AboutSection[] = [
             "EngineCV is built and maintained by Safet Imamovic, a software engineer based in Bosnia and Herzegovina who is also a Masters student and a teaching assistant. It is an independent project: one person decides what gets built, with no company, investors or team behind it. It has been in development since 2026. Most of the guides on the blog are written by the same person, and the same person answers the founder address on the contact page, so a message about the product reaches the one who can change it.",
             "The code is written with the help of AI coding assistants, Claude and Codex. They speed up the typing; the decisions, the review of every change and the responsibility for how your data is handled stay with me. If something is wrong, tell me and I will fix it myself.",
             "EngineCV is open source. The code is published on GitHub under the AGPL-3.0, so you can read how your resume data is handled, report bugs and request features as issues, or send a fix. The blog posts and guide copy are not open licensed; the repository says which parts are which.",
-            "Every release is listed on the changelog page, including what changed and when. That history is meant to let you judge how actively the project is looked after, rather than asking you to take it on trust.",
+            "Every change is in the public commit history on GitHub, including what changed and when. That history is meant to let you judge how actively the project is looked after, rather than asking you to take it on trust.",
         ],
         links: [
             { label: "EngineCV on GitHub", href: SOURCE_REPO_URL },

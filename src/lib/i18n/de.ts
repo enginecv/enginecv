@@ -15,7 +15,7 @@ export const de: Translations = {
   // Pricing Page
 
   // Landing Page
-  "landing.hero.description1": "Erstelle und exportiere Lebensläufe lokal mit Live-Vorschau, Versionshistorie und tiefer Anpassung.",
+  "landing.hero.description1": "Erstelle, gestalte und exportiere professionelle Lebensläufe kostenlos. Kein Konto nötig, keine versteckten Bezahlschranken, und deine Daten bleiben unter deiner Kontrolle.",
   "landing.hero.workbenchKicker": "Lokale Lebenslauf-Werkbank",
   "landing.workbench.localStatus": "Lokal gespeichert",
   "landing.workbench.contentTab": "Inhalt",
@@ -30,10 +30,9 @@ export const de: Translations = {
   "landing.privacy.deviceNode": "Auf deinem Gerät",
   "landing.privacy.exportNode": "Deine Datei",
   "landing.cta.kicker": "Bereit / wenn du es bist",
-  "landing.hero.description2": "AI-Chat und Anbieterintegrationen werden noch nicht unterstützt, deshalb konzentriert sich diese Version auf den local-first Editor, der heute schon funktioniert.",
   "landing.hero.badgeBrowser": "Läuft im Browser",
   "landing.hero.badgePdf": "{formatCount} Exportformate",
-  "landing.hero.badgeAi": "AI-Integration noch nicht unterstützt",
+  "landing.hero.badgePdfFree": "PDF-Export ist kostenlos",
   "landing.hero.badgeNoLockin": "Keine Bindung",
   "landing.hero.badgeOpenSource": "Open Source (AGPL-3.0)",
   "landing.hero.openSource": "EngineCV ist Open Source. Lies den Code, prüfe, was dein Browser sendet, melde einen Fehler oder schick einen Fix.",
@@ -142,6 +141,12 @@ export const de: Translations = {
 
   "landing.cta.title": "Erstelle noch heute deinen Lebenslauf",
   "landing.cta.noSignup": "Kein Konto erforderlich. Starte lokal und exportiere jederzeit.",
+  "landing.freeTools.kicker": "Kostenlose Tools",
+  "landing.freeTools.title": "Starte mit dem, was du schon hast",
+  "landing.freeTools.description": "Importiere eine Europass-Datei, einen LinkedIn-Export oder ein GitHub-Profil, prüfe dein Sprachniveau oder stöbere in Lebenslauf-Beispielen für bestimmte Berufe. Alles ist kostenlos und ohne Konto nutzbar.",
+  "landing.freeTools.examplesTitle": "Lebenslauf-Beispiele nach Beruf",
+  "landing.freeTools.examplesDesc": "Realistische Beispiele mit berufsspezifischen Tipps und typischen Fehlern.",
+  "landing.freeTools.allTools": "Alle kostenlosen Tools ansehen",
 
   "landing.footer.tagline": "Kostenloser Lebenslauf-Builder · Privatsphäre zuerst · Local-first und portabel",
 
@@ -190,9 +195,9 @@ export const de: Translations = {
   "hero.noTermAccount": "Konto",
   "hero.noTermPaywall": "Paywall",
   "hero.noTermNonsense": "Ballast",
-  "hero.noRotationLabel": "Ohne Konto. Ohne Paywall. Ohne Ballast.",
-  "hero.startBuilding": "Lebenslauf erstellen",
-  "hero.viewTemplates": "Alle Vorlagen ansehen",
+  "hero.headline": "Der kostenlose Lebenslauf-Builder, der deinen Lebenslauf nicht als Geisel hält.",
+  "hero.startBuilding": "Meinen Lebenslauf erstellen – kostenlos",
+  "hero.viewTemplates": "Vorlagen entdecken",
   "landing.hero.localNote": "Kein Konto nötig. Dein Lebenslauf bleibt auf deinem Gerät.",
 
   // How It Works
@@ -226,9 +231,6 @@ export const de: Translations = {
   "footer.group.resources": "Ressourcen",
   "footer.group.legal": "Rechtliches",
   "footer.group.support": "Unterstützung",
-  "footer.changelog": "Änderungsprotokoll",
-  "changelog.title": "Änderungsprotokoll",
-  "changelog.subtitle": "Alle sichtbaren Änderungen an EngineCV, direkt aus dem Repository.",
   "footer.terms": "Nutzungsbedingungen",
   "footer.cookies": "Cookies",
   "footer.accessibility": "Barrierefreiheit",

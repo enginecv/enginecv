@@ -8,7 +8,6 @@ import { useTranslation } from "@/lib/i18n";
 import { APP_VERSION } from "@/lib/app-version";
 import { ArrowRight, Check, Github } from "lucide-react";
 import { LazyWorkbenchDemo } from "./LazyWorkbenchDemo";
-import styles from "./Hero.module.css";
 import { localizedPath } from "@/lib/i18n/locales";
 import { GALLERY_PATH } from "@/lib/templates/gallery";
 
@@ -16,16 +15,12 @@ export function Hero() {
   const { t, locale } = useTranslation();
   const formatParams = getExportFormatClaimParams(t);
 
-  const heroTerms = [
-    t("hero.noTermAccount"),
-    t("hero.noTermPaywall"),
-    t("hero.noTermNonsense"),
-  ];
-
   const trustItems = [
-    t("landing.hero.badgeBrowser"),
+    t("landing.hero.badgePdfFree"),
+    `${t("hero.noPrefix")} ${t("hero.noTermAccount")}`,
+    `${t("hero.noPrefix")} ${t("hero.noTermPaywall")}`,
     t("landing.hero.badgePdf", formatParams),
-    t("landing.hero.badgeNoLockin"),
+    t("landing.hero.badgeBrowser"),
   ];
 
   return (
@@ -44,27 +39,10 @@ export function Hero() {
           </div>
 
           <h1
-            aria-label={t("hero.noRotationLabel")}
-            className="text-[clamp(2.7rem,11vw,4.8rem)] font-black leading-none tracking-[-0.065em] text-strong xl:text-[clamp(3.35rem,4.5vw,4.8rem)]"
+            data-testid="hero-headline"
+            className="max-w-3xl text-balance text-[clamp(2.2rem,8vw,3.6rem)] xl:text-[clamp(2.4rem,3.3vw,3.1rem)] font-black leading-[1.05] tracking-[-0.045em] text-strong"
           >
-            <span aria-hidden="true" className="flex max-w-full flex-col items-start">
-              <span data-testid="hero-no-prefix">{t("hero.noPrefix")}</span>
-              <span
-                className="hero-term-window relative -mt-[0.06em] block h-[1em] max-w-full overflow-hidden whitespace-nowrap border-b border-accent/30 pr-[0.16em] text-accent"
-                data-testid="hero-term-window"
-              >
-                <span className={`${styles.termTrack} flex flex-col`} data-testid="hero-term-track">
-                  {[...heroTerms, heroTerms[0]].map((term, index) => (
-                    <span
-                      key={`${term}-${index}`}
-                      className="flex h-[1em] shrink-0 items-center leading-none"
-                    >
-                      {term}
-                    </span>
-                  ))}
-                </span>
-              </span>
-            </span>
+            {t("hero.headline")}
           </h1>
 
           <p className="mt-8 max-w-xl text-lg leading-8 text-mid sm:text-xl">

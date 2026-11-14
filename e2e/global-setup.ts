@@ -18,7 +18,6 @@ const WARM_ROUTES = [
     "/dashboard?tab=templates",
     "/editor/e2e-warmup",
     "/templates/enginecv-modern",
-    "/changelog",
     "/blog",
     "/privacy",
     "/cookies",

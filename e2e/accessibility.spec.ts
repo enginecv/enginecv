@@ -103,7 +103,7 @@ for (const theme of ["dark", "light"] as const) {
             await expectNoA11yViolations(page, { label: `${theme}-paste-from-ai-notices` });
         });
 
-        for (const route of ["/privacy", "/cookies", "/your-data", "/accessibility", "/blog", "/changelog"]) {
+        for (const route of ["/privacy", "/cookies", "/your-data", "/accessibility", "/blog"]) {
             test(`page ${route}`, async ({ page }) => {
                 await page.goto(route);
                 await expectTheme(page, theme);

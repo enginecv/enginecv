@@ -9,12 +9,9 @@ export const adsConfig = {
     cmpScriptSrc: trimEnv(process.env.NEXT_PUBLIC_CMP_SCRIPT_SRC),
 };
 
-export type AdSurface = "landing" | "dashboard" | "blog" | "examples";
+export type AdSurface = "blog" | "examples";
 
 export type AdSlotName =
-    | "landing_before_footer"
-    | "dashboard_top"
-    | "dashboard_after_grid"
     | "blog_index_top"
     | "blog_post_after_intro"
     | "blog_post_mid_1"
@@ -37,25 +34,6 @@ export type ResolvedAdSlot = AdSlotDefinition & {
 };
 
 const adSlotRegistry: Record<AdSlotName, AdSlotDefinition> = {
-    landing_before_footer: {
-        format: "responsive",
-        slotId: trimEnv(process.env.NEXT_PUBLIC_AD_SLOT_LANDING_BEFORE_FOOTER),
-        surface: "landing",
-    },
-    dashboard_top: {
-        format: "leaderboard",
-        height: 90,
-        slotId: trimEnv(process.env.NEXT_PUBLIC_AD_SLOT_DASHBOARD_TOP),
-        surface: "dashboard",
-        width: 728,
-    },
-    dashboard_after_grid: {
-        format: "leaderboard",
-        height: 90,
-        slotId: trimEnv(process.env.NEXT_PUBLIC_AD_SLOT_DASHBOARD_AFTER_GRID),
-        surface: "dashboard",
-        width: 728,
-    },
     blog_index_top: {
         format: "responsive",
         slotId: trimEnv(process.env.NEXT_PUBLIC_AD_SLOT_BLOG_INDEX_TOP),
@@ -115,12 +93,15 @@ export function getAdSlotDefinition(slotName: AdSlotName): ResolvedAdSlot | null
     };
 }
 
-/** Public content and dashboard only. Bosnian is not an AdSense-supported content language. */
+/**
+ * Public reading content only: blog, guides, resources and CV examples. Never the
+ * dashboard, editor, tools or landing page, where people handle their own CV.
+ * Bosnian is not an AdSense-supported content language.
+ */
 export function isAdPageAllowed(pathname: string, locale: string): boolean {
     const segments = pathname.split("/").filter(Boolean);
     const prefixed = ["de", "bs", "fr", "es"].includes(segments[0]);
     const pageLocale = prefixed ? segments.shift() : locale;
     if (!["en", "de", "fr", "es"].includes(pageLocale ?? "")) return false;
-    if (segments[0] === "dashboard") return !prefixed && segments.length === 1;
-    return ["blog", "resources", "jobs", "cv-examples"].includes(segments[0] ?? "");
+    return ["blog", "guides", "resources", "cv-examples"].includes(segments[0] ?? "");
 }

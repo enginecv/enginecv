@@ -37,22 +37,27 @@ describe("Hero template showcase", () => {
     });
 
     it.each([
-        ["en", "No Account. No Paywall. No Nonsense.", ["Account", "Paywall", "Nonsense"]],
-        ["bs", "Bez računa. Bez naplate. Bez gluposti.", ["računa", "naplate", "gluposti"]],
-        ["de", "Ohne Konto. Ohne Paywall. Ohne Ballast.", ["Konto", "Paywall", "Ballast"]],
-        ["fr", "Sans compte. Sans paywall. Sans baratin.", ["compte", "paywall", "baratin"]],
-        ["es", "Sin cuenta. Sin muro de pago. Sin tonterías.", ["cuenta", "muro de pago", "tonterías"]],
-    ] as const)("renders the rotating promise in %s", (locale, accessibleLabel, terms) => {
+        ["en", "The free résumé builder that doesn't hold your CV hostage.", ["No Account", "No Paywall", "PDF export is free"]],
+        ["bs", "Besplatan alat za životopis koji ne drži vaš CV kao taoca.", ["Bez računa", "Bez naplate", "PDF izvoz je besplatan"]],
+        ["de", "Der kostenlose Lebenslauf-Builder, der deinen Lebenslauf nicht als Geisel hält.", ["Ohne Konto", "Ohne Paywall", "PDF-Export ist kostenlos"]],
+        ["fr", "Le créateur de CV gratuit qui ne prend pas votre CV en otage.", ["Sans compte", "Sans paywall", "L'export PDF est gratuit"]],
+        ["es", "El creador de currículums gratuito que no secuestra tu CV.", ["Sin cuenta", "Sin muro de pago", "La exportación a PDF es gratis"]],
+    ] as const)("renders a static free-first headline and proof line in %s", (locale, headline, claims) => {
         useI18nStore.setState({ locale, _hydrated: true });
 
         render(<Hero />);
 
-        expect(screen.getByRole("heading", { name: accessibleLabel })).toBeInTheDocument();
-        const track = screen.getByTestId("hero-term-track");
-        expect(track.children).toHaveLength(4);
-        for (const term of terms) expect(track).toHaveTextContent(term);
-        expect(track.firstElementChild).toHaveTextContent(terms[0]);
-        expect(track.lastElementChild).toHaveTextContent(terms[0]);
+        expect(screen.getByRole("heading", { level: 1, name: headline })).toBeInTheDocument();
+        const proofLine = screen.getByTestId("landing-hero-proof-line");
+        for (const claim of claims) expect(proofLine).toHaveTextContent(claim);
+    });
+
+    it("has one dominant CTA to the dashboard and a secondary templates link", () => {
+        render(<Hero />);
+
+        expect(screen.getByRole("link", { name: /Build My Resume — Free/ })).toHaveAttribute("href", "/dashboard");
+        expect(screen.getByRole("link", { name: "Explore Templates" })).toBeInTheDocument();
+        expect(screen.queryByText(/AI integration not supported/)).not.toBeInTheDocument();
     });
 
     it("renders compact proof claims without equal-width cells", () => {
@@ -61,7 +66,7 @@ describe("Hero template showcase", () => {
         const proofLine = screen.getByTestId("landing-hero-proof-line");
         expect(proofLine).toHaveTextContent("Runs in your browser");
         expect(proofLine).toHaveTextContent(`${getExportFormatCount()} export formats`);
-        expect(proofLine).toHaveTextContent("No lock-in");
+        expect(proofLine).toHaveTextContent("PDF export is free");
         expect(proofLine).toHaveTextContent("Open source (AGPL-3.0)");
         expect(proofLine).toHaveClass("flex", "flex-wrap");
         expect(proofLine.className).not.toContain("grid-cols-3");

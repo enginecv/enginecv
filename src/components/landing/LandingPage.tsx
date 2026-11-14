@@ -1,6 +1,7 @@
 import { Navbar } from "@/components/landing/Navbar";
 import { Hero } from "@/components/landing/Hero";
 import { ProductStory } from "@/components/landing/ProductStory";
+import { FreeToolsSection } from "@/components/landing/FreeToolsSection";
 import { PrivacySection } from "@/components/landing/PrivacySection";
 import { OpenSourceSection } from "@/components/landing/OpenSourceSection";
 import { FAQ } from "@/components/landing/FAQ";
@@ -24,6 +25,7 @@ export function LandingPage({ locale }: { locale: Locale }) {
         <main className="flex-1">
           <Hero />
           <ProductStory />
+          <FreeToolsSection />
           <PrivacySection />
           <OpenSourceSection />
           <FAQ />

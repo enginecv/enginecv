@@ -13,7 +13,6 @@ export const SITE_NAME = "EngineCV";
 export const PUBLIC_ROUTES = [
     "/",
     "/blog",
-    "/changelog",
     "/contact",
     "/privacy",
     "/cookies",

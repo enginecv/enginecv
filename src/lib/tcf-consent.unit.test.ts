@@ -55,16 +55,16 @@ describe("TCF ad consent", () => {
 });
 
 describe("ad placement policy", () => {
-    it.each(["/editor/123", "/templates/enginecv-modern", "/", "/de", "/contact", "/privacy"])("excludes %s even with ads enabled", (path) => {
+    it.each(["/editor/123", "/templates/enginecv-modern", "/", "/de", "/contact", "/privacy", "/dashboard", "/tools", "/tools/europass-to-cv", "/jobs"])("excludes %s even with ads enabled", (path) => {
         expect(isAdPageAllowed(path, "en")).toBe(false);
     });
-    it.each(["/blog", "/de/blog/article", "/resources", "/jobs", "/dashboard", "/cv-examples", "/cv-examples/nurse", "/de/cv-examples/pflegefachkraft"])("allows eligible content on %s", (path) => {
+    it.each(["/blog", "/de/blog/article", "/resources", "/guides", "/guides/work-experience-section", "/cv-examples", "/cv-examples/nurse", "/de/cv-examples/pflegefachkraft"])("allows eligible content on %s", (path) => {
         expect(isAdPageAllowed(path, "en")).toBe(true);
     });
     it("excludes Bosnian content regardless of stored or route preference", () => {
         expect(isAdPageAllowed("/bs/blog/article", "en")).toBe(false);
         expect(isAdPageAllowed("/blog/article", "bs")).toBe(false);
-        expect(isAdPageAllowed("/dashboard", "bs")).toBe(false);
+        expect(isAdPageAllowed("/guides/work-experience-section", "bs")).toBe(false);
         expect(isAdPageAllowed("/bs/cv-examples/nurse", "en")).toBe(false);
     });
 });
