@@ -5,12 +5,12 @@ export const TOOLS_PATH = "/tools";
 
 // Public slug of each tool, in display order. Slugs are part of indexed URLs:
 // never rename one without a redirect.
-export const TOOL_SLUGS = ["europass-to-cv", "linkedin-to-cv", "github-to-cv", "cefr-level"] as const;
+export const TOOL_SLUGS = ["europass-to-cv", "linkedin-to-cv", "github-to-cv", "json-resume-editor", "cefr-level"] as const;
 
 export type ToolSlug = (typeof TOOL_SLUGS)[number];
 
 /** Which client panel a tool page mounts. */
-export type ToolPanelId = "europass" | "linkedin" | "github" | "cefr";
+export type ToolPanelId = "europass" | "linkedin" | "github" | "jsonresume" | "cefr";
 
 export type ToolFaqKey = { q: string; a: string };
 
@@ -64,6 +64,15 @@ const TOOLS: readonly ToolDefinition[] = [
         faq: faqKeys("tools.github", 5),
         panel: "github",
         worksOffline: false,
+        enabled: true,
+    },
+    {
+        slug: "json-resume-editor",
+        keyPrefix: "tools.jsonresume",
+        stepCount: 3,
+        faq: faqKeys("tools.jsonresume", 5),
+        panel: "jsonresume",
+        worksOffline: true,
         enabled: true,
     },
     {

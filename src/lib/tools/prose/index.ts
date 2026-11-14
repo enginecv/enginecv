@@ -2,6 +2,7 @@ import type { ToolSlug } from "../registry";
 import { prose as cefr } from "./cefr-level";
 import { prose as europass } from "./europass-to-cv";
 import { prose as github } from "./github-to-cv";
+import { prose as jsonResume } from "./json-resume-editor";
 import { prose as linkedin } from "./linkedin-to-cv";
 import type { ToolProse } from "./types";
 
@@ -11,6 +12,7 @@ const TOOL_PROSE: Record<ToolSlug, ToolProse> = {
     "europass-to-cv": europass,
     "linkedin-to-cv": linkedin,
     "github-to-cv": github,
+    "json-resume-editor": jsonResume,
     "cefr-level": cefr,
 };
 

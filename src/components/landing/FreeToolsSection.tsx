@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowUpRight, FileInput, FileText, Github, Languages, Linkedin, type LucideIcon } from "lucide-react";
+import { ArrowUpRight, FileInput, FileJson, FileText, Github, Languages, Linkedin, type LucideIcon } from "lucide-react";
 import { IntentPrefetchLink } from "@/components/ui/IntentPrefetchLink";
 import { useTranslation } from "@/lib/i18n";
 import { localizedPath } from "@/lib/i18n/locales";
@@ -11,6 +11,7 @@ const TOOL_ICONS: Record<ToolSlug, LucideIcon> = {
     "europass-to-cv": FileInput,
     "linkedin-to-cv": Linkedin,
     "github-to-cv": Github,
+    "json-resume-editor": FileJson,
     "cefr-level": Languages,
 };
 
