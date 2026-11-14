@@ -126,7 +126,7 @@ test("ads stay off on core routes and Bosnian content even after both permission
         version: 2, ads: "granted", decidedAt: "2026-10-18T00:00:00.000Z",
     })));
     const urls = recordRequests(page);
-    for (const path of ["/", "/de", "/editor/missing", "/bs/blog/nivo-jezika-u-cv-u"]) {
+    for (const path of ["/", "/de", "/dashboard", "/tools/europass-to-cv", "/editor/missing", "/bs/blog/nivo-jezika-u-cv-u"]) {
         await page.goto(path);
         await expect(page.getByTestId("ad-consent-prompt")).toBeHidden();
         await expect(page.locator("#enginecv-adsense-src")).toHaveCount(0);
