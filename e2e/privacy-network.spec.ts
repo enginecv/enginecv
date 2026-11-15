@@ -68,12 +68,12 @@ test("P1: no analytics, ad or font-host requests and no extra cookies across the
     await page.getByTestId("export-confirm-button").click();
     await download;
 
-    // PNG export embeds the preview fonts, which used to be fetched from Google Fonts.
+    // The HTML export embeds the preview fonts, which used to be fetched from Google Fonts.
     await page.getByTestId("export-menu-button").first().click();
-    await page.getByTestId("export-format-png").click();
-    const pngDownload = page.waitForEvent("download");
+    await page.getByTestId("export-format-html").click();
+    const htmlDownload = page.waitForEvent("download");
     await page.getByTestId("export-confirm-button").click();
-    await pngDownload;
+    await htmlDownload;
 
     expect(hostsHit(urls, ANALYTICS_HOSTS), "analytics requests").toEqual([]);
     // Cloudflare Web Analytics is added by the edge on enginecv.app, never by the

@@ -2,12 +2,12 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { AlertTriangle, AlignLeft, Check, Coffee, Copy, Download, FileCode, FileImage, FileJson, FileText, FileType, Github, Globe, Image as ImageIcon, Loader2, Lock, UserRound, X, type LucideIcon } from "lucide-react";
+import { AlertTriangle, AlignLeft, Check, Coffee, Copy, Download, FileCode, FileJson, FileText, FileType, Github, Globe, Loader2, Lock, UserRound, X, type LucideIcon } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
 import { ConversionLossSummary } from "@/components/import/ConversionLossSummary";
 import { resumeToJsonResume } from "@/lib/json-resume/from-resume";
 import type { Resume } from "@/lib/schema";
-import { EXPORT_FORMATS, getExportFormat, type ResumeExportFormat } from "@/lib/export-formats";
+import { EXPORT_FORMATS, getExportFormat, isResumeExportFormat, type ResumeExportFormat } from "@/lib/export-formats";
 import { ExportModuleLoadError, getResumeExportBaseName, loadDocxExporter, runResumeExport, type ResumeExportNotice } from "@/lib/resume-export";
 import { ClipboardDeniedError, copyTextToClipboard } from "@/lib/export-clipboard";
 import { buildSelfContainedHtmlDocument, hasPreviewPages, waitForPreviewPages } from "@/lib/export";
@@ -73,8 +73,6 @@ export const EXPORT_FORMAT_ICONS: Record<ResumeExportFormat, LucideIcon> = {
     md: FileCode,
     txt: AlignLeft,
     html: Globe,
-    png: FileImage,
-    svg: ImageIcon,
 };
 
 function isMobilePdfExportEnvironment() {
@@ -113,7 +111,8 @@ export function ExportDialog({ open, onClose, resume, paperSize, onNeedPreview }
     const [exportNotices, setExportNotices] = useState<ResumeExportNotice[]>([]);
     const [fallbackFonts, setFallbackFonts] = useState<string[]>([]);
     const [copyStatus, setCopyStatus] = useState<"idle" | "copying" | "copied">("idle");
-    const [selectedFormat, setSelectedFormat] = useState<ResumeExportFormat>(prefs.format);
+    // A remembered format that no longer exists (PNG and SVG were removed) opens on the default.
+    const [selectedFormat, setSelectedFormat] = useState<ResumeExportFormat>(isResumeExportFormat(prefs.format) ? prefs.format : DEFAULT_EXPORT_PREFS.format);
     const [jsonEncrypt, setJsonEncrypt] = useState(false);
     const [exporting, setExporting] = useState(false);
     const [exportingFormat, setExportingFormat] = useState<ResumeExportFormat | null>(null);

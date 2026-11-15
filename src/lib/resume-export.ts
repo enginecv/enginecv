@@ -3,8 +3,6 @@ import {
     exportToEncryptedJson,
     exportToHtml,
     exportToJson,
-    exportToPng,
-    exportToSvg,
     triggerPdfPrint,
     type ExportMessages,
 } from "./export";
@@ -133,12 +131,6 @@ export async function runResumeExport({
             }
             break;
         }
-        case "png":
-            await exportToPng(`resume-${baseName}.png`);
-            break;
-        case "svg":
-            await exportToSvg(`resume-${baseName}.svg`);
-            break;
         case "md":
             await deliverFile(textBlob(toMarkdown(toDocumentModel(resume)), format), `resume-${baseName}.md`);
             break;

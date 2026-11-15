@@ -132,10 +132,22 @@ describe("ExportDialog new formats", () => {
         vi.unstubAllGlobals();
     });
 
+    it("opens on the default format when the remembered one no longer exists", () => {
+        useClientPreferencesStore.setState({
+            preferences: { ...useClientPreferencesStore.getState().preferences, export: { format: "png" as never, pdfIncludeSidecar: false, docxIncludePhoto: false } },
+            hydrated: true,
+        });
+        renderDialog();
+        expect(screen.getByTestId("export-format-pdf")).toHaveAttribute("aria-pressed", "true");
+    });
+
     it("lists every registry format and hides encryption for formats without it", () => {
         renderDialog();
-        for (const id of ["json", "jsonresume", "pdf", "docx", "md", "txt", "html", "png", "svg"]) {
+        for (const id of ["json", "jsonresume", "pdf", "docx", "md", "txt", "html"]) {
             expect(screen.getByTestId(`export-format-${id}`)).toBeInTheDocument();
+        }
+        for (const removed of ["png", "svg"]) {
+            expect(screen.queryByTestId(`export-format-${removed}`), removed).not.toBeInTheDocument();
         }
         fireEvent.click(screen.getByTestId("export-format-json"));
         expect(screen.getByRole("switch", { name: /Encrypt/i })).toBeInTheDocument();
@@ -331,7 +343,7 @@ describe("ExportDialog new formats", () => {
 
     it("offers a copy button only on the Text, Markdown and HTML tabs", () => {
         renderDialog();
-        for (const id of ["pdf", "json", "docx", "png", "svg"]) {
+        for (const id of ["pdf", "json", "docx"]) {
             fireEvent.click(screen.getByTestId(`export-format-${id}`));
             expect(screen.queryByTestId("export-copy-clipboard"), id).not.toBeInTheDocument();
         }

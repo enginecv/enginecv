@@ -11,6 +11,25 @@ import {
 } from "./export-formats";
 
 describe("export format registry", () => {
+    it("offers exactly the seven working formats, with PNG and SVG removed", () => {
+        expect(EXPORT_FORMATS.map((format) => format.id)).toEqual(["json", "jsonresume", "pdf", "docx", "md", "txt", "html"]);
+        expect(getExportFormatCount()).toBe(7);
+        expect(EXPORT_FORMATS.some((format) => ["png", "svg"].includes(format.extension))).toBe(false);
+    });
+
+    it("treats the removed formats as unknown ids", () => {
+        expect(isResumeExportFormat("png")).toBe(false);
+        expect(isResumeExportFormat("svg")).toBe(false);
+        expect(() => getExportFormat("png" as never)).toThrow();
+    });
+
+    it("falls back to pdf, keeping the other preferences, when the stored format was png or svg", () => {
+        for (const removed of ["png", "svg"]) {
+            const parsed = clientPreferencesSchema.parse({ export: { format: removed, pdfIncludeSidecar: true, docxIncludePhoto: true } });
+            expect(parsed.export).toEqual({ format: "pdf", pdfIncludeSidecar: true, docxIncludePhoto: true });
+        }
+    });
+
     it("declares every id exactly once with a unique extension", () => {
         const ids = EXPORT_FORMATS.map((format) => format.id);
         expect(new Set(ids).size).toBe(ids.length);
