@@ -122,3 +122,37 @@ test.describe("editor preview headings", () => {
         await expect(page.getByRole("heading", { name: /^Edit entry in/ })).toBeVisible();
     });
 });
+
+test.describe("going to an entry when an earlier entry is hidden", () => {
+    test("double-click and Go to entry open the entry that was clicked, not the hidden one above it", async ({ page }) => {
+        await openExampleInEditor(page);
+        const entries = page.locator('.resume-page [data-nav-section="experience"][data-nav-kind="entry"]');
+        const before = await entries.count();
+        expect(before).toBeGreaterThan(1);
+
+        // Open the first entry, remember what it is, and hide it.
+        await entries.first().click();
+        await menuButton(page, "Go to entry").click();
+        const hiddenPosition = await page.getByTestId("entry-input-position").inputValue();
+        expect(hiddenPosition).not.toBe("");
+        await page.getByRole("button", { name: /Hide entry/ }).click();
+        await expect(entries).toHaveCount(before - 1);
+        await expect(page.locator(".resume-page")).not.toContainText(hiddenPosition);
+
+        // The entry now shown first used to be the second one in the editor.
+        await page.getByText("Back", { exact: true }).first().click();
+        const shown = entries.first();
+        const shownText = (await shown.innerText()).trim();
+        await shown.locator("[data-editable-field]").first().dblclick({ modifiers: ["Alt"] });
+
+        const opened = await page.getByTestId("entry-input-position").inputValue();
+        expect(opened, "opened the hidden entry instead of the one clicked").not.toBe(hiddenPosition);
+        expect(shownText).toContain(opened);
+
+        // The click menu's "Go to entry" agrees.
+        await page.getByText("Back", { exact: true }).first().click();
+        await entries.first().click();
+        await menuButton(page, "Go to entry").click();
+        expect(await page.getByTestId("entry-input-position").inputValue()).toBe(opened);
+    });
+});

@@ -24,6 +24,8 @@ interface InterestsFlowProps {
     itemSpacing: number;
     /** `data-nav-section` value so a click on an item targets this section. */
     navSection: string;
+    /** Position of each shown interest in the full list (hidden ones are not shown). Defaults to the shown position. */
+    sourceIndices?: number[];
     /** Returns the icon element for an interest, or null. Provided by the caller. */
     renderIcon?: (interest: FlowInterest) => ReactNode;
 }
@@ -52,6 +54,7 @@ export function InterestsFlow({
     accentColor,
     itemSpacing,
     navSection,
+    sourceIndices,
     renderIcon,
 }: InterestsFlowProps) {
     if (interests.length === 0) return null;
@@ -61,7 +64,7 @@ export function InterestsFlow({
     const navAttrs = (index: number) => ({
         "data-testid": "resume-interest-item",
         "data-nav-section": navSection,
-        "data-nav-entry-index": String(index),
+        "data-nav-entry-index": String(sourceIndices?.[index] ?? index),
         "data-nav-kind": "entry",
     });
     const blockStyle = { marginBottom: `${itemSpacing}px` };

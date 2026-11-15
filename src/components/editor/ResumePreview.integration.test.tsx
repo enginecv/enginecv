@@ -7,6 +7,11 @@ import { useResumeStore } from "@/lib/store";
 import { useI18nStore } from "@/lib/i18n";
 import { ResumePreview } from "./ResumePreview";
 
+/** Position of a skill group in the full list (the schema adds an empty "ungrouped" group first). */
+function resume_groupIndex(resume: Resume, groupId: string) {
+    return resume.skillGroups.findIndex((group) => group.id === groupId);
+}
+
 /** Finds a button in the preview's body-level selection menu by its label. */
 function findButton(label: string) {
     return Array.from(document.body.querySelectorAll<HTMLButtonElement>("button"))
@@ -2695,6 +2700,138 @@ describe("ResumePreview", () => {
         });
     });
 
+    describe("navigating to an entry when earlier entries are hidden", () => {
+        afterEach(() => cleanup());
+
+        const experience = (id: string, company: string, hidden: boolean) => ({
+            id, hidden, company, position: "Engineer", start: "2024-01", end: "Present",
+            location: "", description: "", highlights: [], skills: [], url: "", urlIcon: "auto",
+        });
+
+        async function renderWith(configure: (resume: Resume) => void, section: string) {
+            const resume = createEmptyResume();
+            resume.basics.name = "Jane Doe";
+            configure(resume);
+            const requestEditorNav = vi.fn();
+            useResumeStore.setState({ resume, paperSize: "a4", requestEditorNav });
+            const { container } = render(<ResumePreview />);
+            const page = container.querySelector(".resume-page") as HTMLElement;
+            const entries = await waitFor(() => {
+                const nodes = Array.from(page.querySelectorAll<HTMLElement>(`[data-nav-kind="entry"][data-nav-section="${section}"]`));
+                expect(nodes.length).toBeGreaterThan(0);
+                return nodes;
+            });
+            return { page, entries, requestEditorNav };
+        }
+
+        function doubleClick(element: HTMLElement) {
+            fireEvent.click(element, { detail: 1 });
+            fireEvent.click(element, { detail: 2 });
+            fireEvent.dblClick(element);
+        }
+
+        it("reports the entry's position in the full list, not among the visible ones", async () => {
+            const { entries, requestEditorNav } = await renderWith((resume) => {
+                resume.settings.contentSections = ["experience"];
+                resume.experience = [experience("e1", "Hidden Co", true), experience("e2", "Shown Co", false)];
+            }, "experience");
+
+            expect(entries).toHaveLength(1);
+            // The only visible entry is the second one in the editor.
+            expect(entries[0]).toHaveAttribute("data-nav-entry-index", "1");
+
+            doubleClick(entries[0]);
+            expect(requestEditorNav).toHaveBeenCalledWith("experience", 1);
+        });
+
+        it("the click menu's Go to entry uses the same full-list position", async () => {
+            const { entries, requestEditorNav } = await renderWith((resume) => {
+                resume.settings.contentSections = ["experience"];
+                resume.experience = [experience("e1", "Hidden Co", true), experience("e2", "Shown Co", false)];
+            }, "experience");
+
+            fireEvent.click(entries[0]);
+            const goTo = await waitFor(() => {
+                const button = findButton("Go to entry");
+                expect(button).toBeTruthy();
+                return button as HTMLButtonElement;
+            });
+            fireEvent.click(goTo);
+
+            expect(requestEditorNav).toHaveBeenCalledWith("experience", 1);
+        });
+
+        it("keeps working when several entries are hidden and when none are", async () => {
+            const hiddenMix = await renderWith((resume) => {
+                resume.settings.contentSections = ["experience"];
+                resume.experience = [
+                    experience("e1", "A", true), experience("e2", "B", false), experience("e3", "C", true),
+                    experience("e4", "D", false), experience("e5", "E", false),
+                ];
+            }, "experience");
+            expect(hiddenMix.entries.map((entry) => entry.getAttribute("data-nav-entry-index"))).toEqual(["1", "3", "4"]);
+            cleanup();
+
+            const none = await renderWith((resume) => {
+                resume.settings.contentSections = ["experience"];
+                resume.experience = [experience("e1", "A", false), experience("e2", "B", false)];
+            }, "experience");
+            expect(none.entries.map((entry) => entry.getAttribute("data-nav-entry-index"))).toEqual(["0", "1"]);
+        });
+
+        it("maps projects and custom sections the same way", async () => {
+            const project = (id: string, name: string, hidden: boolean) => ({
+                id, hidden, name, subtitle: "", description: "", highlights: [], keywords: [], skills: [],
+                start: "", end: "", url: "", urlIcon: "auto", repos: [], icon: "", visibility: "",
+            });
+            const projects = await renderWith((resume) => {
+                resume.settings.contentSections = ["projects"];
+                resume.projects = [project("p1", "Hidden", true), project("p2", "Shown", false)] as never;
+            }, "projects");
+            expect(projects.entries[0]).toHaveAttribute("data-nav-entry-index", "1");
+            cleanup();
+
+            const custom = await renderWith((resume) => {
+                resume.settings.contentSections = ["custom:c1"];
+                resume.customSections = [{
+                    id: "c1", hidden: false, title: "Extra", icon: "auto", layout: "entries", text: "", tags: [],
+                    entries: [
+                        { id: "x1", hidden: true, title: "Hidden entry", subtitle: "", location: "", start: "", end: "", description: "", url: "", urlIcon: "auto" },
+                        { id: "x2", hidden: false, title: "Shown entry", subtitle: "", location: "", start: "", end: "", description: "", url: "", urlIcon: "auto" },
+                    ],
+                }] as never;
+            }, "custom:c1");
+            expect(custom.entries[0]).toHaveAttribute("data-nav-entry-index", "1");
+        });
+
+        it("maps skill groups to their position in the full group list", async () => {
+            const skill = (id: string) => ({ id, hidden: false, name: id, description: "", level: "", icon: "auto", display: "name", keywords: [] });
+            const { entries } = await renderWith((resume) => {
+                resume.settings.contentSections = ["skills"];
+                resume.skillGroups = [
+                    { id: "g1", name: "Hidden group", hidden: true, skills: [skill("a")] },
+                    { id: "g2", name: "Shown group", hidden: false, skills: [skill("b")] },
+                ] as never;
+            }, "skills");
+
+            const shownGroup = resume_groupIndex(useResumeStore.getState().resume, "g2");
+            expect(entries[0]).toHaveAttribute("data-nav-entry-index", String(shownGroup));
+        });
+
+        it("maps interests shown as chips the same way", async () => {
+            const { entries } = await renderWith((resume) => {
+                resume.settings.contentSections = ["interests"];
+                resume.settings.interestsSection = { ...resume.settings.interestsSection, display: "chips" };
+                resume.interests = [
+                    { id: "i1", hidden: true, name: "Hidden hobby", description: "" },
+                    { id: "i2", hidden: false, name: "Chess", description: "" },
+                ];
+            }, "interests");
+
+            expect(entries.some((entry) => entry.textContent === "Chess" && entry.getAttribute("data-nav-entry-index") === "1")).toBe(true);
+        });
+    });
+
     describe("interests display styles", () => {
         afterEach(() => cleanup());
 
@@ -2795,7 +2932,8 @@ describe("ResumePreview", () => {
         it("targets the right entry when an item in a compact style is clicked", async () => {
             const { page, requestEditorNav } = await renderInterests({ display: "chips" });
             const items = page.querySelectorAll<HTMLElement>('[data-testid="resume-interest-item"]');
-            // Hidden interests are skipped, so the third visible item is "Reading".
+            // The hidden "Secret hobby" (position 2) is not shown, so the third visible item is
+            // "Reading", whose position in the full list is 3.
             fireEvent.click(items[2]);
 
             const goTo = await waitFor(() => {
@@ -2805,7 +2943,7 @@ describe("ResumePreview", () => {
             });
             fireEvent.click(goTo);
 
-            expect(requestEditorNav).toHaveBeenCalledWith("interests", 2);
+            expect(requestEditorNav).toHaveBeenCalledWith("interests", 3);
         });
 
         const ICONS = { Chess: "lucide:crown", Hiking: "🥾", Reading: "lucide:not-a-real-icon" };

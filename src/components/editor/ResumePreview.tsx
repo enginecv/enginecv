@@ -44,7 +44,7 @@ import { parseInterestIcon } from "@/lib/interests/icon";
 import { assessedCefrSkills, CEFR_SKILL_GROUPS, CEFR_SKILLS, isCefrLevel, type CefrSkill, type CefrSkillGroup } from "@/lib/cefr";
 import { resolveSectionSettings } from "@/lib/customization";
 import type { IconComponent } from "@/lib/icons/brand-icons";
-import { getVisibleContentKeys, getVisibleSectionEntries, visibleEntries } from "@/lib/preview/visibility";
+import { getVisibleContentKeys, getVisibleSectionEntries, getVisibleSourceIndices, visibleEntries } from "@/lib/preview/visibility";
 import { getRoleFonts, roleFontStack, fontFamilyCssValue } from "@/lib/fonts";
 import { PreviewNavMenu } from "./PreviewNavMenu";
 import { RepoBadgeList } from "./RepoBadge";
@@ -157,6 +157,20 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
     // therefore every visual export, which consumes this preview's pages)
     // renders only visible content. JSON export reads the raw document.
     const content = useMemo(() => getVisibleSectionEntries(resume), [resume]);
+    // The preview builds from the visible entries, but "go to this entry" is a position
+    // in the full list the editor works with; map one to the other so a hidden entry
+    // above does not shift every entry below it.
+    const sourceIndexLists = useMemo(() => new Map<string, number[]>(), [resume]);
+    const sourceEntryIndices = (sectionKey: string): number[] => {
+        let list = sourceIndexLists.get(sectionKey);
+        if (!list) {
+            list = getVisibleSourceIndices(resume, sectionKey);
+            sourceIndexLists.set(sectionKey, list);
+        }
+        return list;
+    };
+    const sourceEntryIndex = (sectionKey: string, visibleIndex: number): number =>
+        sourceEntryIndices(sectionKey)[visibleIndex] ?? visibleIndex;
     const allSkillsVisible = useMemo(
         () => content.skillGroups.flatMap((group) => group.skills),
         [content],
@@ -2235,6 +2249,7 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
             accentColor={settings.colors.accent}
             itemSpacing={settings.spacing.itemSpacing}
             navSection="interests"
+            sourceIndices={sourceEntryIndices("interests")}
             renderIcon={renderInterestIcon}
         />
     );
@@ -3704,7 +3719,7 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
                 kind: "entry",
                 section: section.base,
                 navSection: section.key,
-                navEntryIndex: index,
+                navEntryIndex: sourceEntryIndex(section.key, index),
                 node: entryNode,
             });
         });
@@ -3771,7 +3786,7 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
                             <div
                                 key={`${section.key}:entry-fragment:${entryIndex}`}
                                 data-nav-section={section.key}
-                                data-nav-entry-index={entryIndex}
+                                data-nav-entry-index={sourceEntryIndex(section.key, entryIndex)}
                                 data-nav-kind="entry"
                                 style={{ display: "flow-root" }}
                             >
