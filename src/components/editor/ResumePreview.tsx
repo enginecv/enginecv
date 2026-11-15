@@ -37,7 +37,8 @@ import { resolveExternalHref } from "@/lib/external-links";
 import { getPrimaryResumeEmail, getResumeEmails } from "@/lib/emails";
 import { useTranslation } from "@/lib/i18n";
 import type { Resume, ResumeSettings } from "@/lib/schema";
-import { isNativeLanguageFluency, skillLevelRank, SKILL_LEVELS, type SkillGroup } from "@/lib/schema";
+import { DEFAULT_INTERESTS_SECTION, isNativeLanguageFluency, skillLevelRank, SKILL_LEVELS, type SkillGroup } from "@/lib/schema";
+import { InterestsFlow } from "./interests/InterestsFlow";
 import { assessedCefrSkills, CEFR_SKILL_GROUPS, CEFR_SKILLS, isCefrLevel, type CefrSkill, type CefrSkillGroup } from "@/lib/cefr";
 import { resolveSectionSettings } from "@/lib/customization";
 import type { IconComponent } from "@/lib/icons/brand-icons";
@@ -332,6 +333,7 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
             tableCellPaddingX: 8,
             tableCellPaddingY: 6,
         },
+        interestsSection: { ...DEFAULT_INTERESTS_SECTION },
         design: DEFAULT_DESIGN_SETTINGS,
     };
 
@@ -381,6 +383,10 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
             ...defaultSettings.languagesSection,
             ...((resume.settings as any)?.languagesSection || {}),
         },
+        interestsSection: {
+            ...defaultSettings.interestsSection,
+            ...((resume.settings as any)?.interestsSection || {}),
+        },
         design: {
             ...defaultSettings.design,
             ...((resume.settings as any)?.design || {}),
@@ -424,6 +430,8 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
     const languageLayout: "list" | "table" | "cefr" =
         storedLanguageLayout === "table" || storedLanguageLayout === "cefr" ? storedLanguageLayout : "list";
     const languagesStyle = getScopedSettings("languages").languagesSection;
+    const scopedInterests = getScopedSettings("interests");
+    const interestsStyle = scopedInterests.interestsSection;
     const projectsStyle = getScopedSettings("projects");
     const languageColumns = languageLayout === "list" ? Math.min(3, Math.max(1, languagesStyle.columns ?? 1)) : 1;
     // Custom entry spacing replaces the global spacing.itemSpacing part of the wrapper margin.
@@ -2185,6 +2193,23 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
 
     // Multi-column list renders as one grid block (like the table) instead of per-entry blocks.
     // Each cell keeps the regular entry styling, so the outer div is only a spacer.
+    // Inline / Chips / Icon grid: the whole Interests section as one block. The
+    // `list` display keeps the per-entry rendering (default, unchanged).
+    const renderInterestsFlow = (interests: any[]) => (
+        <InterestsFlow
+            interests={interests}
+            display={interestsStyle.display === "list" ? "inline" : interestsStyle.display}
+            separator={interestsStyle.separator}
+            columns={interestsStyle.columns}
+            showIcons={interestsStyle.showIcons}
+            fallbackLabel={interestLabel}
+            titleFontSize={scopedInterests.entryLayout.titleFontSize}
+            accentColor={settings.colors.accent}
+            itemSpacing={settings.spacing.itemSpacing}
+            navSection="interests"
+        />
+    );
+
     const renderLanguageGrid = (languages: any[]) => (
         <div
             data-testid="resume-languages-grid"
@@ -3103,26 +3128,35 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
             section: "interests",
             node: renderSectionHeading("interests", interestsLabel),
         });
-        content.interests.forEach((interest: any, i: number) => {
+        if (interestsStyle.display !== "list") {
             pushBlock({
-                key: `interest-${interest.id || i}`,
+                key: "interests-flow",
                 kind: "entry",
                 section: "interests",
-                node: renderEntry(
-                    interest.name || interestLabel,
-                    null,
-                    null,
-                    null,
-                    interest.description ? (
-                        <ReactMarkdown components={markdownComponents} remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw, rehypeSanitize]}>{interest.description}</ReactMarkdown>
-                    ) : null,
-                    undefined,
-                    undefined,
-                    undefined,
-                    getConfiguredSectionKey("interests"),
-                ),
+                node: renderInterestsFlow(content.interests),
             });
-        });
+        } else {
+            content.interests.forEach((interest: any, i: number) => {
+                pushBlock({
+                    key: `interest-${interest.id || i}`,
+                    kind: "entry",
+                    section: "interests",
+                    node: renderEntry(
+                        interest.name || interestLabel,
+                        null,
+                        null,
+                        null,
+                        interest.description ? (
+                            <ReactMarkdown components={markdownComponents} remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw, rehypeSanitize]}>{interest.description}</ReactMarkdown>
+                        ) : null,
+                        undefined,
+                        undefined,
+                        undefined,
+                        getConfiguredSectionKey("interests"),
+                    ),
+                });
+            });
+        }
     }
 
     if (shouldRenderConfiguredSection("languages") && content.languages && content.languages.length > 0) {
@@ -3456,23 +3490,25 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
             key: getConfiguredSectionKey("interests"),
             base: "interests",
             headingNode: renderSectionHeading("interests", interestsLabel),
-            entryNodes: content.interests.map((interest: any, i: number) => (
-                <div key={`layout-interest-${interest.id || i}`}>
-                    {renderEntry(
-                        interest.name || interestLabel,
-                        null,
-                        null,
-                        null,
-                        interest.description ? (
-                            <ReactMarkdown components={markdownComponents} remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw, rehypeSanitize]}>{interest.description}</ReactMarkdown>
-                        ) : null,
-                        undefined,
-                        undefined,
-                        undefined,
-                        getConfiguredSectionKey("interests"),
-                    )}
-                </div>
-            )),
+            entryNodes: interestsStyle.display !== "list"
+                ? [<div key="layout-interests-flow">{renderInterestsFlow(content.interests)}</div>]
+                : content.interests.map((interest: any, i: number) => (
+                    <div key={`layout-interest-${interest.id || i}`}>
+                        {renderEntry(
+                            interest.name || interestLabel,
+                            null,
+                            null,
+                            null,
+                            interest.description ? (
+                                <ReactMarkdown components={markdownComponents} remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw, rehypeSanitize]}>{interest.description}</ReactMarkdown>
+                            ) : null,
+                            undefined,
+                            undefined,
+                            undefined,
+                            getConfiguredSectionKey("interests"),
+                        )}
+                    </div>
+                )),
         });
     }
 

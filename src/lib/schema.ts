@@ -381,6 +381,40 @@ export const languageSchema = z.object({
         : language
 ));
 
+// How the Interests section is laid out. `list` is the original look (one entry
+// per interest, with its description), so it is the default and existing CVs do
+// not change. The other styles render all interests as one compact block.
+export const INTERESTS_DISPLAYS = ["list", "inline", "chips", "iconGrid"] as const;
+export const INTERESTS_SEPARATORS = ["dot", "comma", "pipe", "slash"] as const;
+export type InterestsDisplay = (typeof INTERESTS_DISPLAYS)[number];
+export type InterestsSeparator = (typeof INTERESTS_SEPARATORS)[number];
+
+export interface InterestsSection {
+    display: InterestsDisplay;
+    /** Show per-interest icons in the styles that can (list, chips, icon grid). */
+    showIcons: boolean;
+    /** Icon grid: number of columns (1-4). */
+    columns: number;
+    /** Inline style: what goes between interests. */
+    separator: InterestsSeparator;
+}
+
+export const DEFAULT_INTERESTS_SECTION: InterestsSection = {
+    display: "list",
+    showIcons: true,
+    columns: 3,
+    separator: "dot",
+};
+
+// Unknown or out-of-range values fall back to the default instead of failing
+// the whole resume (older files, imports, hand-edited JSON).
+export const interestsSectionSchema = z.object({
+    display: z.enum(INTERESTS_DISPLAYS).default(DEFAULT_INTERESTS_SECTION.display).catch(DEFAULT_INTERESTS_SECTION.display),
+    showIcons: z.boolean().default(DEFAULT_INTERESTS_SECTION.showIcons).catch(DEFAULT_INTERESTS_SECTION.showIcons),
+    columns: z.number().int().min(1).max(4).default(DEFAULT_INTERESTS_SECTION.columns).catch(DEFAULT_INTERESTS_SECTION.columns),
+    separator: z.enum(INTERESTS_SEPARATORS).default(DEFAULT_INTERESTS_SECTION.separator).catch(DEFAULT_INTERESTS_SECTION.separator),
+});
+
 export const interestSchema = z.object({
     id: z.string().default(() => createId()),
     hidden: z.boolean().default(false),
@@ -918,6 +952,11 @@ export const settingsSchema = z.object({
         tableCellPaddingY: 6,
     }),
 
+    // Interests Section (display style and icons; see interestsSectionSchema)
+    interestsSection: interestsSectionSchema
+        .default(() => ({ ...DEFAULT_INTERESTS_SECTION }))
+        .catch(() => ({ ...DEFAULT_INTERESTS_SECTION })),
+
     // Repo Badge (per-project repository chips)
     repoBadge: z.object({
         fontFamily: z.string().default(""),
@@ -1039,6 +1078,7 @@ export const SECTION_STYLE_KEYS = [
     "entryLayout",
     "repoBadge",
     "languagesSection",
+    "interestsSection",
     "linkIcon",
 ] as const;
 
@@ -1352,6 +1392,7 @@ export const resumeObjectSchema = z.object({
             tableCellPaddingX: 8,
             tableCellPaddingY: 6,
         },
+        interestsSection: { ...DEFAULT_INTERESTS_SECTION },
         repoBadge: {
             fontFamily: "",
             fontSize: 9,

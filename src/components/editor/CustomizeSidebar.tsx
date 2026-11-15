@@ -11,7 +11,8 @@ import { getBuiltinTemplates } from "@/lib/templates/enginecv-templates";
 import { FONT_ROLES, PRESET_FONTS, type FontRole, type RoleFonts, roleRef, parseRoleRef, getRoleFonts } from "@/lib/fonts";
 import { getVisibleContentKeys } from "@/lib/preview/visibility";
 import { hasSectionStyleOverride, resolveSectionSettings } from "@/lib/customization";
-import type { ResumeSettings, SectionStyleKey } from "@/lib/schema";
+import type { InterestsDisplay, InterestsSeparator, ResumeSettings, SectionStyleKey } from "@/lib/schema";
+import { DEFAULT_INTERESTS_SECTION } from "@/lib/schema";
 import type { LucideIcon } from "lucide-react";
 import { createContext, useContext, useId, useState, useRef, useEffect, useMemo, type ChangeEvent, type ReactNode } from "react";
 import {
@@ -2017,6 +2018,7 @@ export function CustomizeSidebar() {
             tableCellPaddingX: 8,
             tableCellPaddingY: 6,
         },
+        interestsSection: { ...DEFAULT_INTERESTS_SECTION },
         design: DEFAULT_DESIGN_SETTINGS,
     };
 
@@ -2066,6 +2068,10 @@ export function CustomizeSidebar() {
         languagesSection: {
             ...defaultSettings.languagesSection,
             ...((resume.settings as any)?.languagesSection || {}),
+        },
+        interestsSection: {
+            ...defaultSettings.interestsSection,
+            ...((resume.settings as any)?.interestsSection || {}),
         },
         design: {
             ...defaultSettings.design,
@@ -2198,7 +2204,7 @@ export function CustomizeSidebar() {
         if (
             scope === "section"
             && selectedCustomizeSection
-            && (["headings", "contentStyle", "entryLayout", "repoBadge", "languagesSection", "linkIcon"] as string[]).includes(category)
+            && (["headings", "contentStyle", "entryLayout", "repoBadge", "languagesSection", "interestsSection", "linkIcon"] as string[]).includes(category)
         ) {
             updateSectionStyle(
                 selectedCustomizeSection,
@@ -2708,6 +2714,7 @@ export function CustomizeSidebar() {
         } as Record<string, string>)[settings.entryLayout.layout] || "customize.entryLayoutContentRight"),
         repoBadge: settings.repoBadge.colorMode,
         languagesSection: `${settings.languagesSection.columns}`,
+        interestsSection: t(`customize.interestsStyle${({ list: "List", inline: "Inline", chips: "Chips", iconGrid: "IconGrid" } as Record<string, string>)[settings.interestsSection.display] ?? "List"}`),
         linkIcons: t(`customize.${settings.linkIcon.side}`),
         headerLinkIndicators: t(`customize.${settings.headerIcon.side}`),
         designOverlays: `${settings.design.elements.length}`,
@@ -4309,6 +4316,108 @@ export function CustomizeSidebar() {
                             </>
                         )}
                     </div>
+                </div>
+            </CustomizeSectionCard>
+            )}
+
+            {matchSearch(["customize.interestsSection", "customize.interestsStyle", "customize.interestsShowIcons", "customize.interestsSeparator", "customize.interestsColumns"]) && (
+            <CustomizeSectionCard
+                sectionKey="interestsSection"
+            >
+                <div className="space-y-6" data-testid="interests-section-controls">
+                    <div>
+                        <label className="text-xs font-semibold text-strong/90 mb-3 block">{t("customize.interestsStyle")}</label>
+                        <div className="flex flex-wrap bg-surface-1 p-1 rounded-xl border border-edge" role="group" aria-label={t("customize.interestsStyle")}>
+                            {([
+                                { value: "list" as InterestsDisplay, labelKey: "customize.interestsStyleList" },
+                                { value: "inline" as InterestsDisplay, labelKey: "customize.interestsStyleInline" },
+                                { value: "chips" as InterestsDisplay, labelKey: "customize.interestsStyleChips" },
+                                { value: "iconGrid" as InterestsDisplay, labelKey: "customize.interestsStyleIconGrid" },
+                            ]).map((opt) => (
+                                <button
+                                    key={opt.value}
+                                    type="button"
+                                    data-testid={`interests-style-${opt.value}`}
+                                    aria-pressed={settings.interestsSection.display === opt.value}
+                                    onClick={() => handleUpdate('interestsSection', { display: opt.value })}
+                                    className={`flex-1 min-w-[5.5rem] px-2 py-2 text-sm font-medium rounded-lg transition-colors ${
+                                        settings.interestsSection.display === opt.value
+                                            ? "bg-edge text-strong"
+                                            : "text-faint hover:text-strong"
+                                    }`}
+                                >
+                                    {t(opt.labelKey)}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {settings.interestsSection.display !== "list" && (resume.interests || []).some((interest) => (interest.description || "").trim() !== "") && (
+                        <p className="text-xs text-faint" data-testid="interests-descriptions-hidden">
+                            {t("customize.interestsDescriptionsHidden")}
+                        </p>
+                    )}
+
+                    {settings.interestsSection.display !== "inline" && (
+                        <ApplyToCheckbox
+                            label={t("customize.interestsShowIcons")}
+                            checked={settings.interestsSection.showIcons}
+                            onChange={(checked) => handleUpdate('interestsSection', { showIcons: checked })}
+                        />
+                    )}
+
+                    {settings.interestsSection.display === "inline" && (
+                        <div>
+                            <label className="text-xs font-semibold text-strong/90 mb-3 block">{t("customize.interestsSeparator")}</label>
+                            <div className="flex flex-wrap bg-surface-1 p-1 rounded-xl border border-edge" role="group" aria-label={t("customize.interestsSeparator")}>
+                                {([
+                                    { value: "dot" as InterestsSeparator, labelKey: "customize.interestsSeparatorDot" },
+                                    { value: "comma" as InterestsSeparator, labelKey: "customize.interestsSeparatorComma" },
+                                    { value: "pipe" as InterestsSeparator, labelKey: "customize.interestsSeparatorPipe" },
+                                    { value: "slash" as InterestsSeparator, labelKey: "customize.interestsSeparatorSlash" },
+                                ]).map((opt) => (
+                                    <button
+                                        key={opt.value}
+                                        type="button"
+                                        data-testid={`interests-separator-${opt.value}`}
+                                        aria-pressed={settings.interestsSection.separator === opt.value}
+                                        onClick={() => handleUpdate('interestsSection', { separator: opt.value })}
+                                        className={`flex-1 min-w-[4rem] px-2 py-2 text-sm font-medium rounded-lg transition-colors ${
+                                            settings.interestsSection.separator === opt.value
+                                                ? "bg-edge text-strong"
+                                                : "text-faint hover:text-strong"
+                                        }`}
+                                    >
+                                        {t(opt.labelKey)}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {settings.interestsSection.display === "iconGrid" && (
+                        <div>
+                            <label className="text-xs font-semibold text-strong/90 mb-3 block">{t("customize.interestsColumns")}</label>
+                            <div className="flex bg-surface-1 p-1 rounded-xl border border-edge" role="group" aria-label={t("customize.interestsColumns")}>
+                                {[1, 2, 3, 4].map((count) => (
+                                    <button
+                                        key={count}
+                                        type="button"
+                                        data-testid={`interests-columns-${count}`}
+                                        aria-pressed={settings.interestsSection.columns === count}
+                                        onClick={() => handleUpdate('interestsSection', { columns: count })}
+                                        className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${
+                                            settings.interestsSection.columns === count
+                                                ? "bg-edge text-strong"
+                                                : "text-faint hover:text-strong"
+                                        }`}
+                                    >
+                                        {count}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
             </CustomizeSectionCard>
             )}

@@ -2664,4 +2664,146 @@ describe("ResumePreview", () => {
         });
     });
 
+    describe("interests display styles", () => {
+        afterEach(() => cleanup());
+
+        type Display = "list" | "inline" | "chips" | "iconGrid";
+
+        function buildInterests(count = 4) {
+            const base = [
+                { id: "i1", hidden: false, name: "Chess", description: "Club player since 2015" },
+                { id: "i2", hidden: false, name: "Hiking", description: "" },
+                { id: "i3", hidden: true, name: "Secret hobby", description: "Not shown" },
+                { id: "i4", hidden: false, name: "Reading", description: "" },
+            ];
+            const extra = Array.from({ length: Math.max(0, count - base.length) }, (_, index) => ({
+                id: `x${index}`,
+                hidden: false,
+                name: `Hobby ${index + 1}`,
+                description: "",
+            }));
+            return [...base, ...extra];
+        }
+
+        async function renderInterests(options: {
+            display?: Display;
+            omitSetting?: boolean;
+            count?: number;
+            columns?: "one" | "two";
+            extra?: Partial<Resume["settings"]["interestsSection"]>;
+        } = {}) {
+            const resume = createEmptyResume();
+            resume.basics.name = "Jane Doe";
+            resume.settings.contentSections = ["interests"];
+            resume.interests = buildInterests(options.count);
+            if (options.columns) resume.settings.layout.columns = options.columns;
+            if (options.omitSetting) {
+                delete (resume.settings as Partial<Resume["settings"]>).interestsSection;
+            } else {
+                resume.settings.interestsSection = {
+                    ...resume.settings.interestsSection,
+                    display: options.display ?? "list",
+                    ...(options.extra ?? {}),
+                };
+            }
+            const requestEditorNav = vi.fn();
+            useResumeStore.setState({ resume, paperSize: "a4", requestEditorNav });
+            const { container } = render(<ResumePreview />);
+            const page = container.querySelector(".resume-page") as HTMLElement;
+            await waitFor(() => expect(within(page).getByText("Chess")).toBeInTheDocument());
+            return { container, page, requestEditorNav };
+        }
+
+        it("keeps today's per-entry list, with descriptions, when no style was ever chosen", async () => {
+            const { page } = await renderInterests({ omitSetting: true });
+
+            expect(page.querySelector('[data-testid="resume-interests-flow"]')).toBeNull();
+            expect(within(page).getByText("Club player since 2015")).toBeInTheDocument();
+            expect(within(page).getByText("Hiking")).toBeInTheDocument();
+            expect(within(page).queryByText("Secret hobby")).toBeNull();
+        });
+
+        it("renders the default list identically whether the style is missing or explicitly list", async () => {
+            const missing = await renderInterests({ omitSetting: true });
+            const missingHtml = missing.page.querySelector('[data-nav-section="interests"]')?.parentElement?.innerHTML;
+            cleanup();
+            const explicit = await renderInterests({ display: "list" });
+            const explicitHtml = explicit.page.querySelector('[data-nav-section="interests"]')?.parentElement?.innerHTML;
+
+            expect(missingHtml).toBeTruthy();
+            expect(explicitHtml).toBe(missingHtml);
+        });
+
+        for (const display of ["inline", "chips", "iconGrid"] as const) {
+            it(`renders the ${display} style as one block without descriptions or hidden interests`, async () => {
+                const { page } = await renderInterests({ display });
+
+                const flow = page.querySelector<HTMLElement>('[data-testid="resume-interests-flow"]');
+                expect(flow).not.toBeNull();
+                expect(flow).toHaveAttribute("data-display", display);
+                expect(page.querySelectorAll('[data-testid="resume-interests-flow"]')).toHaveLength(1);
+                expect(flow?.textContent).toContain("Chess");
+                expect(flow?.textContent).toContain("Hiking");
+                expect(flow?.textContent).toContain("Reading");
+                expect(page.textContent).not.toContain("Club player since 2015");
+                expect(page.textContent).not.toContain("Secret hobby");
+            });
+        }
+
+        it("fits 30 interests in the chips style as a single block on one page", async () => {
+            const { container, page } = await renderInterests({ display: "chips", count: 30 });
+
+            expect(page.querySelectorAll('[data-testid="resume-interest-item"]')).toHaveLength(29);
+            expect(container.querySelectorAll(".resume-page")).toHaveLength(1);
+        });
+
+        it("targets the right entry when an item in a compact style is clicked", async () => {
+            const { page, requestEditorNav } = await renderInterests({ display: "chips" });
+            const items = page.querySelectorAll<HTMLElement>('[data-testid="resume-interest-item"]');
+            // Hidden interests are skipped, so the third visible item is "Reading".
+            fireEvent.click(items[2]);
+
+            const goTo = await waitFor(() => {
+                const button = findButton("Go to entry");
+                expect(button).toBeTruthy();
+                return button as HTMLButtonElement;
+            });
+            fireEvent.click(goTo);
+
+            expect(requestEditorNav).toHaveBeenCalledWith("interests", 2);
+        });
+
+        // Keep this test last in the block: the manual rAF controller it installs
+        // leaves state behind that makes the next single-column render start empty.
+        it("renders the chosen style in the two-column layout path too", async () => {
+            const raf = installRafController();
+            const resume = createEmptyResume();
+            resume.basics.name = "Jane Doe";
+            resume.settings.contentSections = ["interests"];
+            resume.settings.layout.columns = "two";
+            resume.settings.layout.sectionOrder = ["interests"];
+            resume.settings.layout.sectionPlacement = { interests: "left" };
+            resume.interests = buildInterests(4);
+            resume.settings.interestsSection = { ...resume.settings.interestsSection, display: "chips" };
+            useResumeStore.setState({ resume, paperSize: "a4" });
+
+            const { container, unmount } = render(<ResumePreview />);
+            applyStructuredMeasurements(container, {
+                "basic:profile": 120,
+                "interests:heading": 40,
+                "interests:entry:0": 60,
+            });
+            await raf.flushAll();
+            await waitFor(() => {
+                expect(container.querySelectorAll(".resume-page")).toHaveLength(1);
+            });
+
+            const page = container.querySelector(".resume-page") as HTMLElement;
+            const flow = page.querySelector<HTMLElement>('[data-testid="resume-interests-flow"]');
+            expect(flow).not.toBeNull();
+            expect(flow).toHaveAttribute("data-display", "chips");
+            expect(page.querySelectorAll('[data-testid="resume-interests-flow"]')).toHaveLength(1);
+            unmount();
+        });
+    });
 });
