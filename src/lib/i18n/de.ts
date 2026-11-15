@@ -2221,7 +2221,7 @@ export const de: Translations = {
   "tools.github.title": "Entwickler-Lebenslauf aus deinem GitHub-Profil erstellen",
   "tools.github.intro": "Gib deinen GitHub-Benutzernamen ein. EngineCV liest dein öffentliches Profil, Repositorys, Sprachen und Organisationen, lässt dich wählen, welche Repositorys zu Projekten werden, und öffnet einen Entwickler-Lebenslauf im Editor.",
   "tools.github.card": "Aus öffentlichem GitHub-Profil und Repositorys einen Entwickler-Lebenslauf machen.",
-  "tools.github.privacy": "Nur dein Benutzername wird gesendet, direkt von deinem Browser an die öffentliche GitHub-API. EngineCV hat keinen Server dazwischen und fragt nie nach einer Anmeldung.",
+  "tools.github.privacy": "Was du eingibst (der Benutzername und beim Tippen auch Teileingaben für die Vorschau) geht direkt von deinem Browser an die öffentliche GitHub-API, zusammen mit deiner IP-Adresse. EngineCV hat keinen Server dazwischen und fragt nie nach einer Anmeldung.",
   "tools.github.steps.1": "Gib deinen GitHub-Benutzernamen ein und prüfe, ob das angezeigte Profil deins ist.",
   "tools.github.steps.2": "Wähle die Repositorys und Organisationen, die in den Lebenslauf sollen.",
   "tools.github.steps.3": "Öffne den Lebenslauf im Editor, ergänze deine Berufserfahrung, wähle eine Vorlage und exportiere.",

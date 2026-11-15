@@ -2220,7 +2220,7 @@ export const fr: Translations = {
   "tools.github.title": "Créez un CV de développeur depuis votre profil GitHub",
   "tools.github.intro": "Saisissez votre nom d'utilisateur GitHub. EngineCV lit votre profil public, vos dépôts, langages et organisations, vous laisse choisir les dépôts qui deviennent des projets et ouvre un CV de développeur dans l'éditeur.",
   "tools.github.card": "Transformez votre profil GitHub public et vos dépôts en CV de développeur.",
-  "tools.github.privacy": "Seul votre nom d'utilisateur est envoyé, directement de votre navigateur à l'API publique de GitHub. EngineCV n'a pas de serveur intermédiaire et ne vous demande jamais de vous connecter.",
+  "tools.github.privacy": "Ce que vous saisissez (le nom d'utilisateur, et des fragments pendant la frappe pour l'aperçu) part directement de votre navigateur vers l'API publique de GitHub, avec votre adresse IP. EngineCV n'a pas de serveur intermédiaire et ne vous demande jamais de vous connecter.",
   "tools.github.steps.1": "Saisissez votre nom d'utilisateur GitHub et vérifiez que le profil affiché est le vôtre.",
   "tools.github.steps.2": "Choisissez les dépôts et organisations à faire figurer sur votre CV.",
   "tools.github.steps.3": "Ouvrez le CV dans l'éditeur, ajoutez votre expérience, choisissez un modèle et exportez.",

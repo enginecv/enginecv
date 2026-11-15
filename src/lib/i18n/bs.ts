@@ -2221,7 +2221,7 @@ export const bs: Translations = {
   "tools.github.title": "Napravite CV za programere iz svog GitHub profila",
   "tools.github.intro": "Upišite svoje GitHub korisničko ime. EngineCV čita vaš javni profil, repozitorije, jezike i organizacije, daje vam da izaberete koji repozitoriji postaju projekti i otvara CV za programere u uređivaču.",
   "tools.github.card": "Pretvorite javni GitHub profil i repozitorije u CV za programere.",
-  "tools.github.privacy": "Šalje se samo vaše korisničko ime, direktno iz preglednika na javni GitHub API. EngineCV nema server između i nikad ne traži prijavu.",
+  "tools.github.privacy": "Ono što upišete (korisničko ime, a tokom kucanja i dio unosa za pregled) ide direktno iz preglednika na javni GitHub API, zajedno s vašom IP adresom. EngineCV nema server između i nikad ne traži prijavu.",
   "tools.github.steps.1": "Upišite GitHub korisničko ime i provjerite da je prikazani profil vaš.",
   "tools.github.steps.2": "Izaberite repozitorije i organizacije koje želite u CV-u.",
   "tools.github.steps.3": "Otvorite CV u uređivaču, dodajte radno iskustvo, izaberite šablon i izvezite.",
