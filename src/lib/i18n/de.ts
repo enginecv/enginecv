@@ -1458,6 +1458,7 @@ export const de: Translations = {
   "customize.center": "Zentriert",
   "customize.right": "Rechts",
   "customize.full": "Voll",
+  "customize.placementGroup": "{section} - Spalte",
   "customize.resetTo5050": "Auf 50 / 50 zurücksetzen",
   "customize.documentFlow": "Dokumentfluss",
   "customize.documentFlowDesc": "Ziehe, um die Reihenfolge aller Inhaltsabschnitte, Trennlinien, vertikalen Trennlinien und Seitenumbrüche zu steuern.",

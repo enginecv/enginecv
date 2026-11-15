@@ -1458,6 +1458,7 @@ export const bs: Translations = {
   "customize.center": "Centar",
   "customize.right": "Desno",
   "customize.full": "Puno",
+  "customize.placementGroup": "{section} - kolona",
   "customize.resetTo5050": "Resetuj na 50 / 50",
   "customize.documentFlow": "Tok dokumenta",
   "customize.documentFlowDesc": "Povucite za kontrolu redoslijeda svih sekcija sadržaja, separatora, vertikalnih separatora i prijeloma stranica.",

@@ -1458,6 +1458,7 @@ export const fr: Translations = {
   "customize.center": "Centre",
   "customize.right": "Droite",
   "customize.full": "Pleine",
+  "customize.placementGroup": "{section} - colonne",
   "customize.resetTo5050": "Réinitialiser à 50 / 50",
   "customize.documentFlow": "Flux du document",
   "customize.documentFlowDesc": "Faites glisser pour contrôler l'ordre de toutes les sections de contenu, séparateurs, séparateurs verticaux et sauts de page.",

@@ -1,4 +1,4 @@
-import { cleanup } from "@testing-library/react";
+import { cleanup, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useI18nStore } from "@/lib/i18n";
 import { createEmptyResume } from "@/lib/schema";
@@ -85,5 +85,75 @@ describe("section placement control", () => {
         expect(useResumeStore.getState().resume.settings.layout.sectionPlacement.skills).toBe("full");
         expect(toggleSide("skills")).toBe("full");
         expect(previewSide(container, "skills")).toBe("full");
+    });
+
+    describe("accessibility", () => {
+        it("groups each section's options, names the group after the section, and marks exactly one option pressed", async () => {
+            await renderEditor(twoColumnResume({ education: "left" }));
+
+            for (const key of ["experience", "education", "skills", "projects"]) {
+                const row = screen.getByTestId(`section-order-row-${key}`);
+                const group = within(row).getByRole("group", { name: /- column$/i });
+                const options = within(group).getAllByRole("button");
+                expect(options.map((option) => option.textContent)).toEqual(["Left", "Right"]);
+                expect(within(group).getAllByRole("button", { pressed: true })).toHaveLength(1);
+                expect(within(group).getAllByRole("button", { pressed: true })[0].textContent?.toLowerCase()).toBe(toggleSide(key));
+            }
+            // The group name carries the section name.
+            expect(within(screen.getByTestId("section-order-row-education")).getByRole("group", { name: /Education/i })).toBeInTheDocument();
+        });
+
+        it("offers Full only in mixed mode", async () => {
+            await renderEditor(twoColumnResume({}, "mix"));
+
+            const group = within(screen.getByTestId("section-order-row-skills")).getByRole("group", { name: /- column$/i });
+            expect(within(group).getAllByRole("button").map((option) => option.textContent)).toEqual(["Full", "Left", "Right"]);
+        });
+
+        it("has no side control for separators and page breaks", async () => {
+            const resume = twoColumnResume({});
+            resume.settings.layout.sectionOrder = ["experience", "separator:one", "education", "pagebreak:two", "skills", "projects"];
+            await renderEditor(resume);
+
+            for (const key of ["separator:one", "pagebreak:two"]) {
+                expect(within(screen.getByTestId(`section-order-row-${key}`)).queryByRole("group", { name: /- column$/i })).toBeNull();
+            }
+        });
+
+        it("can be operated with the keyboard alone and announces the new state", async () => {
+            const { user, container, raf } = await renderEditor(twoColumnResume({ education: "left" }));
+            const group = within(screen.getByTestId("section-order-row-education")).getByRole("group", { name: /- column$/i });
+            const right = within(group).getByRole("button", { name: "Right" });
+
+            right.focus();
+            expect(right).toHaveFocus();
+            await user.keyboard("{Enter}");
+            await settle(container, raf);
+
+            expect(within(group).getByRole("button", { name: "Right" })).toHaveAttribute("aria-pressed", "true");
+            expect(within(group).getByRole("button", { name: "Left" })).toHaveAttribute("aria-pressed", "false");
+
+            const left = within(group).getByRole("button", { name: "Left" });
+            left.focus();
+            await user.keyboard(" ");
+            await settle(container, raf);
+            expect(within(group).getByRole("button", { name: "Left" })).toHaveAttribute("aria-pressed", "true");
+        });
+
+        it("gives the move buttons a name that says which section they move", async () => {
+            await renderEditor(twoColumnResume({}));
+
+            const row = screen.getByTestId("section-order-row-education");
+            expect(within(row).getByRole("button", { name: /Move up: Education/i })).toBeInTheDocument();
+            expect(within(row).getByRole("button", { name: /Move down: Education/i })).toBeInTheDocument();
+        });
+
+        it("translates the group name", async () => {
+            useI18nStore.setState({ locale: "de", _hydrated: true });
+            await renderEditor(twoColumnResume({}));
+
+            const row = screen.getByTestId("section-order-row-experience");
+            expect(within(row).getByRole("group", { name: /Spalte/i })).toBeInTheDocument();
+        });
     });
 });

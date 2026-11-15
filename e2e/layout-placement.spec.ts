@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { expectNoA11yViolations } from "./helpers/a11y";
 import { openJsonFixture } from "./helpers/json-editor";
 
 // Section placement in the two-column layout (feature 086): the side the
@@ -114,4 +115,56 @@ test.describe("section placement in the two-column layout", () => {
         await expect.poll(() => previewSide(page, key)).toBe("left");
         await expectAllAgree(page);
     });
+
+    test("the side control has no serious accessibility problems and works from the keyboard alone", async ({ page }) => {
+        await openJsonFixture(page, false);
+        await openLayoutPanel(page);
+        await chooseTwoColumns(page);
+        const key = (await sectionKeys(page))[1];
+
+        await expectNoA11yViolations(page, { include: [`[data-testid="section-order-row-${key}"]`], label: "section placement control" });
+
+        const group = page.getByTestId(`section-order-row-${key}`).getByRole("group");
+        await expect(group).toHaveCount(1);
+        const right = group.getByRole("button", { name: "Right", exact: true });
+        await right.focus();
+        await page.keyboard.press("Enter");
+        await expect(right).toHaveAttribute("aria-pressed", "true");
+        await expect.poll(() => previewSide(page, key)).toBe("right");
+
+        const left = group.getByRole("button", { name: "Left", exact: true });
+        await left.focus();
+        await page.keyboard.press("Space");
+        await expect(left).toHaveAttribute("aria-pressed", "true");
+        await expect.poll(() => previewSide(page, key)).toBe("left");
+    });
+
+    for (const [locale, text] of [
+        ["de", { two: "Zwei", left: "Links", right: "Rechts" }],
+        ["bs", { two: "Dvije", left: "Lijevo", right: "Desno" }],
+    ] as const) {
+        test(`the control does not overflow its row in ${locale}`, async ({ page }) => {
+            await page.addInitScript((value: string) => {
+                window.localStorage.setItem("enginecv-locale", value);
+                document.cookie = `enginecv-locale=${value}; path=/`;
+            }, locale);
+            await openJsonFixture(page, false);
+            await openLayoutPanel(page);
+            await page.getByRole("button", { name: text.two, exact: true }).click();
+            await expect(page.locator(".resume-page").first()).toBeVisible();
+
+            const key = (await sectionKeys(page))[0];
+            const row = page.getByTestId(`section-order-row-${key}`);
+            await expect(row.getByRole("button", { name: text.left, exact: true })).toBeVisible();
+            await expect(row.getByRole("button", { name: text.right, exact: true })).toBeVisible();
+            const overflows = await row.evaluate((element) => {
+                const bounds = element.getBoundingClientRect();
+                return Array.from(element.querySelectorAll("button")).filter((button) => {
+                    const box = button.getBoundingClientRect();
+                    return box.right > bounds.right + 1 || button.scrollWidth > button.clientWidth + 1;
+                }).length;
+            });
+            expect(overflows, "buttons clipped or outside their row").toBe(0);
+        });
+    }
 });

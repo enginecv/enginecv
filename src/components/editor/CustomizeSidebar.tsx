@@ -861,7 +861,11 @@ function DraggableSectionList({
                                 </div>
                                 <div className="text-[11px] text-faint truncate">{caption}</div>
                                 {placement && (
-                                    <div className="flex items-center gap-1.5 mt-2">
+                                    <div
+                                        role="group"
+                                        aria-label={t("customize.placementGroup", { section: label })}
+                                        className="flex items-center gap-1.5 mt-2"
+                                    >
                                         {(layoutMode === "mix"
                                             ? ([
                                                 { value: "full", label: t("customize.full") },
@@ -877,6 +881,7 @@ function DraggableSectionList({
                                                 key={option.value}
                                                 type="button"
                                                 onClick={() => onPlacementChange(key, option.value)}
+                                                aria-pressed={placement === option.value}
                                                 className={`px-2.5 h-7 rounded-lg border text-[11px] font-medium transition-colors ${placement === option.value
                                                     ? "bg-edge border-accent text-strong"
                                                     : "bg-surface-4 border-edge text-faint hover:text-strong hover:border-faint"
@@ -907,6 +912,8 @@ function DraggableSectionList({
                                 type="button"
                                 onClick={() => moveSection(index, "up")}
                                 disabled={index === 0}
+                                aria-label={`${t("editor.moveUp")}: ${label}`}
+                                title={t("editor.moveUp")}
                                 className="w-7 h-7 rounded-lg border border-edge text-faint hover:text-strong hover:border-faint disabled:opacity-35 disabled:hover:text-faint disabled:hover:border-edge transition-colors flex items-center justify-center"
                             >
                                 <ChevronDown className="w-3.5 h-3.5 rotate-180" />
@@ -915,6 +922,8 @@ function DraggableSectionList({
                                 type="button"
                                 onClick={() => moveSection(index, "down")}
                                 disabled={index === validOrder.length - 1}
+                                aria-label={`${t("editor.moveDown")}: ${label}`}
+                                title={t("editor.moveDown")}
                                 className="w-7 h-7 rounded-lg border border-edge text-faint hover:text-strong hover:border-faint disabled:opacity-35 disabled:hover:text-faint disabled:hover:border-edge transition-colors flex items-center justify-center"
                             >
                                 <ChevronDown className="w-3.5 h-3.5" />

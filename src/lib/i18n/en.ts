@@ -1406,6 +1406,7 @@ export const en: Translations = {
   "customize.center": "Center",
   "customize.right": "Right",
   "customize.full": "Full",
+  "customize.placementGroup": "{section} - column",
   "customize.resetTo5050": "Reset to 50 / 50",
   "customize.documentFlow": "Document Flow",
   "customize.documentFlowDesc": "Drag to control the top-to-bottom order of every content section, separator, vertical separator, and page break.",
