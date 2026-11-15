@@ -96,4 +96,29 @@ test.describe("editor preview headings", () => {
         await expect(menuButton(page, "Customize section")).toHaveCount(0);
         await expect(menuButton(page, "Remove Section")).toHaveCount(0);
     });
+
+    test("Alt+double-click on entry text jumps to that entry instead of editing inline", async ({ page }) => {
+        await openExampleInEditor(page);
+        const editable = page.locator('.resume-page [data-nav-section="experience"][data-nav-kind="entry"] [data-editable-field]').first();
+        await expect(editable).toBeVisible();
+
+        await editable.dblclick({ modifiers: ["Alt"] });
+
+        await expect(page.getByRole("heading", { name: /^Edit entry in/ })).toBeVisible();
+        await expect(page.locator('.resume-page [contenteditable="true"]')).toHaveCount(0);
+        await expect(menuButton(page, "Customize section")).toHaveCount(0);
+    });
+
+    test("double-clicking the empty area of an entry jumps to that entry", async ({ page }) => {
+        await openExampleInEditor(page);
+        const entry = page.locator('.resume-page [data-nav-section="experience"][data-nav-kind="entry"]').first();
+        await expect(entry).toBeVisible();
+        const box = await entry.boundingBox();
+        if (!box) throw new Error("entry not measurable");
+
+        // The far right edge of the entry row is padding, not editable text.
+        await page.mouse.dblclick(box.x + box.width - 2, box.y + box.height / 2);
+
+        await expect(page.getByRole("heading", { name: /^Edit entry in/ })).toBeVisible();
+    });
 });

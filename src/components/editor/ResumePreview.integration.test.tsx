@@ -2648,6 +2648,37 @@ describe("ResumePreview", () => {
             expect(requestEditorNav).not.toHaveBeenCalled();
         });
 
+        it("navigates to the entry when the entry area (not its text) is double-clicked", async () => {
+            const { page, requestEditorNav } = await renderWithExperience();
+            const entry = await waitFor(() => {
+                const node = page.querySelector<HTMLElement>('[data-nav-kind="entry"][data-nav-section="experience"]');
+                expect(node).not.toBeNull();
+                return node as HTMLElement;
+            });
+
+            doubleClick(entry);
+
+            expect(requestEditorNav).toHaveBeenCalledTimes(1);
+            expect(requestEditorNav).toHaveBeenCalledWith("experience", 0);
+            await new Promise((resolve) => setTimeout(resolve, 320));
+            expect(findButton("Go to entry")).toBeUndefined();
+        });
+
+        it("navigates from editable text on Alt+double-click without starting inline edit", async () => {
+            const { page, requestEditorNav } = await renderWithExperience();
+            const editable = await waitFor(() => {
+                const node = page.querySelector<HTMLElement>('[data-nav-kind="entry"] [data-editable-field]');
+                expect(node).not.toBeNull();
+                return node as HTMLElement;
+            });
+
+            fireEvent.dblClick(editable, { altKey: true });
+
+            expect(requestEditorNav).toHaveBeenCalledTimes(1);
+            expect(requestEditorNav).toHaveBeenCalledWith("experience", 0);
+            expect(page.querySelector('[contenteditable="true"], textarea, input')).toBeNull();
+        });
+
         it("does not follow a link inside a heading area when double-clicked", async () => {
             const { heading, requestEditorNav } = await renderWithExperience();
             const link = document.createElement("a");

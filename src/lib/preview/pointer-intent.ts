@@ -4,8 +4,8 @@
  *
  * - A plain click on a selectable element opens the Go to / Customize menu,
  *   even when the click lands on a link. Ctrl/Cmd+click follows the link.
- * - Double-clicking a section heading navigates to that section; editable text
- *   keeps its own double-click (inline edit).
+ * - Double-clicking a section heading or an entry navigates to it. Editable text
+ *   keeps its own double-click (inline edit) unless Alt is held.
  */
 
 export interface ClickInput {
@@ -62,18 +62,30 @@ export function decideClick(input: ClickInput): ClickDecision {
 
 export interface DoubleClickInput {
     thumbnailMode: boolean;
+    /** Alt/Option held: navigate even from inline-editable text. */
+    altKey: boolean;
     isContentEditable: boolean;
     /** True when the target is inside an inline-editable field. */
     hasEditableAncestor: boolean;
     navSection: string | null;
+    /** "heading" for a section heading, "entry" for an entry. */
     navKind: string | null;
+    /** Index of the entry inside its section, when the target is an entry. */
+    navEntryIndex: number | null;
 }
 
-export type DoubleClickDecision = { kind: "ignore" } | { kind: "navigate"; section: string };
+export type DoubleClickDecision =
+    | { kind: "ignore" }
+    | { kind: "navigate"; section: string; entryIndex: number | null };
 
 export function decideDoubleClick(input: DoubleClickInput): DoubleClickDecision {
     if (input.thumbnailMode) return { kind: "ignore" };
-    if (input.isContentEditable || input.hasEditableAncestor) return { kind: "ignore" };
-    if (input.navKind !== "heading" || input.navSection == null) return { kind: "ignore" };
-    return { kind: "navigate", section: input.navSection };
+    // Never hijack a double-click inside text that is being edited right now.
+    if (input.isContentEditable) return { kind: "ignore" };
+    // Editable text keeps its own double-click unless Alt asks to navigate.
+    if (input.hasEditableAncestor && !input.altKey) return { kind: "ignore" };
+    if (input.navSection == null) return { kind: "ignore" };
+    if (input.navKind === "heading") return { kind: "navigate", section: input.navSection, entryIndex: null };
+    if (input.navKind === "entry") return { kind: "navigate", section: input.navSection, entryIndex: input.navEntryIndex };
+    return { kind: "ignore" };
 }

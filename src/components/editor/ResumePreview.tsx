@@ -736,23 +736,30 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
             }
         };
 
-        // Double-click on a section heading jumps to that section in the sidebar.
-        // Editable text keeps its own double-click (inline edit).
+        // Double-click on a section heading or an entry jumps to it in the sidebar.
+        // Editable text keeps its own double-click (inline edit); Alt+double-click
+        // navigates from anywhere, text included.
         const handleDblClick = (e: MouseEvent) => {
             const target = e.target as HTMLElement;
             const el = target.closest('[data-nav-section]') as HTMLElement | null;
+            const idxAttr = el?.getAttribute('data-nav-entry-index');
             const decision = decideDoubleClick({
                 thumbnailMode,
+                altKey: e.altKey,
                 isContentEditable: target.isContentEditable,
                 hasEditableAncestor: target.closest('[data-editable-field]') != null,
                 navSection: el?.getAttribute('data-nav-section') || null,
                 navKind: el?.getAttribute('data-nav-kind') || null,
+                navEntryIndex: idxAttr != null && idxAttr !== '' ? Number(idxAttr) : null,
             });
             if (decision.kind !== 'navigate') return;
             clearNavTimer();
             setNavMenu(null);
             e.preventDefault();
-            requestEditorNav(decision.section, null);
+            // This listener runs before React's, so stopping here also keeps an
+            // Alt+double-click on editable text from starting inline edit.
+            e.stopPropagation();
+            requestEditorNav(decision.section, decision.entryIndex);
         };
 
         // Middle-button "auxclick" would otherwise autoscroll / open links.

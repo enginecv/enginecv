@@ -20,10 +20,12 @@ function click(overrides: Partial<ClickInput> = {}): ClickInput {
 function dbl(overrides: Partial<DoubleClickInput> = {}): DoubleClickInput {
     return {
         thumbnailMode: false,
+        altKey: false,
         isContentEditable: false,
         hasEditableAncestor: false,
         navSection: "experience",
         navKind: "heading",
+        navEntryIndex: null,
         ...overrides,
     };
 }
@@ -100,18 +102,44 @@ describe("decideClick", () => {
 
 describe("decideDoubleClick", () => {
     it("navigates to the section when a heading is double-clicked", () => {
-        expect(decideDoubleClick(dbl())).toEqual({ kind: "navigate", section: "experience" });
+        expect(decideDoubleClick(dbl())).toEqual({ kind: "navigate", section: "experience", entryIndex: null });
     });
 
-    it("never navigates from editable text or an active edit", () => {
+    it("navigates to the entry when an entry area is double-clicked", () => {
+        expect(decideDoubleClick(dbl({ navKind: "entry", navEntryIndex: 2 }))).toEqual({
+            kind: "navigate",
+            section: "experience",
+            entryIndex: 2,
+        });
+        expect(decideDoubleClick(dbl({ navKind: "entry", navEntryIndex: null }))).toEqual({
+            kind: "navigate",
+            section: "experience",
+            entryIndex: null,
+        });
+    });
+
+    it("keeps inline editing for double-clicks on editable text", () => {
+        expect(decideDoubleClick(dbl({ hasEditableAncestor: true, navKind: "entry", navEntryIndex: 0 }))).toEqual({ kind: "ignore" });
         expect(decideDoubleClick(dbl({ hasEditableAncestor: true }))).toEqual({ kind: "ignore" });
-        expect(decideDoubleClick(dbl({ isContentEditable: true }))).toEqual({ kind: "ignore" });
     });
 
-    it("ignores entry targets, unmarked targets and thumbnails", () => {
-        expect(decideDoubleClick(dbl({ navKind: "entry" }))).toEqual({ kind: "ignore" });
+    it("lets Alt+double-click navigate from editable text", () => {
+        expect(decideDoubleClick(dbl({ hasEditableAncestor: true, altKey: true, navKind: "entry", navEntryIndex: 1 }))).toEqual({
+            kind: "navigate",
+            section: "experience",
+            entryIndex: 1,
+        });
+    });
+
+    it("never navigates while text is being edited, even with Alt", () => {
+        expect(decideDoubleClick(dbl({ isContentEditable: true }))).toEqual({ kind: "ignore" });
+        expect(decideDoubleClick(dbl({ isContentEditable: true, altKey: true }))).toEqual({ kind: "ignore" });
+    });
+
+    it("ignores unmarked targets, unknown kinds and thumbnails", () => {
         expect(decideDoubleClick(dbl({ navKind: null, navSection: null }))).toEqual({ kind: "ignore" });
         expect(decideDoubleClick(dbl({ navSection: null }))).toEqual({ kind: "ignore" });
+        expect(decideDoubleClick(dbl({ navKind: "other" }))).toEqual({ kind: "ignore" });
         expect(decideDoubleClick(dbl({ thumbnailMode: true }))).toEqual({ kind: "ignore" });
     });
 });
