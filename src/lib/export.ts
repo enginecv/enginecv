@@ -1,4 +1,5 @@
 import { toPng, toSvg } from "html-to-image";
+import { ExportEmbedError, assertSelfContained, buildEmbeddedStyles } from "./export-embed";
 import { isJsonResumeDocument } from "./agent/authoring/detect";
 import { jsonResumeToResume } from "./json-resume/to-resume";
 import { MAX_JSON_RESUME_BYTES } from "./json-resume/schema";
@@ -522,12 +523,18 @@ function buildPrintableDocument({
     printablePagesMarkup,
     pageWidthPx,
     pageHeightPx,
+    styles = getPrintableStyles(),
+    includeBase = true,
 }: {
     filename: string;
     paperSize: "a4" | "letter";
     printablePagesMarkup: string;
     pageWidthPx: number;
     pageHeightPx: number;
+    /** Head styles. The default links the live stylesheets (right for the print window). */
+    styles?: string;
+    /** The print window needs a base address; a downloaded file must not have one. */
+    includeBase?: boolean;
 }) {
     const pageLabel = paperSize === "a4" ? "A4" : "letter";
 
@@ -536,9 +543,9 @@ function buildPrintableDocument({
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <base href="${window.location.href}">
+    ${includeBase ? `<base href="${window.location.href}">` : ""}
     <title>${filename}</title>
-    ${getPrintableStyles()}
+    ${styles}
     <style>
         html, body {
             margin: 0;
@@ -782,6 +789,7 @@ function preparePageForPrint(pageNode: HTMLElement) {
 export const __testing = {
     getIntrinsicPageSize,
     preparePageForPrint,
+    buildPrintableDocument,
 };
 
 function waitForPrintAssets(printWindow: Window, printDocument: Document) {
@@ -914,11 +922,24 @@ export async function exportToPng(filename: string = "resume.png") {
     }, "image/png");
 }
 
-/** Standalone HTML document of the rendered preview pages, or null when no pages are mounted. */
-export function buildResumeHtmlDocument(
+export interface SelfContainedHtml {
+    html: string;
+    /** Web font families that could not be embedded and fall back to a generic family. */
+    fallbackFonts: string[];
+}
+
+/**
+ * One self-contained HTML file of the rendered preview pages: same markup and
+ * page rules as the PDF print window, but with the app's CSS and the fonts in
+ * use embedded and no <base>, <link> or <script>, so it looks the same offline,
+ * on another computer, or after the site is redeployed. Null when no pages are
+ * mounted. Throws ExportEmbedError rather than produce a file that still needs
+ * the site.
+ */
+export async function buildSelfContainedHtmlDocument(
     paperSize: "a4" | "letter" = "a4",
     filename: string = "resume.html"
-): string | null {
+): Promise<SelfContainedHtml | null> {
     const pageNodes = getPageNodes();
     if (pageNodes.length === 0) return null;
 
@@ -926,19 +947,33 @@ export function buildResumeHtmlDocument(
     const printablePagesMarkup = Array.from(pageNodes)
         .map((pageNode) => preparePageForPrint(pageNode).outerHTML)
         .join("\n");
+    const { styles, fallbackFamilies } = await buildEmbeddedStyles(Array.from(pageNodes));
 
-    return buildPrintableDocument({ filename, paperSize, printablePagesMarkup, pageWidthPx, pageHeightPx });
+    const html = buildPrintableDocument({
+        filename,
+        paperSize,
+        printablePagesMarkup,
+        pageWidthPx,
+        pageHeightPx,
+        styles,
+        includeBase: false,
+    });
+    const problems = assertSelfContained(html);
+    if (problems.length > 0) throw new ExportEmbedError("not-self-contained", problems.join("; "));
+    return { html, fallbackFonts: fallbackFamilies };
 }
 
+/** Downloads the self-contained HTML file. Returns the fonts that fell back, if any. */
 export async function exportToHtml(
     paperSize: "a4" | "letter" = "a4",
     filename: string = "resume.html"
-) {
-    const html = buildResumeHtmlDocument(paperSize, filename);
-    if (html === null) return;
+): Promise<string[]> {
+    const result = await buildSelfContainedHtmlDocument(paperSize, filename);
+    if (result === null) return [];
 
-    const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+    const blob = new Blob([result.html], { type: "text/html;charset=utf-8" });
     downloadBlob(blob, filename);
+    return result.fallbackFonts;
 }
 
 export async function exportToEncryptedJson(

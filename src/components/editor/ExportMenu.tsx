@@ -10,7 +10,8 @@ import type { Resume } from "@/lib/schema";
 import { EXPORT_FORMATS, getExportFormat, type ResumeExportFormat } from "@/lib/export-formats";
 import { ExportModuleLoadError, getResumeExportBaseName, loadDocxExporter, runResumeExport, type ResumeExportNotice } from "@/lib/resume-export";
 import { ClipboardDeniedError, copyTextToClipboard } from "@/lib/export-clipboard";
-import { buildResumeHtmlDocument, hasPreviewPages, waitForPreviewPages } from "@/lib/export";
+import { buildSelfContainedHtmlDocument, hasPreviewPages, waitForPreviewPages } from "@/lib/export";
+import { ExportEmbedError } from "@/lib/export-embed";
 import { toDocumentModel } from "@/lib/document-model";
 import { toMarkdown } from "@/lib/export-markdown";
 import { toPlainText } from "@/lib/export-plaintext";
@@ -110,6 +111,7 @@ export function ExportDialog({ open, onClose, resume, paperSize, onNeedPreview }
     // Off by default and not remembered: the photo is written into the file as image data.
     const [jsonResumeIncludePhoto, setJsonResumeIncludePhoto] = useState(false);
     const [exportNotices, setExportNotices] = useState<ResumeExportNotice[]>([]);
+    const [fallbackFonts, setFallbackFonts] = useState<string[]>([]);
     const [copyStatus, setCopyStatus] = useState<"idle" | "copying" | "copied">("idle");
     const [selectedFormat, setSelectedFormat] = useState<ResumeExportFormat>(prefs.format);
     const [jsonEncrypt, setJsonEncrypt] = useState(false);
@@ -223,11 +225,12 @@ export function ExportDialog({ open, onClose, resume, paperSize, onNeedPreview }
 
         setExportError(null);
         setExportNotices([]);
+        setFallbackFonts([]);
         setExporting(true);
         setExportingFormat(format);
         try {
             if (!(await ensurePreviewPages(format))) throw new Error(t("export.failed"));
-            const { notices } = await runResumeExport({
+            const { notices, fallbackFonts: fonts } = await runResumeExport({
                 resume,
                 paperSize,
                 format,
@@ -243,10 +246,13 @@ export function ExportDialog({ open, onClose, resume, paperSize, onNeedPreview }
                 useExportSupportPromptStore.getState().show();
             }
             // Keep the dialog open when the export succeeded with a caveat worth reading.
+            if (fonts?.length) setFallbackFonts(fonts);
             if (notices.length > 0) setExportNotices(notices);
             else onClose();
         } catch (error) {
-            setExportError(error instanceof ExportModuleLoadError
+            setExportError(error instanceof ExportEmbedError
+                ? t("export.htmlEmbedFailed")
+                : error instanceof ExportModuleLoadError
                 ? t("export.docxLoadFailed")
                 : error instanceof Error ? error.message : t("export.failed"));
         } finally {
@@ -256,11 +262,14 @@ export function ExportDialog({ open, onClose, resume, paperSize, onNeedPreview }
     };
 
     /** Same payload as the downloaded file, so a paste matches what Export would save. */
-    const serializeForCopy = (format: CopyableFormat): string => {
+    const serializeForCopy = (format: CopyableFormat): string | Promise<string> => {
         if (format === "html") {
-            const html = buildResumeHtmlDocument(paperSize, `resume-${getResumeExportBaseName(resume)}.html`);
-            if (html === null) throw new Error(t("export.failed"));
-            return html;
+            // Embedding styles and fonts takes time, so hand the clipboard a promise
+            // (started now, inside the user gesture) instead of awaiting here.
+            return buildSelfContainedHtmlDocument(paperSize, `resume-${getResumeExportBaseName(resume)}.html`).then((result) => {
+                if (result === null) throw new Error(t("export.failed"));
+                return result.html;
+            });
         }
         const model = toDocumentModel(resume);
         return format === "md" ? toMarkdown(model) : toPlainText(model);
@@ -279,7 +288,11 @@ export function ExportDialog({ open, onClose, resume, paperSize, onNeedPreview }
             setCopyStatus("copied");
         } catch (error) {
             setCopyStatus("idle");
-            setExportError(error instanceof ClipboardDeniedError ? t("export.copyFailed") : t("export.failed"));
+            setExportError(
+                error instanceof ClipboardDeniedError ? t("export.copyFailed")
+                    : error instanceof ExportEmbedError ? t("export.htmlEmbedFailed")
+                    : t("export.failed"),
+            );
         }
     };
 
@@ -571,6 +584,12 @@ export function ExportDialog({ open, onClose, resume, paperSize, onNeedPreview }
                     {exportNotices.includes("docxPhotoSkipped") && (
                         <div className="mt-3">
                             {renderNotice(t("export.docxPhotoSkippedTitle"), t("export.docxPhotoSkipped"), "export-docx-photo-skipped")}
+                        </div>
+                    )}
+
+                    {exportNotices.includes("htmlFontFallback") && (
+                        <div className="mt-3">
+                            {renderNotice(t("export.htmlFontFallbackTitle"), t("export.htmlFontFallback", { fonts: fallbackFonts.join(", ") }), "export-html-font-fallback")}
                         </div>
                     )}
 

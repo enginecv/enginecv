@@ -251,6 +251,71 @@ describe("ExportDialog new formats", () => {
         expect(onClose).not.toHaveBeenCalled();
     });
 
+    it("keeps the dialog open and names the fonts that were replaced in the HTML export", async () => {
+        const page = document.createElement("div");
+        page.className = "resume-page";
+        document.body.appendChild(page);
+        mocks.runOverride = vi.fn().mockResolvedValue({ notices: ["htmlFontFallback"], fallbackFonts: ["Lora", "Merriweather"] });
+
+        try {
+            const onClose = renderDialog();
+            fireEvent.click(screen.getByTestId("export-format-html"));
+            fireEvent.click(screen.getByTestId("export-confirm-button"));
+
+            const notice = await screen.findByTestId("export-html-font-fallback");
+
+            expect(notice).toHaveTextContent("Font replaced");
+            expect(notice).toHaveTextContent("Lora, Merriweather");
+            expect(onClose).not.toHaveBeenCalled();
+        } finally {
+            page.remove();
+        }
+    });
+
+    it("shows a translated error and saves nothing when the HTML file cannot be built", async () => {
+        const { ExportEmbedError } = await import("@/lib/export-embed");
+        const page = document.createElement("div");
+        page.className = "resume-page";
+        document.body.appendChild(page);
+        mocks.runOverride = vi.fn().mockRejectedValue(new ExportEmbedError("stylesheet", "Could not read stylesheet"));
+
+        try {
+            const onClose = renderDialog();
+            fireEvent.click(screen.getByTestId("export-format-html"));
+            fireEvent.click(screen.getByTestId("export-confirm-button"));
+
+            expect(await screen.findByText(/could not be built with everything it needs/)).toBeInTheDocument();
+            expect(screen.queryByTestId("export-html-font-fallback")).toBeNull();
+            expect(onClose).not.toHaveBeenCalled();
+        } finally {
+            page.remove();
+        }
+    });
+
+    it("copies HTML through a promised clipboard item, and reports a failed build as the HTML error", async () => {
+        const write = vi.fn(async (items: ClipboardItem[]) => {
+            const blob = await (items[0] as unknown as { items: Record<string, Promise<Blob>> }).items["text/plain"];
+            expect(await blob.text()).toMatch(/^<!DOCTYPE html>/i);
+        });
+        vi.stubGlobal("ClipboardItem", class { constructor(public items: Record<string, Promise<Blob>>) {} });
+        Object.defineProperty(navigator, "clipboard", { configurable: true, value: { write, writeText: vi.fn() } });
+        const page = document.createElement("div");
+        page.className = "resume-page";
+        page.textContent = "Rendered Ada page";
+        document.body.appendChild(page);
+
+        try {
+            renderDialog();
+            fireEvent.click(screen.getByTestId("export-format-html"));
+            fireEvent.click(screen.getByTestId("export-copy-clipboard"));
+            expect(await screen.findByText("Resume copied to clipboard")).toBeInTheDocument();
+            expect(write).toHaveBeenCalledTimes(1);
+        } finally {
+            page.remove();
+            vi.unstubAllGlobals();
+        }
+    });
+
     it("explains a failed DOCX load and allows retry", async () => {
         mocks.runOverride = vi.fn()
             .mockRejectedValueOnce(new ExportModuleLoadError())
