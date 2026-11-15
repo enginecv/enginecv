@@ -9,6 +9,7 @@ import {
 import { getExportFormat, type ResumeExportFormat } from "./export-formats";
 import { resumeToJsonResume } from "./json-resume/from-resume";
 import type { ConversionReport } from "./json-resume/report";
+import { toLatex } from "./export-latex";
 import { toMarkdown } from "./export-markdown";
 import { toPlainText } from "./export-plaintext";
 import type { Resume } from "./schema";
@@ -136,6 +137,9 @@ export async function runResumeExport({
             break;
         case "txt":
             await deliverFile(textBlob(toPlainText(toDocumentModel(resume)), format), `resume-${baseName}.txt`);
+            break;
+        case "tex":
+            await deliverFile(textBlob(toLatex(toDocumentModel(resume), { paperSize }), format), `resume-${baseName}.tex`);
             break;
         case "docx": {
             const { buildDocx } = await loadDocxExporter();

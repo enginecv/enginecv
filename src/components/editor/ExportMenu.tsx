@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { AlertTriangle, AlignLeft, Check, Coffee, Copy, Download, FileCode, FileJson, FileText, FileType, Github, Globe, Loader2, Lock, UserRound, X, type LucideIcon } from "lucide-react";
+import { AlertTriangle, AlignLeft, Check, Coffee, Copy, Download, FileCode, FileJson, FileText, FileType, Github, Globe, Loader2, Lock, Sigma, UserRound, X, type LucideIcon } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
 import { ConversionLossSummary } from "@/components/import/ConversionLossSummary";
 import { resumeToJsonResume } from "@/lib/json-resume/from-resume";
@@ -13,6 +13,7 @@ import { ClipboardDeniedError, copyTextToClipboard } from "@/lib/export-clipboar
 import { buildSelfContainedHtmlDocument, hasPreviewPages, waitForPreviewPages } from "@/lib/export";
 import { ExportEmbedError } from "@/lib/export-embed";
 import { toDocumentModel } from "@/lib/document-model";
+import { toLatex } from "@/lib/export-latex";
 import { toMarkdown } from "@/lib/export-markdown";
 import { toPlainText } from "@/lib/export-plaintext";
 import type { ClientPreferences } from "@/lib/preferences/schema";
@@ -52,7 +53,7 @@ interface ExportDialogProps {
 type ExportPrefs = ClientPreferences["export"];
 
 /** Formats whose output is text the user can paste straight into a form or editor. */
-const COPYABLE_FORMATS = ["txt", "md", "html"] as const satisfies readonly ResumeExportFormat[];
+const COPYABLE_FORMATS = ["txt", "md", "html", "tex"] as const satisfies readonly ResumeExportFormat[];
 type CopyableFormat = (typeof COPYABLE_FORMATS)[number];
 
 function isCopyableFormat(format: ResumeExportFormat): format is CopyableFormat {
@@ -75,6 +76,7 @@ export const EXPORT_FORMAT_ICONS: Record<ResumeExportFormat, LucideIcon> = {
     docx: FileText,
     md: FileCode,
     txt: AlignLeft,
+    tex: Sigma,
     html: Globe,
 };
 
@@ -274,6 +276,7 @@ export function ExportDialog({ open, onClose, resume, paperSize, onNeedPreview }
             });
         }
         const model = toDocumentModel(resume);
+        if (format === "tex") return toLatex(model, { paperSize });
         return format === "md" ? toMarkdown(model) : toPlainText(model);
     };
 
@@ -586,6 +589,12 @@ export function ExportDialog({ open, onClose, resume, paperSize, onNeedPreview }
                             : isCopyableFormat(selectedFormat) ? renderCopyOptions(selectedFormat)
                             : renderDefaultOptions()}
                     </div>
+
+                    {selectedFormat === "tex" && (
+                        <div className="mt-3">
+                            {renderNotice(t("export.latexNoteTitle"), t("export.latexNote"), "export-latex-note")}
+                        </div>
+                    )}
 
                     {exportNotices.includes("docxPhotoSkipped") && (
                         <div className="mt-3">

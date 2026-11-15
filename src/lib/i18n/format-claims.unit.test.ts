@@ -34,8 +34,8 @@ describe("export format claims", () => {
         const translate = (key: string) => dictionary[key] ?? en[key];
         const params = getExportFormatClaimParams(translate);
 
-        expect(getExportFormatCount()).toBe(7);
-        expect(render(dictionary["landing.hero.badgePdf"], params)).toContain("7");
+        expect(getExportFormatCount()).toBe(8);
+        expect(render(dictionary["landing.hero.badgePdf"], params)).toContain("8");
         expect(render(dictionary["landing.hero.badgePdf"], params)).toContain(String(getExportFormatCount()));
         const listed = render(dictionary["landing.faq.a4"], params);
         for (const format of EXPORT_FORMATS) {

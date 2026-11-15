@@ -54,6 +54,63 @@ test("exports an editable DOCX", async ({ page }) => {
     expect(xml).toContain("Acme Systems");
 });
 
+test("exports a LaTeX source file with the CV's content", async ({ page }) => {
+    await createResume(page);
+    const { name, bytes } = await exportAs(page, "tex");
+    expect(name).toMatch(/^resume-.*\.tex$/);
+    const text = bytes.toString("utf8");
+    expect(text).toContain("\\documentclass");
+    expect(text).toContain("\\begin{document}");
+    expect(text).toContain("Export Role");
+    expect(text).toContain("Acme Systems");
+    expect(text.trimEnd().endsWith("\\end{document}")).toBe(true);
+});
+
+test("shows eight formats as two full rows of four, and the LaTeX note", async ({ page }) => {
+    await createResume(page);
+    await page.getByTestId("export-menu-button").first().click();
+    const cards = page.locator('[data-testid^="export-format-"]').filter({ hasNot: page.locator("[data-never]") });
+    const ids = ["json", "jsonresume", "pdf", "docx", "md", "txt", "tex", "html"];
+    const boxes = [];
+    for (const id of ids) boxes.push((await page.getByTestId(`export-format-${id}`).boundingBox())!);
+    expect(await cards.count()).toBeGreaterThanOrEqual(8);
+    const rows = new Set(boxes.map((box) => Math.round(box.y)));
+    expect(rows.size).toBe(2);
+    for (const row of rows) expect(boxes.filter((box) => Math.round(box.y) === row)).toHaveLength(4);
+    // Same width everywhere: no card spans, and none is left short.
+    const widths = new Set(boxes.map((box) => Math.round(box.width)));
+    expect(widths.size).toBe(1);
+
+    await page.getByTestId("export-format-tex").click();
+    await expect(page.getByTestId("export-latex-note")).toContainText("standard CV layout");
+    await expect(page.getByTestId("export-copy-clipboard")).toContainText("LaTeX");
+});
+
+for (const locale of ["bs", "de", "fr", "es"]) {
+    test(`LaTeX card and note fit the dialog in ${locale}`, async ({ page }) => {
+        await page.addInitScript((stored: string) => {
+            window.localStorage.setItem("enginecv-locale", stored);
+            document.cookie = `enginecv-locale=${stored}; path=/`;
+        }, locale);
+        await createResume(page);
+        await page.getByTestId("export-menu-button").first().click();
+        const card = page.getByTestId("export-format-tex");
+        await expect(card).toBeVisible();
+        await card.click();
+        const note = page.getByTestId("export-latex-note");
+        await expect(note).toContainText("XeLaTeX");
+        const clipped = await page.getByRole("dialog").evaluate((dialog) => {
+            const cards = Array.from(dialog.querySelectorAll<HTMLElement>('[data-testid^="export-format-"]'));
+            return {
+                cards: cards.filter((el) => el.scrollWidth > el.clientWidth + 1).length,
+                dialog: dialog.scrollWidth - dialog.clientWidth,
+            };
+        });
+        expect(clipped.cards).toBe(0);
+        expect(clipped.dialog).toBeLessThanOrEqual(0);
+    });
+}
+
 test("copies Text, Markdown and HTML from their tabs", async ({ page, context, browserName }) => {
     test.skip(browserName !== "chromium", "Clipboard permissions are Chromium-only in Playwright");
     await context.grantPermissions(["clipboard-read", "clipboard-write"]);

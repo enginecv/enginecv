@@ -11,9 +11,11 @@ import {
 } from "./export-formats";
 
 describe("export format registry", () => {
-    it("offers exactly the seven working formats, with PNG and SVG removed", () => {
-        expect(EXPORT_FORMATS.map((format) => format.id)).toEqual(["json", "jsonresume", "pdf", "docx", "md", "txt", "html"]);
-        expect(getExportFormatCount()).toBe(7);
+    it("offers exactly the eight working formats, with PNG and SVG removed", () => {
+        expect(EXPORT_FORMATS.map((format) => format.id)).toEqual(["json", "jsonresume", "pdf", "docx", "md", "txt", "tex", "html"]);
+        expect(getExportFormatCount()).toBe(8);
+        // Two full rows of four in the dialog's four-column picker.
+        expect(getExportFormatCount() % 4).toBe(0);
         expect(EXPORT_FORMATS.some((format) => ["png", "svg"].includes(format.extension))).toBe(false);
     });
 
