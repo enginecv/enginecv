@@ -28,6 +28,9 @@ import {
     DEFAULT_DESIGN_SETTINGS,
     DEFAULT_DESIGN_STYLE,
     DESIGN_OBJECT_FITS,
+    getDesignLayer,
+    getOverlayMaxSize,
+    getOverlayPositionLimits,
     type DesignElement,
     type DesignElementType,
     type DesignObjectFit,
@@ -1867,6 +1870,7 @@ export function CustomizeSidebar() {
     const removeDesignElement = useResumeStore((state) => state.removeDesignElement);
     const duplicateDesignElement = useResumeStore((state) => state.duplicateDesignElement);
     const moveDesignElementLayer = useResumeStore((state) => state.moveDesignElementLayer);
+    const setDesignElementLayer = useResumeStore((state) => state.setDesignElementLayer);
     const designImageInputRef = useRef<HTMLInputElement>(null);
     const [activeCustomizeSection, setActiveCustomizeSection] = useState<CustomizeSectionKey | null>(null);
 
@@ -2471,15 +2475,41 @@ export function CustomizeSidebar() {
             return <p className="text-xs leading-relaxed text-faint">{t("customize.designSelectHint")}</p>;
         }
 
+        const selectedLimits = getOverlayPositionLimits(selectedDesignElement.width, selectedDesignElement.height, designCanvas.width, designCanvas.height);
         return (
             <>
                 <div className="grid grid-cols-2 gap-3">
-                    <InspectorSlider label="X" value={selectedDesignElement.x} onChange={(value) => handleSelectedDesignUpdate({ x: value })} min={0} max={designCanvas.width} step={1} ticks={9} suffix="px" />
-                    <InspectorSlider label="Y" value={selectedDesignElement.y} onChange={(value) => handleSelectedDesignUpdate({ y: value })} min={0} max={designCanvas.height} step={1} ticks={9} suffix="px" />
-                    <InspectorSlider label={t("customize.width")} value={selectedDesignElement.width} onChange={(value) => handleSelectedDesignUpdate({ width: value })} min={24} max={designCanvas.width} step={1} ticks={9} suffix="px" />
-                    <InspectorSlider label={t("customize.height")} value={selectedDesignElement.height} onChange={(value) => handleSelectedDesignUpdate({ height: value })} min={24} max={designCanvas.height} step={1} ticks={9} suffix="px" />
+                    <InspectorSlider label="X" value={selectedDesignElement.x} onChange={(value) => handleSelectedDesignUpdate({ x: value })} min={selectedLimits.minX} max={selectedLimits.maxX} step={1} ticks={9} suffix="px" />
+                    <InspectorSlider label="Y" value={selectedDesignElement.y} onChange={(value) => handleSelectedDesignUpdate({ y: value })} min={selectedLimits.minY} max={selectedLimits.maxY} step={1} ticks={9} suffix="px" />
+                    <InspectorSlider label={t("customize.width")} value={selectedDesignElement.width} onChange={(value) => handleSelectedDesignUpdate({ width: value })} min={24} max={getOverlayMaxSize(designCanvas.width, designCanvas.height).width} step={1} ticks={9} suffix="px" />
+                    <InspectorSlider label={t("customize.height")} value={selectedDesignElement.height} onChange={(value) => handleSelectedDesignUpdate({ height: value })} min={24} max={getOverlayMaxSize(designCanvas.width, designCanvas.height).height} step={1} ticks={9} suffix="px" />
                     <div className="col-span-2">
                         <InspectorSlider label={t("customize.designOpacity")} value={selectedDesignElement.style.opacity} onChange={(value) => handleSelectedDesignStyleUpdate({ opacity: value })} min={0} max={100} step={1} ticks={11} suffix="%" />
+                    </div>
+                </div>
+
+                <div>
+                    <label className="text-xs font-semibold text-strong/90 mb-2 block">{t("customize.designLayerSide")}</label>
+                    <div className="flex bg-surface-1 p-1 rounded-xl border border-edge" role="group" aria-label={t("customize.designLayerSide")}>
+                        {([
+                            { value: "front" as const, labelKey: "customize.designInFront" },
+                            { value: "behind" as const, labelKey: "customize.designBehind" },
+                        ]).map((opt) => (
+                            <button
+                                key={opt.value}
+                                type="button"
+                                data-testid={`design-layer-${opt.value}`}
+                                aria-pressed={getDesignLayer(selectedDesignElement) === opt.value}
+                                onClick={() => setDesignElementLayer(selectedDesignElement.id, opt.value)}
+                                className={`flex-1 px-2 py-2 text-xs font-medium rounded-lg transition-colors ${
+                                    getDesignLayer(selectedDesignElement) === opt.value
+                                        ? "bg-edge text-strong"
+                                        : "text-faint hover:text-strong"
+                                }`}
+                            >
+                                {t(opt.labelKey)}
+                            </button>
+                        ))}
                     </div>
                 </div>
 
@@ -5485,7 +5515,7 @@ export function CustomizeSidebar() {
                                                     </div>
                                                 </div>
                                                 <span className="rounded-lg border border-current/10 px-2 py-1 text-[10px] font-medium text-current/70">
-                                                    z{element.zIndex}
+                                                    {getDesignLayer(element) === "behind" ? `${t("customize.designBehind")} · ` : ""}z{element.zIndex}
                                                 </span>
                                             </div>
                                         </button>

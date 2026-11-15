@@ -55,7 +55,7 @@ import {
     blendHex,
     type BoxBorderSettings,
 } from "@/lib/preview/box-style";
-import { DEFAULT_DESIGN_BORDER, DEFAULT_DESIGN_SETTINGS, DEFAULT_DESIGN_STYLE, type DesignElement } from "@/lib/design";
+import { DEFAULT_DESIGN_BORDER, DEFAULT_DESIGN_SETTINGS, DEFAULT_DESIGN_STYLE, getDesignLayer, type DesignElement } from "@/lib/design";
 import { clampPan, computePanBounds } from "@/lib/preview/pan-bounds";
 import { derivePageGeometry } from "@/lib/preview/page-geometry";
 import { isGithubProject } from "@/lib/import/github-projects";
@@ -4211,9 +4211,12 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
         );
     };
 
-    const renderDesignOverlayLayer = (pageIndex: number) => {
+    // Elements in the "behind" layer are drawn beneath the page content (the layer is
+    // placed before it and sent to z-index -1 inside the document's own stacking
+    // context, so it stays above the page background); "front" elements are above it.
+    const renderDesignOverlayLayer = (pageIndex: number, layer: "front" | "behind" = "front") => {
         const pageElements = designElements
-            .filter((element: DesignElement) => element.pageIndex === pageIndex)
+            .filter((element: DesignElement) => element.pageIndex === pageIndex && getDesignLayer(element) === layer)
             .sort((left: DesignElement, right: DesignElement) => left.zIndex - right.zIndex);
 
         if (pageElements.length === 0) {
@@ -4221,7 +4224,12 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
         }
 
         return (
-            <div className="pointer-events-none absolute inset-0 z-20" data-no-drag>
+            <div
+                className={`pointer-events-none absolute inset-0 ${layer === "front" ? "z-20" : ""}`}
+                style={layer === "behind" ? { zIndex: -1 } : undefined}
+                data-no-drag
+                data-design-layer={layer}
+            >
                 {pageElements.map((element: DesignElement) => (
                     <DesignOverlayElementView
                         key={element.id}
@@ -4229,6 +4237,8 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
                         accentColor={settings.colors.accent}
                         pageWidth={pageContentWidth}
                         pageHeight={pageContentHeight}
+                        marginX={marginHorizontalPx}
+                        marginY={marginVerticalPx}
                         pageScale={scale}
                         isSelected={isInteractiveDesignPreview && selectedDesignElementId === element.id}
                         interactive={isInteractiveDesignPreview}
@@ -4447,8 +4457,10 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
                                 height: '100%',
                                 boxSizing: 'border-box',
                                 position: "relative",
+                                isolation: "isolate",
                             }}
                         >
+                            {renderDesignOverlayLayer(pageIdx, "behind")}
                             {blockIndices.map((idx) => {
                                 const block = resumeBlocks[idx];
                                 if (!block) return null;
@@ -4495,9 +4507,11 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
                                 height: '100%',
                                 boxSizing: 'border-box',
                                 position: "relative",
+                                isolation: "isolate",
                             }}
                         >
                             <div className="relative w-full h-full">
+                                {renderDesignOverlayLayer(pageIdx, "behind")}
                                 {pageItems.map((item) => (
                                     <div
                                         key={item.key}
