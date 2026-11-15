@@ -11,6 +11,7 @@ import { createId } from "@/lib/id";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { EntryForm } from "./EntryForm";
+import { InterestIconField } from "./interests/InterestIconField";
 import { GetTipsLink } from "./GetTipsLink";
 import { MarkdownField } from "./MarkdownField";
 import { RepoLinksEditor } from "./RepoLinksEditor";
@@ -2222,6 +2223,12 @@ function SectionEditForm({
                 descriptionKey: "description",
                 descriptionLabel: t("editor.additionalInformation"),
                 dateMode: "none" as const,
+                extraFields: (item: any, onChange: (updated: any) => void) => (
+                    <InterestIconField
+                        value={item.icon}
+                        onChange={(icon) => onChange({ ...item, icon })}
+                    />
+                ),
             };
             return renderEntryEditor({
                 items,

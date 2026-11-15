@@ -1,5 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { openJsonFixture, savedResume } from "./helpers/json-editor";
+import { createCvFromHub } from "./helpers/import-hub";
+import { createQaFullResume } from "../src/lib/qa/sample-resumes";
 
 // Interests display styles (feature 083). The QA fixture resume has interests,
 // some with descriptions.
@@ -109,6 +111,130 @@ test.describe("interests display styles", () => {
             const container = await controls.boundingBox();
             expect(box && container && box.x + box.width <= container.x + container.width + 1).toBeTruthy();
         }
+    });
+});
+
+test.describe("interest icons", () => {
+    async function openInterestEntries(page: Page) {
+        await openJsonFixture(page, false);
+        await expect(interestsHeading(page)).toBeVisible();
+        // The section card (reached by double-clicking the heading) has no entry
+        // list; an entry form opens from the preview menu's "Go to entry".
+        const firstEntry = page.locator('.resume-page [data-nav-section="interests"][data-nav-kind="entry"]').first();
+        await firstEntry.scrollIntoViewIfNeeded();
+        await firstEntry.click();
+        await page.getByRole("button", { name: "Go to entry", exact: true }).click();
+        await expect(page.getByTestId("interest-icon-trigger").first()).toBeVisible();
+    }
+
+    async function firstInterestIcon(page: Page) {
+        return (await savedResume(page)).interests[0]?.icon;
+    }
+
+    test("pick an icon by search, see it in the preview, type an emoji, then clear it", async ({ page }) => {
+        await openInterestEntries(page);
+        expect(await firstInterestIcon(page)).toBeUndefined();
+
+        // Pick by search.
+        await page.getByTestId("interest-icon-trigger").first().click();
+        await page.getByTestId("interest-icon-search").fill("guitar");
+        await page.getByTestId("interest-icon-option-guitar").click();
+        await expect.poll(() => firstInterestIcon(page)).toBe("lucide:guitar");
+        await expect(page.locator('.resume-page [data-testid="interest-icon-svg"]')).toHaveCount(1);
+
+        // Type an emoji instead.
+        await page.getByTestId("interest-icon-trigger").first().click();
+        await page.getByTestId("interest-icon-emoji-input").fill("🎸");
+        await expect.poll(() => firstInterestIcon(page)).toBe("🎸");
+        await expect(page.locator('.resume-page [data-testid="interest-icon-emoji"]')).toHaveText("🎸");
+
+        // Clear it.
+        await page.getByTestId("interest-icon-clear").first().click();
+        await expect.poll(() => firstInterestIcon(page)).toBeUndefined();
+        await expect(page.locator('.resume-page [data-testid="interest-icon-svg"], .resume-page [data-testid="interest-icon-emoji"]')).toHaveCount(0);
+    });
+
+    test("an invalid emoji shows an error and saves nothing", async ({ page }) => {
+        await openInterestEntries(page);
+
+        await page.getByTestId("interest-icon-trigger").first().click();
+        await page.getByTestId("interest-icon-emoji-input").fill("guitar");
+
+        await expect(page.getByTestId("interest-icon-emoji-error")).toBeVisible();
+        await page.waitForTimeout(300);
+        expect(await firstInterestIcon(page)).toBeUndefined();
+    });
+
+    test("the icon appears in the icon grid and is kept when switching to a style without icons", async ({ page }) => {
+        await openInterestEntries(page);
+        await page.getByTestId("interest-icon-trigger").first().click();
+        await page.getByTestId("interest-icon-search").fill("music");
+        await page.getByTestId("interest-icon-option-music").click();
+        await expect.poll(() => firstInterestIcon(page)).toBe("lucide:music");
+
+        // Leave the entry editor before opening Customize from the preview menu.
+        await page.getByText("Back", { exact: true }).first().click();
+        await openInterestsCustomize(page);
+        await page.getByTestId("interests-style-iconGrid").click();
+        await expect(flow(page).locator('[data-testid="interest-icon-svg"]')).toHaveCount(1);
+
+        await page.getByTestId("interests-style-inline").click();
+        await expect(flow(page).locator('[data-testid="interest-icon-svg"]')).toHaveCount(0);
+        expect(await firstInterestIcon(page)).toBe("lucide:music");
+    });
+});
+
+/** Imports the fixture, exports it as the app does for PDF (HTML, then Chromium print) and returns the PDF as text. */
+async function printedPdf(page: Page, fixture: ReturnType<typeof createQaFullResume>) {
+    await page.goto("/dashboard");
+    await page.getByTestId("dashboard-import-resume-input").setInputFiles({
+        name: "icons.json",
+        mimeType: "application/json",
+        buffer: Buffer.from(JSON.stringify(fixture)),
+    });
+    await createCvFromHub(page);
+    await expect(flow(page)).toHaveAttribute("data-display", "iconGrid");
+
+    // Same route the app's PDF export prints: the exported HTML, rendered by
+    // Chromium (the engine behind "Save as PDF").
+    await page.getByTestId("export-menu-button").first().click();
+    await page.getByTestId("export-format-html").click();
+    const downloadPromise = page.waitForEvent("download");
+    await page.getByTestId("export-confirm-button").click();
+    const stream = await (await downloadPromise).createReadStream();
+    const chunks: Buffer[] = [];
+    for await (const chunk of stream) chunks.push(chunk as Buffer);
+    const html = Buffer.concat(chunks).toString("utf8");
+    expect(html).toContain("resume-interests-flow");
+
+    await page.setContent(html, { waitUntil: "load" });
+    await page.evaluate(() => document.fonts.ready);
+    const pdf = await page.pdf({ preferCSSPageSize: true, printBackground: true });
+    return { html, raw: pdf.toString("latin1") };
+}
+
+const imageObjects = (raw: string) => (raw.match(/\/Subtype\s*\/Image/g) ?? []).length;
+
+test.describe("interest icons in the PDF", () => {
+    function fixtureWith(icons: Array<string | undefined>) {
+        const fixture = createQaFullResume();
+        fixture.basics.photo = "";
+        fixture.interests = fixture.interests.map((interest, index) => (
+            icons[index] ? { ...interest, icon: icons[index] } : { ...interest, icon: undefined }
+        ));
+        fixture.settings.interestsSection = { ...fixture.settings.interestsSection, display: "iconGrid" };
+        return fixture;
+    }
+
+    test("a catalog icon is drawn as vector paths (no extra image) and links still work", async ({ page }) => {
+        const without = await printedPdf(page, fixtureWith([]));
+        const withIcon = await printedPdf(page, fixtureWith(["lucide:guitar"]));
+
+        expect(withIcon.html).toContain("lucide");
+        // Link annotations survive (the CV has email, phone and web links).
+        expect(withIcon.raw).toMatch(/\/Subtype\s*\/Link/);
+        // An SVG icon adds no raster image to the PDF compared with no icon at all.
+        expect(imageObjects(withIcon.raw)).toBe(imageObjects(without.raw));
     });
 });
 

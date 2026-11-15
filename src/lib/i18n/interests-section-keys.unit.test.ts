@@ -41,3 +41,28 @@ describe("interests section customization translations", () => {
         }
     });
 });
+
+const INTEREST_ICON_KEYS = [
+    "editor.interestIcon",
+    "editor.interestIconNone",
+    "editor.interestIconChoose",
+    "editor.interestIconSearch",
+    "editor.interestIconSearchPlaceholder",
+    "editor.interestIconEmpty",
+    "editor.interestIconEmojiLabel",
+    "editor.interestIconEmojiPlaceholder",
+    "editor.interestIconEmojiInvalid",
+    "editor.interestIconClear",
+] as const;
+
+describe("interest icon field translations", () => {
+    const locales = { en, bs, de, fr, es };
+
+    for (const [locale, translations] of Object.entries(locales)) {
+        it(`defines every interest icon key in "${locale}"`, () => {
+            for (const key of INTEREST_ICON_KEYS) {
+                expect((translations as Record<string, string>)[key], `${locale} missing ${key}`).toBeTruthy();
+            }
+        });
+    }
+});

@@ -2691,11 +2691,15 @@ describe("ResumePreview", () => {
             count?: number;
             columns?: "one" | "two";
             extra?: Partial<Resume["settings"]["interestsSection"]>;
+            /** Interest name -> stored icon value. */
+            icons?: Record<string, string>;
         } = {}) {
             const resume = createEmptyResume();
             resume.basics.name = "Jane Doe";
             resume.settings.contentSections = ["interests"];
-            resume.interests = buildInterests(options.count);
+            resume.interests = buildInterests(options.count).map((interest) => (
+                options.icons?.[interest.name] ? { ...interest, icon: options.icons[interest.name] } : interest
+            ));
             if (options.columns) resume.settings.layout.columns = options.columns;
             if (options.omitSetting) {
                 delete (resume.settings as Partial<Resume["settings"]>).interestsSection;
@@ -2771,6 +2775,61 @@ describe("ResumePreview", () => {
             fireEvent.click(goTo);
 
             expect(requestEditorNav).toHaveBeenCalledWith("interests", 2);
+        });
+
+        const ICONS = { Chess: "lucide:crown", Hiking: "🥾", Reading: "lucide:not-a-real-icon" };
+
+        it("shows icons before the name in the list style, only for interests that have a usable one", async () => {
+            const { page } = await renderInterests({ display: "list", icons: ICONS });
+
+            const svgs = page.querySelectorAll('[data-testid="interest-icon-svg"]');
+            const emoji = page.querySelectorAll('[data-testid="interest-icon-emoji"]');
+            expect(svgs).toHaveLength(1);
+            expect(emoji).toHaveLength(1);
+            expect(emoji[0]).toHaveTextContent("🥾");
+            // The icon sits in the same title as the name, before it.
+            const chessTitle = within(page).getByText("Chess");
+            expect(chessTitle.querySelector('[data-testid="interest-icon-svg"]')).not.toBeNull();
+            // "Reading" holds an unknown icon name: it renders as plain text with no icon.
+            expect(within(page).getByText("Reading").querySelector("svg")).toBeNull();
+            // Descriptions still show in the list style.
+            expect(within(page).getByText("Club player since 2015")).toBeInTheDocument();
+        });
+
+        it("hides icons everywhere when 'Show icons' is off", async () => {
+            for (const display of ["list", "chips", "iconGrid"] as const) {
+                const { page } = await renderInterests({ display, icons: ICONS, extra: { showIcons: false } });
+                expect(page.querySelectorAll('[data-testid="interest-icon-svg"]'), display).toHaveLength(0);
+                expect(page.querySelectorAll('[data-testid="interest-icon-emoji"]'), display).toHaveLength(0);
+                cleanup();
+            }
+        });
+
+        it("shows vector icons and emoji in chips and the icon grid, and never in the inline style", async () => {
+            for (const display of ["chips", "iconGrid"] as const) {
+                const { page } = await renderInterests({ display, icons: ICONS });
+                const flow = page.querySelector('[data-testid="resume-interests-flow"]') as HTMLElement;
+                expect(flow.querySelectorAll('[data-testid="interest-icon-svg"]'), display).toHaveLength(1);
+                expect(flow.querySelectorAll('[data-testid="interest-icon-emoji"]'), display).toHaveLength(1);
+                // Decorative: hidden from assistive technology, the name carries the meaning.
+                expect(flow.querySelector('[data-testid="interest-icon-svg"]')).toHaveAttribute("aria-hidden", "true");
+                cleanup();
+            }
+
+            const { page } = await renderInterests({ display: "inline", icons: ICONS });
+            const flow = page.querySelector('[data-testid="resume-interests-flow"]') as HTMLElement;
+            expect(flow.querySelectorAll('[data-testid="interest-icon-svg"], [data-testid="interest-icon-emoji"]')).toHaveLength(0);
+        });
+
+        it("keeps the icon on the interest when switching to a style that does not show it, and shows it again after", async () => {
+            const first = await renderInterests({ display: "inline", icons: ICONS });
+            expect(first.page.querySelectorAll('[data-testid="interest-icon-svg"]')).toHaveLength(0);
+            const stored = useResumeStore.getState().resume.interests.find((interest) => interest.name === "Chess");
+            expect(stored?.icon).toBe("lucide:crown");
+            cleanup();
+
+            const second = await renderInterests({ display: "chips", icons: ICONS });
+            expect(second.page.querySelectorAll('[data-testid="interest-icon-svg"]')).toHaveLength(1);
         });
 
         // Keep this test last in the block: the manual rAF controller it installs

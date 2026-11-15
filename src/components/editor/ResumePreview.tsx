@@ -39,6 +39,8 @@ import { useTranslation } from "@/lib/i18n";
 import type { Resume, ResumeSettings } from "@/lib/schema";
 import { DEFAULT_INTERESTS_SECTION, isNativeLanguageFluency, skillLevelRank, SKILL_LEVELS, type SkillGroup } from "@/lib/schema";
 import { InterestsFlow } from "./interests/InterestsFlow";
+import { InterestIconView } from "./interests/InterestIconView";
+import { parseInterestIcon } from "@/lib/interests/icon";
 import { assessedCefrSkills, CEFR_SKILL_GROUPS, CEFR_SKILLS, isCefrLevel, type CefrSkill, type CefrSkillGroup } from "@/lib/cefr";
 import { resolveSectionSettings } from "@/lib/customization";
 import type { IconComponent } from "@/lib/icons/brand-icons";
@@ -2193,6 +2195,24 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
 
     // Multi-column list renders as one grid block (like the table) instead of per-entry blocks.
     // Each cell keeps the regular entry styling, so the outer div is only a spacer.
+    // Icon element for an interest, or null when it has no usable icon.
+    const renderInterestIcon = (interest: { icon?: string }) =>
+        parseInterestIcon(interest.icon) ? <InterestIconView value={interest.icon} /> : null;
+
+    // Title of an interest in the `list` display. Without an icon (or with icons
+    // off) this is the plain name, exactly as before.
+    const renderInterestListTitle = (interest: any): React.ReactNode => {
+        const name = interest.name || interestLabel;
+        const icon = interestsStyle.showIcons ? renderInterestIcon(interest) : null;
+        if (!icon) return name;
+        return (
+            <span className="inline-flex items-center gap-1.5">
+                <span aria-hidden="true" className="inline-flex shrink-0 items-center" style={{ color: settings.colors.accent }}>{icon}</span>
+                {name}
+            </span>
+        );
+    };
+
     // Inline / Chips / Icon grid: the whole Interests section as one block. The
     // `list` display keeps the per-entry rendering (default, unchanged).
     const renderInterestsFlow = (interests: any[]) => (
@@ -2207,6 +2227,7 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
             accentColor={settings.colors.accent}
             itemSpacing={settings.spacing.itemSpacing}
             navSection="interests"
+            renderIcon={renderInterestIcon}
         />
     );
 
@@ -3142,7 +3163,7 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
                     kind: "entry",
                     section: "interests",
                     node: renderEntry(
-                        interest.name || interestLabel,
+                        renderInterestListTitle(interest),
                         null,
                         null,
                         null,
@@ -3495,7 +3516,7 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
                 : content.interests.map((interest: any, i: number) => (
                     <div key={`layout-interest-${interest.id || i}`}>
                         {renderEntry(
-                            interest.name || interestLabel,
+                            renderInterestListTitle(interest),
                             null,
                             null,
                             null,

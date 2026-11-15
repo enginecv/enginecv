@@ -420,6 +420,10 @@ export const interestSchema = z.object({
     hidden: z.boolean().default(false),
     name: z.string().default(""),
     description: z.string().default(""),
+    // Optional icon: `lucide:<catalog-name>` or a single emoji. Meaning and
+    // validation live in lib/interests/icon.ts; anything unusable is simply "no
+    // icon", so bad values here must never fail the whole resume.
+    icon: z.string().max(64).optional().catch(undefined),
 });
 
 const variantSchema = z.object({
