@@ -1,6 +1,7 @@
 "use client";
 
 import { useResumeStore } from "@/lib/store";
+import { resolveSkillsSection } from "@/lib/skills/levels";
 import { setJsonEditorSlot } from "./json-editor-slot";
 import { requestJsonEditorLeave } from "@/lib/editor-json-session";
 import { allSkills, createUngroupedSkillGroup, isNativeLanguageFluency, SKILL_LEVELS, UNGROUPED_SKILL_GROUP_ID, type SkillGroup, type SkillLevel, type CustomSection, type CustomEntry } from "@/lib/schema";
@@ -1543,6 +1544,11 @@ function SectionEditForm({
                             );
                         })}
                     </div>
+                    {!resolveSkillsSection(resume).showLevels && (
+                        <p className="text-xs text-faint" data-testid="skill-levels-hidden-hint">
+                            {t("editor.skillLevelsHidden")}
+                        </p>
+                    )}
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">

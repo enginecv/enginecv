@@ -11,8 +11,8 @@ import { getBuiltinTemplates } from "@/lib/templates/enginecv-templates";
 import { FONT_ROLES, PRESET_FONTS, type FontRole, type RoleFonts, roleRef, parseRoleRef, getRoleFonts } from "@/lib/fonts";
 import { getVisibleContentKeys } from "@/lib/preview/visibility";
 import { hasSectionStyleOverride, resolveSectionSettings } from "@/lib/customization";
-import type { InterestsDisplay, InterestsSeparator, ResumeSettings, SectionStyleKey } from "@/lib/schema";
-import { DEFAULT_INTERESTS_SECTION } from "@/lib/schema";
+import type { InterestsDisplay, InterestsSeparator, ResumeSettings, SectionStyleKey, SkillLevelStyle } from "@/lib/schema";
+import { DEFAULT_INTERESTS_SECTION, DEFAULT_SKILLS_SECTION } from "@/lib/schema";
 import { resolvePlacement, resolveSectionPlacements } from "@/lib/layout/section-placement";
 import type { LucideIcon } from "lucide-react";
 import { createContext, useContext, useId, useState, useRef, useEffect, useMemo, type ChangeEvent, type ReactNode } from "react";
@@ -2011,6 +2011,7 @@ export function CustomizeSidebar() {
             tableCellPaddingY: 6,
         },
         interestsSection: { ...DEFAULT_INTERESTS_SECTION },
+        skillsSection: { ...DEFAULT_SKILLS_SECTION },
         design: DEFAULT_DESIGN_SETTINGS,
     };
 
@@ -2064,6 +2065,10 @@ export function CustomizeSidebar() {
         interestsSection: {
             ...defaultSettings.interestsSection,
             ...((resume.settings as any)?.interestsSection || {}),
+        },
+        skillsSection: {
+            ...defaultSettings.skillsSection,
+            ...((resume.settings as any)?.skillsSection || {}),
         },
         design: {
             ...defaultSettings.design,
@@ -2211,7 +2216,7 @@ export function CustomizeSidebar() {
         if (
             scope === "section"
             && selectedCustomizeSection
-            && (["headings", "contentStyle", "entryLayout", "repoBadge", "languagesSection", "interestsSection", "linkIcon"] as string[]).includes(category)
+            && (["headings", "contentStyle", "entryLayout", "repoBadge", "languagesSection", "interestsSection", "skillsSection", "linkIcon"] as string[]).includes(category)
         ) {
             updateSectionStyle(
                 selectedCustomizeSection,
@@ -2722,6 +2727,9 @@ export function CustomizeSidebar() {
         repoBadge: settings.repoBadge.colorMode,
         languagesSection: `${settings.languagesSection.columns}`,
         interestsSection: t(`customize.interestsStyle${({ list: "List", inline: "Inline", chips: "Chips", iconGrid: "IconGrid" } as Record<string, string>)[settings.interestsSection.display] ?? "List"}`),
+        skillsSection: settings.skillsSection.showLevels
+            ? t(`customize.skillsLevelStyle${({ dots: "Dots", bar: "Bar", text: "Text", number: "Number" } as Record<string, string>)[settings.skillsSection.levelStyle] ?? "Dots"}`)
+            : t("palette.optionOff"),
         linkIcons: t(`customize.${settings.linkIcon.side}`),
         headerLinkIndicators: t(`customize.${settings.headerIcon.side}`),
         designOverlays: `${settings.design.elements.length}`,
@@ -4323,6 +4331,48 @@ export function CustomizeSidebar() {
                             </>
                         )}
                     </div>
+                </div>
+            </CustomizeSectionCard>
+            )}
+
+            {matchSearch(["customize.skillsSection", "customize.skillsShowLevels", "customize.skillsLevelStyle"]) && (
+            <CustomizeSectionCard
+                sectionKey="skillsSection"
+            >
+                <div className="space-y-6" data-testid="skills-section-controls">
+                    <ApplyToCheckbox
+                        label={t("customize.skillsShowLevels")}
+                        checked={settings.skillsSection.showLevels}
+                        onChange={(checked) => handleUpdate('skillsSection', { showLevels: checked })}
+                    />
+                    {settings.skillsSection.showLevels && (
+                        <div>
+                            <label className="text-xs font-semibold text-strong/90 mb-3 block">{t("customize.skillsLevelStyle")}</label>
+                            <div className="flex flex-wrap bg-surface-1 p-1 rounded-xl border border-edge" role="group" aria-label={t("customize.skillsLevelStyle")}>
+                                {([
+                                    { value: "dots" as SkillLevelStyle, labelKey: "customize.skillsLevelStyleDots" },
+                                    { value: "bar" as SkillLevelStyle, labelKey: "customize.skillsLevelStyleBar" },
+                                    { value: "text" as SkillLevelStyle, labelKey: "customize.skillsLevelStyleText" },
+                                    { value: "number" as SkillLevelStyle, labelKey: "customize.skillsLevelStyleNumber" },
+                                ]).map((opt) => (
+                                    <button
+                                        key={opt.value}
+                                        type="button"
+                                        data-testid={`skills-level-style-${opt.value}`}
+                                        aria-pressed={settings.skillsSection.levelStyle === opt.value}
+                                        onClick={() => handleUpdate('skillsSection', { levelStyle: opt.value })}
+                                        className={`flex-1 min-w-[4.5rem] px-2 py-2 text-sm font-medium rounded-lg transition-colors ${
+                                            settings.skillsSection.levelStyle === opt.value
+                                                ? "bg-edge text-strong"
+                                                : "text-faint hover:text-strong"
+                                        }`}
+                                    >
+                                        {t(opt.labelKey)}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </div>
             </CustomizeSectionCard>
             )}

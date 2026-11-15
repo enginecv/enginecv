@@ -37,7 +37,8 @@ import { resolveExternalHref } from "@/lib/external-links";
 import { getPrimaryResumeEmail, getResumeEmails } from "@/lib/emails";
 import { useTranslation } from "@/lib/i18n";
 import type { Resume, ResumeSettings } from "@/lib/schema";
-import { DEFAULT_INTERESTS_SECTION, isNativeLanguageFluency, skillLevelRank, SKILL_LEVELS, type SkillGroup } from "@/lib/schema";
+import { DEFAULT_INTERESTS_SECTION, DEFAULT_SKILLS_SECTION, isNativeLanguageFluency, SKILL_LEVELS, type SkillGroup } from "@/lib/schema";
+import { getSkillLevelWord, skillLevelNumber } from "@/lib/skills/levels";
 import { InterestsFlow } from "./interests/InterestsFlow";
 import { InterestIconView } from "./interests/InterestIconView";
 import { parseInterestIcon } from "@/lib/interests/icon";
@@ -350,6 +351,7 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
             tableCellPaddingY: 6,
         },
         interestsSection: { ...DEFAULT_INTERESTS_SECTION },
+        skillsSection: { ...DEFAULT_SKILLS_SECTION },
         design: DEFAULT_DESIGN_SETTINGS,
     };
 
@@ -402,6 +404,10 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
         interestsSection: {
             ...defaultSettings.interestsSection,
             ...((resume.settings as any)?.interestsSection || {}),
+        },
+        skillsSection: {
+            ...defaultSettings.skillsSection,
+            ...((resume.settings as any)?.skillsSection || {}),
         },
         design: {
             ...defaultSettings.design,
@@ -2488,7 +2494,9 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
         const iconColor = skillIconColorMode === "custom"
             ? (settings.colors.skillIconCustomColor || settings.colors.accent)
             : (brandHex ?? settings.colors.accent);
-        const rank = skillLevelRank(skill.level || "");
+        const skillsStyle = getScopedSettings("skills").skillsSection;
+        const rank = skillsStyle.showLevels ? skillLevelNumber(skill.level) : 0;
+        const levelWord = rank > 0 ? getSkillLevelWord(skill.level, settings.language) : "";
         return (
             <span
                 key={`${skill.id || "skill"}-${index}`}
@@ -2497,8 +2505,8 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
             >
                 {showIcon && SkillIcon && <SkillIcon className="h-[1.1em] w-[1.1em] shrink-0" style={{ color: iconColor }} />}
                 {showName && skill.name && <span className="font-medium">{skill.name}</span>}
-                {rank > 0 && (
-                    <span className="inline-flex items-center gap-[2px]">
+                {rank > 0 && skillsStyle.levelStyle === "dots" && (
+                    <span role="img" aria-label={levelWord} data-testid="resume-skill-level-dots" className="inline-flex items-center gap-[2px]">
                         {SKILL_LEVELS.map((_, i) => (
                             <span
                                 key={i}
@@ -2511,6 +2519,32 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
                                 }}
                             />
                         ))}
+                    </span>
+                )}
+                {rank > 0 && skillsStyle.levelStyle === "bar" && (
+                    <span
+                        role="img"
+                        aria-label={levelWord}
+                        data-testid="resume-skill-level-bar"
+                        className="inline-block overflow-hidden rounded-full"
+                        style={{ height: "0.42em", width: "2.6em", backgroundColor: "color-mix(in srgb, currentColor 25%, transparent)" }}
+                    >
+                        <span className="block h-full rounded-full" style={{ width: `${(rank / SKILL_LEVELS.length) * 100}%`, backgroundColor: settings.colors.accent }} />
+                    </span>
+                )}
+                {rank > 0 && skillsStyle.levelStyle === "text" && (
+                    <span data-testid="resume-skill-level-text" className="text-[0.85em] font-medium" style={{ color: settings.colors.accent }}>
+                        {levelWord}
+                    </span>
+                )}
+                {rank > 0 && skillsStyle.levelStyle === "number" && (
+                    <span
+                        data-testid="resume-skill-level-number"
+                        aria-label={levelWord}
+                        className="text-[0.85em] font-medium tabular-nums"
+                        style={{ color: settings.colors.accent }}
+                    >
+                        {rank}/{SKILL_LEVELS.length}
                     </span>
                 )}
             </span>

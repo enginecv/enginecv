@@ -1,5 +1,6 @@
 import {
     FolderGit2,
+    Gauge,
     Globe,
     Heading,
     Heart,
@@ -226,6 +227,16 @@ export const CUSTOMIZE_SECTIONS = [
         keywords: ["interests", "hobbies", "chips", "icons", "inline"],
         localStyleKey: "interestsSection",
         sectionBase: "interests",
+    },
+    {
+        id: "skillsSection",
+        labelKey: "customize.skillsSection",
+        icon: Gauge,
+        group: "sections",
+        order: 480,
+        keywords: ["skills", "level", "levels", "competency", "proficiency", "dots", "bar", "meter"],
+        localStyleKey: "skillsSection",
+        sectionBase: "skills",
     },
     {
         id: "designOverlays",
