@@ -631,6 +631,8 @@ const designElementSchema = z.object({
     width: z.number().default(220),
     height: z.number().default(120),
     zIndex: z.number().int().default(1),
+    // Drawn above the CV's content (default, as every element was before) or beneath it.
+    layer: z.enum(["front", "behind"]).default("front").catch("front"),
     text: z.string().default(""),
     imageSrc: z.string().default(""),
     shape: z.enum(["rectangle", "ellipse"]).default("rectangle"),

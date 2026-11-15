@@ -10,6 +10,7 @@ import {
     duplicateDesignElement,
     getNextDesignZIndex,
     moveDesignElementLayer,
+    setDesignElementLayerSide,
     normalizeDesignElementOrder,
 } from "./design";
 import {
@@ -129,6 +130,7 @@ interface ResumeStore {
     removeDesignElement: (id: string) => void;
     duplicateDesignElement: (id: string) => void;
     moveDesignElementLayer: (id: string, direction: "forward" | "backward" | "front" | "back") => void;
+    setDesignElementLayer: (id: string, layer: "front" | "behind") => void;
     updateBasics: (basics: Partial<Resume["basics"]>) => void;
     updateMeta: (meta: Partial<Resume["meta"]>) => void;
     updateExperience: (experience: Resume["experience"]) => void;
@@ -457,6 +459,25 @@ export const useResumeStore = create<ResumeStore>((set, get) => ({
     moveDesignElementLayer: (id, direction) => set((state) => {
         const currentElements = state.resume.settings.design?.elements || [];
         const nextElements = moveDesignElementLayer(currentElements, id, direction);
+
+        return {
+            isDirty: true,
+            resume: {
+                ...state.resume,
+                settings: {
+                    ...state.resume.settings,
+                    design: {
+                        ...(state.resume.settings.design || { elements: [] }),
+                        elements: nextElements,
+                    },
+                },
+            },
+        };
+    }),
+
+    setDesignElementLayer: (id, layer) => set((state) => {
+        const currentElements = state.resume.settings.design?.elements || [];
+        const nextElements = setDesignElementLayerSide(currentElements, id, layer);
 
         return {
             isDirty: true,
