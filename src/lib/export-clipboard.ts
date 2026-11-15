@@ -52,13 +52,32 @@ export async function copyResumeToClipboard(model: DocumentModel, accentColor?: 
     }
 }
 
-/** Copies an already serialized payload (plain text or Markdown source) as `text/plain` only. */
-export async function copyTextToClipboard(text: string): Promise<void> {
+/**
+ * Copies an already serialized payload (plain text, Markdown or HTML source) as
+ * `text/plain` only. Pass a promise for text that takes time to build (the
+ * self-contained HTML): a promised `ClipboardItem` blob keeps the user gesture
+ * in Safari, which drops it across an await. Engines without promised items
+ * wait for the text first, which Chromium and Firefox allow.
+ */
+export async function copyTextToClipboard(text: string | Promise<string>): Promise<void> {
     const clipboard = typeof navigator !== "undefined" ? navigator.clipboard : undefined;
     if (!clipboard) throw new ClipboardDeniedError();
 
+    if (typeof text !== "string" && typeof ClipboardItem !== "undefined" && typeof clipboard.write === "function") {
+        const promised = text.then((value) => new Blob([value], { type: "text/plain" }));
+        try {
+            await clipboard.write([new ClipboardItem({ "text/plain": promised })]);
+            return;
+        } catch (error) {
+            // A failure to build the text is the caller's error, not a clipboard denial.
+            await promised;
+            if (isPermissionError(error)) throw new ClipboardDeniedError(error);
+            // Engine without promised items: fall through and write the text.
+        }
+    }
+
     try {
-        await clipboard.writeText(text);
+        await clipboard.writeText(await text);
     } catch (error) {
         throw new ClipboardDeniedError(error);
     }
