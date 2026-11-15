@@ -59,6 +59,9 @@ function isCopyableFormat(format: ResumeExportFormat): format is CopyableFormat 
     return (COPYABLE_FORMATS as readonly ResumeExportFormat[]).includes(format);
 }
 
+/** Columns in the format picker; keep in sync with the grid-cols class below. */
+const FORMAT_GRID_COLUMNS = 4;
+
 const DEFAULT_EXPORT_PREFS: ExportPrefs = {
     format: "pdf",
     pdfIncludeSidecar: false,
@@ -520,13 +523,17 @@ export function ExportDialog({ open, onClose, resume, paperSize, onNeedPreview }
                     </h2>
                     <p className="mt-1 text-xs leading-relaxed text-mid">{t("export.subtitle")}</p>
 
-                    <div className="mt-4 grid grid-cols-3 gap-1 rounded-xl border border-edge bg-surface-2 p-1">
-                        {formatCards.map((format) => {
+                    <div className="mt-4 grid grid-cols-4 gap-1 rounded-xl border border-edge bg-surface-2 p-1">
+                        {formatCards.map((format, index) => {
                             const active = selectedFormat === format.id;
+                            // The last card fills the cells left in its row (7 cards: 4 + 3, so it spans 2).
+                            const leftover = formatCards.length % FORMAT_GRID_COLUMNS;
+                            const span = index === formatCards.length - 1 && leftover !== 0 ? FORMAT_GRID_COLUMNS - leftover + 1 : 1;
                             return (
                                 <button
                                     key={format.id}
                                     type="button"
+                                    style={span > 1 ? { gridColumn: `span ${span}` } : undefined}
                                     onClick={() => selectFormat(format.id)}
                                     data-testid={`export-format-${format.id}`}
                                     disabled={exporting}

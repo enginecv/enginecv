@@ -132,6 +132,17 @@ describe("ExportDialog new formats", () => {
         vi.unstubAllGlobals();
     });
 
+    it("shows seven format cards in four columns, the last one filling the row", () => {
+        renderDialog();
+        const cards = Array.from(document.querySelectorAll<HTMLElement>('[data-testid^="export-format-"]'))
+            .filter((node) => /^export-format-[a-z]+$/.test(node.getAttribute("data-testid") ?? ""));
+        expect(cards).toHaveLength(7);
+        expect(cards[0].parentElement?.className).toContain("grid-cols-4");
+        // 7 = 4 + 3: the last card spans two cells so the second row is full.
+        expect(cards[cards.length - 1].style.gridColumn).toBe("span 2");
+        expect(cards.slice(0, -1).every((card) => card.style.gridColumn === "")).toBe(true);
+    });
+
     it("opens on the default format when the remembered one no longer exists", () => {
         useClientPreferencesStore.setState({
             preferences: { ...useClientPreferencesStore.getState().preferences, export: { format: "png" as never, pdfIncludeSidecar: false, docxIncludePhoto: false } },
