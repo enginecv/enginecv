@@ -2062,6 +2062,7 @@ export const fr: Translations = {
   "gallery.view": "Voir {name}",
   "gallery.detailTitle": "Modèle de CV {name}",
   "gallery.detailMetaTitle": "Modèle de CV {name} | EngineCV",
+  "gallery.detailMetaDescription": "Modèle de CV {name} : {summary} Modifiez-le gratuitement dans votre navigateur et exportez un PDF. Aucun compte requis.",
   "gallery.suitsHeading": "Pour qui",
   "gallery.factsHeading": "En bref",
   "gallery.factOneColumn": "Une colonne",

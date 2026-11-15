@@ -2063,6 +2063,7 @@ export const bs: Translations = {
   "gallery.view": "Pogledaj {name}",
   "gallery.detailTitle": "CV šablon {name}",
   "gallery.detailMetaTitle": "CV šablon {name} | EngineCV",
+  "gallery.detailMetaDescription": "CV šablon {name}: {summary} Uredite ga besplatno u pregledniku i izvezite PDF. Račun nije potreban.",
   "gallery.suitsHeading": "Kome odgovara",
   "gallery.factsHeading": "Ukratko",
   "gallery.factOneColumn": "Jedna kolona",

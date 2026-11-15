@@ -4,8 +4,8 @@ import { LegalPage, LegalSection } from "@/components/legal/LegalPage";
 import { pageMetadata } from "@/lib/site";
 
 export const metadata: Metadata = pageMetadata({
-    title: "Privacy Policy | EngineCV",
-    description: "What EngineCV keeps on your device, every case where data can leave it, and the cookieless page analytics it uses.",
+    title: "Privacy Policy: What EngineCV Stores and Shares | EngineCV",
+    description: "What the EngineCV resume builder keeps on your device, every case where your data can leave it, and the cookieless page analytics it uses, in plain language.",
     path: "/privacy",
 });
 

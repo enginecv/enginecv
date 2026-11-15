@@ -3,8 +3,8 @@ import { LegalPage, LegalSection } from "@/components/legal/LegalPage";
 import { LEGAL_OPERATOR, isLegalNoticeReady, type LegalOperator } from "@/lib/legal-operator";
 import { pageMetadata } from "@/lib/site";
 
-const TITLE = "Impressum / Legal notice | EngineCV";
-const DESCRIPTION = "Who operates EngineCV and how to reach them.";
+const TITLE = "Impressum and Legal Notice: Who Operates EngineCV | EngineCV";
+const DESCRIPTION = "Legal notice (Impressum) for the EngineCV resume builder: who operates the website, who is responsible for its content under German and EU law, and how to reach them.";
 
 export const metadata: Metadata = isLegalNoticeReady()
     ? pageMetadata({ title: TITLE, description: DESCRIPTION, path: "/impressum" })

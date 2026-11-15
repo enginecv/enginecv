@@ -16,7 +16,7 @@ import { breadcrumbJsonLd } from "@/lib/structured-data";
 export function roleExamplesIndexMetadata(locale: Locale): Metadata {
     const languages = indexAlternates();
     return pageMetadata({
-        title: translate(locale, "roleExamples.indexTitle"),
+        title: `${translate(locale, "roleExamples.indexTitle")} | ${SITE_NAME}`,
         description: translate(locale, "roleExamples.indexIntro"),
         path: roleExamplePath(locale),
         ogLocale: OG_LOCALES[locale],

@@ -2063,6 +2063,7 @@ export const de: Translations = {
   "gallery.view": "{name} ansehen",
   "gallery.detailTitle": "Lebenslauf-Vorlage {name}",
   "gallery.detailMetaTitle": "Lebenslauf-Vorlage {name} | EngineCV",
+  "gallery.detailMetaDescription": "Lebenslauf-Vorlage {name}: {summary} Kostenlos im Browser bearbeiten und als PDF exportieren. Kein Konto nötig.",
   "gallery.suitsHeading": "Für wen sie passt",
   "gallery.factsHeading": "Auf einen Blick",
   "gallery.factOneColumn": "Einspaltig",

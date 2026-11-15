@@ -7,8 +7,8 @@ import { STORAGE_REGISTRY, type RegistryEntry } from "@/lib/storage-registry/reg
 import { en as storageMessages } from "@/lib/storage-registry/messages/en";
 
 export const metadata: Metadata = pageMetadata({
-    title: "Cookie and Storage Policy | EngineCV",
-    description: "Every cookie and browser storage entry EngineCV uses, and how to manage ad consent.",
+    title: "Cookie and Storage Policy: Every Cookie We Use | EngineCV",
+    description: "Every cookie and browser storage entry EngineCV uses, what each one is for, how long it lasts, and how to manage or withdraw your ad consent.",
     path: "/cookies",
 });
 

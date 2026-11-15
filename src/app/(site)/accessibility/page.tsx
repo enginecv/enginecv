@@ -4,8 +4,8 @@ import { LegalPage, LegalSection } from "@/components/legal/LegalPage";
 import { pageMetadata } from "@/lib/site";
 
 export const metadata: Metadata = pageMetadata({
-    title: "Accessibility Statement | EngineCV",
-    description: "How accessible EngineCV is today, how it is tested, and the issues that are still open.",
+    title: "Accessibility Statement: How Accessible EngineCV Is | EngineCV",
+    description: "How accessible EngineCV is today, how accessibility is tested on this resume builder, and the known issues that are still open and being worked on.",
     path: "/accessibility",
 });
 

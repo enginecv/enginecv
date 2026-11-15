@@ -2063,6 +2063,7 @@ export const es: Translations = {
   "gallery.view": "Ver {name}",
   "gallery.detailTitle": "Plantilla de currículum {name}",
   "gallery.detailMetaTitle": "Plantilla de currículum {name} | EngineCV",
+  "gallery.detailMetaDescription": "Plantilla de currículum {name}: {summary} Edítala gratis en tu navegador y exporta un PDF. No necesitas cuenta.",
   "gallery.suitsHeading": "Para quién es",
   "gallery.factsHeading": "De un vistazo",
   "gallery.factOneColumn": "Una columna",

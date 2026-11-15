@@ -15,11 +15,11 @@ export const GUIDE_COPY = {
     hub: {
         eyebrow: "EngineCV Guides",
         title: "CV section guides",
-        metaTitle: "CV Section Guides",
+        metaTitle: "CV Section Guides: How to Write Every Part of Your CV",
         description:
             "One practical guide for each part of a CV: what recruiters and applicant tracking systems look for, how to fill in each field, and before and after rewrites you can adapt.",
         metaDescription:
-            "Practical guides for every part of a CV: work experience, education, skills, summary and more, with before and after examples.",
+            "Practical guides for every part of a CV: work experience, education, skills, summary and more, with before and after examples you can adapt to your own CV.",
         empty: "The first guides are on their way. Check back soon.",
     },
     related: {
