@@ -86,6 +86,7 @@ import type {
 } from "@/lib/preview/pagination-types";
 import { DesignOverlayElementView } from "./preview/DesignOverlay";
 import { InlineEditProvider, InlineInteractiveContext, InlineField, InlineToolbar } from "./preview/PreviewInlineEdit";
+import { decideClick, decideDoubleClick } from "@/lib/preview/pointer-intent";
 
 interface ResumePreviewProps {
     resumeOverride?: Resume;
@@ -486,7 +487,7 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
     const panStart = useRef({ x: 0, y: 0, panX: 0, panY: 0 });
     const isMobile = useRef(false);
     // Element-selection context menu (opened by clicking a preview element).
-    const [navMenu, setNavMenu] = useState<{ x: number; y: number; section: string; entryIndex: number | null; kind: string } | null>(null);
+    const [navMenu, setNavMenu] = useState<{ x: number; y: number; section: string; entryIndex: number | null; kind: string; href: string | null } | null>(null);
     const requestEditorNav = useResumeStore((state) => state.requestEditorNav);
     const requestCustomizeSection = useResumeStore((state) => state.requestCustomizeSection);
     const requestCustomizePanel = useResumeStore((state) => state.requestCustomizePanel);
@@ -665,45 +666,83 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
         };
 
         // Left click on a tagged preview element opens the selection menu.
+        const clearNavTimer = () => {
+            if (navClickTimer.current) { clearTimeout(navClickTimer.current); navClickTimer.current = null; }
+        };
+
+        // The click rules live in lib/preview/pointer-intent so they stay in one
+        // tested table. A plain click on a link inside a selectable element opens
+        // the menu (with "Open link"); Ctrl/Cmd+click follows the link.
         const handleClick = (e: MouseEvent) => {
-            if (thumbnailMode) return;
-            if (e.button !== 0 || didDrag.current || spaceHeld.current) return;
             const target = e.target as HTMLElement;
-            // Clicks inside an actively-edited element place the caret; never
-            // hijack them into the selection menu.
-            if (target.isContentEditable) return;
-            // Links retain native browser behavior. Element navigation remains
-            // available by clicking surrounding personal-detail/entry content.
             const linkEl = target.closest('a[href]') as HTMLAnchorElement | null;
-            if (linkEl) {
-                setNavMenu(null);
-                return;
-            }
-            // Second click of a double-click: cancel the deferred menu so the
-            // element's own double-click (inline edit) proceeds unobstructed.
-            if (e.detail >= 2) {
-                if (navClickTimer.current) { clearTimeout(navClickTimer.current); navClickTimer.current = null; }
-                return;
-            }
             const el = target.closest('[data-nav-section]') as HTMLElement | null;
-            if (!el) {
-                if (navClickTimer.current) { clearTimeout(navClickTimer.current); navClickTimer.current = null; }
-                setNavMenu(null);
-                return;
+            const decision = decideClick({
+                thumbnailMode,
+                button: e.button,
+                detail: e.detail,
+                didDrag: didDrag.current,
+                spaceHeld: spaceHeld.current,
+                ctrlKey: e.ctrlKey,
+                metaKey: e.metaKey,
+                isContentEditable: target.isContentEditable,
+                linkHref: linkEl ? linkEl.href : null,
+                navSection: el?.getAttribute('data-nav-section') || null,
+            });
+            switch (decision.kind) {
+                case 'ignore':
+                    return;
+                case 'native':
+                    clearNavTimer();
+                    if (decision.closeMenu) setNavMenu(null);
+                    return;
+                case 'cancel-timer':
+                    // Second click of a double-click: the element's own double-click
+                    // (inline edit or heading navigation) proceeds unobstructed.
+                    clearNavTimer();
+                    if (decision.preventDefault) e.preventDefault();
+                    return;
+                case 'close-menu':
+                    clearNavTimer();
+                    setNavMenu(null);
+                    return;
+                case 'open-menu': {
+                    if (!el) return;
+                    const section = el.getAttribute('data-nav-section');
+                    if (!section) return;
+                    const idxAttr = el.getAttribute('data-nav-entry-index');
+                    const entryIndex = idxAttr != null && idxAttr !== '' ? Number(idxAttr) : null;
+                    const kind = el.getAttribute('data-nav-kind') || 'entry';
+                    e.preventDefault();
+                    // Defer: a double-click within ~220ms clears this before it fires.
+                    const payload = { x: e.clientX, y: e.clientY, section, entryIndex, kind, href: decision.href };
+                    clearNavTimer();
+                    navClickTimer.current = setTimeout(() => {
+                        setNavMenu(payload);
+                        navClickTimer.current = null;
+                    }, 220);
+                    return;
+                }
             }
-            const section = el.getAttribute('data-nav-section');
-            if (!section) return;
-            const idxAttr = el.getAttribute('data-nav-entry-index');
-            const entryIndex = idxAttr != null && idxAttr !== '' ? Number(idxAttr) : null;
-            const kind = el.getAttribute('data-nav-kind') || 'entry';
+        };
+
+        // Double-click on a section heading jumps to that section in the sidebar.
+        // Editable text keeps its own double-click (inline edit).
+        const handleDblClick = (e: MouseEvent) => {
+            const target = e.target as HTMLElement;
+            const el = target.closest('[data-nav-section]') as HTMLElement | null;
+            const decision = decideDoubleClick({
+                thumbnailMode,
+                isContentEditable: target.isContentEditable,
+                hasEditableAncestor: target.closest('[data-editable-field]') != null,
+                navSection: el?.getAttribute('data-nav-section') || null,
+                navKind: el?.getAttribute('data-nav-kind') || null,
+            });
+            if (decision.kind !== 'navigate') return;
+            clearNavTimer();
+            setNavMenu(null);
             e.preventDefault();
-            // Defer: a double-click within ~220ms clears this before it fires.
-            const payload = { x: e.clientX, y: e.clientY, section, entryIndex, kind };
-            if (navClickTimer.current) clearTimeout(navClickTimer.current);
-            navClickTimer.current = setTimeout(() => {
-                setNavMenu(payload);
-                navClickTimer.current = null;
-            }, 220);
+            requestEditorNav(decision.section, null);
         };
 
         // Middle-button "auxclick" would otherwise autoscroll / open links.
@@ -713,12 +752,14 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
 
         container.addEventListener('mousedown', handleMouseDown);
         container.addEventListener('click', handleClick);
+        container.addEventListener('dblclick', handleDblClick);
         container.addEventListener('auxclick', handleAuxClick);
         window.addEventListener('mousemove', handleMouseMove);
         window.addEventListener('mouseup', handleMouseUp);
         return () => {
             container.removeEventListener('mousedown', handleMouseDown);
             container.removeEventListener('click', handleClick);
+            container.removeEventListener('dblclick', handleDblClick);
             container.removeEventListener('auxclick', handleAuxClick);
             window.removeEventListener('mousemove', handleMouseMove);
             window.removeEventListener('mouseup', handleMouseUp);
@@ -4126,6 +4167,14 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
                         else requestCustomizeSection(navMenu.section);
                         setNavMenu(null);
                     }}
+                    onOpenLink={navMenu.href ? () => {
+                        const href = navMenu.href as string;
+                        // mailto: and tel: hand off to the mail/phone app in place; web links
+                        // open in a new tab without giving the target access to this one.
+                        if (/^(mailto|tel):/i.test(href)) window.location.href = href;
+                        else window.open(href, "_blank", "noopener,noreferrer");
+                        setNavMenu(null);
+                    } : undefined}
                     onClose={() => setNavMenu(null)}
                 />
             )}

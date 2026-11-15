@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { createPortal } from "react-dom";
-import { CornerUpRight, SlidersHorizontal } from "lucide-react";
+import { CornerUpRight, ExternalLink, SlidersHorizontal } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
 
 interface PreviewNavMenuProps {
@@ -11,6 +11,8 @@ interface PreviewNavMenuProps {
     kind: string;
     onGo: () => void;
     onCustomize?: () => void;
+    /** Present only when the menu was opened from a link in the preview. */
+    onOpenLink?: () => void;
     onClose: () => void;
 }
 
@@ -18,7 +20,7 @@ interface PreviewNavMenuProps {
  * Small element-selection menu opened by clicking an element in the live
  * preview. Rendered to document.body so it escapes the zoomed/panned page.
  */
-export function PreviewNavMenu({ x, y, kind, onGo, onCustomize, onClose }: PreviewNavMenuProps) {
+export function PreviewNavMenu({ x, y, kind, onGo, onCustomize, onOpenLink, onClose }: PreviewNavMenuProps) {
     const { t } = useTranslation();
 
     useEffect(() => {
@@ -38,7 +40,7 @@ export function PreviewNavMenu({ x, y, kind, onGo, onCustomize, onClose }: Previ
     if (typeof document === "undefined") return null;
 
     const left = Math.min(x, window.innerWidth - 220);
-    const top = Math.min(y, window.innerHeight - 90);
+    const top = Math.min(y, window.innerHeight - (onOpenLink ? 130 : 90));
 
     return createPortal(
         <>
@@ -63,6 +65,16 @@ export function PreviewNavMenu({ x, y, kind, onGo, onCustomize, onClose }: Previ
                     >
                         <SlidersHorizontal className="w-4 h-4 text-accent shrink-0" />
                         {t("editor.customizeSection")}
+                    </button>
+                ) : null}
+                {onOpenLink ? (
+                    <button
+                        type="button"
+                        onClick={onOpenLink}
+                        className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-strong hover:bg-edge transition-colors"
+                    >
+                        <ExternalLink className="w-4 h-4 text-accent shrink-0" />
+                        {t("editor.openLink")}
                     </button>
                 ) : null}
             </div>

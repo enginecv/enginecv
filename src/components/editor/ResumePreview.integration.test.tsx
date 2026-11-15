@@ -7,6 +7,12 @@ import { useResumeStore } from "@/lib/store";
 import { useI18nStore } from "@/lib/i18n";
 import { ResumePreview } from "./ResumePreview";
 
+/** Finds a button in the preview's body-level selection menu by its label. */
+function findButton(label: string) {
+    return Array.from(document.body.querySelectorAll<HTMLButtonElement>("button"))
+        .find((candidate) => candidate.textContent?.includes(label));
+}
+
 const PX_PER_MM = 96 / 25.4;
 const defaultResizeObserver = globalThis.ResizeObserver;
 
@@ -261,7 +267,7 @@ describe("ResumePreview", () => {
         expect(page.getByText("personal@example.com").closest("a")).toHaveAttribute("href", "mailto:personal@example.com");
     });
 
-    it("keeps personal links clickable and normalizes supported URL forms", async () => {
+    it("keeps personal links followable (Ctrl/Cmd+click) and normalizes supported URL forms", async () => {
         const resume = createEmptyResume();
         resume.basics.name = "Alicia Vector";
         resume.basics.customLinks = [{
@@ -278,8 +284,12 @@ describe("ResumePreview", () => {
         const link = await within(previewPage).findByRole("link", { name: /Case studies/ });
 
         expect(link).toHaveAttribute("href", "HTTPS://example.com/case-studies");
-        const click = new MouseEvent("click", { bubbles: true, cancelable: true, button: 0 });
-        expect(link.dispatchEvent(click)).toBe(true);
+        // In the editor a plain click selects the element (menu); a modified
+        // click follows the link, so the browser default must not be prevented.
+        const ctrlClick = new MouseEvent("click", { bubbles: true, cancelable: true, button: 0, ctrlKey: true });
+        expect(link.dispatchEvent(ctrlClick)).toBe(true);
+        const metaClick = new MouseEvent("click", { bubbles: true, cancelable: true, button: 0, metaKey: true });
+        expect(link.dispatchEvent(metaClick)).toBe(true);
     });
 
     it("keeps resume labels tied to CV language when app locale changes", async () => {
@@ -2498,5 +2508,160 @@ describe("ResumePreview", () => {
             expect(state.customizeScope).toBe("resume");
             expect(state.pendingCustomizeNav).toMatchObject({ scope: "resume", panel: "personalDetails" });
         });
+
+        async function renderWithPortfolioLink() {
+            const resume = createEmptyResume();
+            resume.basics.name = "Alicia Vector";
+            resume.settings.contentSections = [];
+            resume.basics.customLinks = [{
+                id: "portfolio",
+                name: "Portfolio",
+                label: "Case studies",
+                icon: "auto",
+                url: "https://example.com/case-studies",
+            }];
+            useResumeStore.setState({ resume, paperSize: "a4" });
+            const { container } = render(<ResumePreview />);
+            const page = container.querySelector(".resume-page") as HTMLElement;
+            return within(page).findByRole("link", { name: /Case studies/ });
+        }
+
+        it("opens the menu instead of following a link on a plain click, with Open link", async () => {
+            const link = await renderWithPortfolioLink();
+            const open = vi.spyOn(window, "open").mockImplementation(() => null);
+
+            const click = new MouseEvent("click", { bubbles: true, cancelable: true, button: 0 });
+            // preventDefault() was called, so the browser would not follow the link.
+            expect(link.dispatchEvent(click)).toBe(false);
+
+            const openLink = await waitFor(() => {
+                const button = findButton("Open link");
+                expect(button).toBeTruthy();
+                return button as HTMLButtonElement;
+            });
+            expect(findButton("Go to")).toBeTruthy();
+            expect(findButton("Customize section")).toBeTruthy();
+
+            fireEvent.click(openLink);
+            expect(open).toHaveBeenCalledWith("https://example.com/case-studies", "_blank", "noopener,noreferrer");
+            expect(findButton("Open link")).toBeUndefined();
+            open.mockRestore();
+        });
+
+        it("follows a link on Ctrl+click and Cmd+click without opening the menu", async () => {
+            const link = await renderWithPortfolioLink();
+
+            for (const modifier of [{ ctrlKey: true }, { metaKey: true }]) {
+                const click = new MouseEvent("click", { bubbles: true, cancelable: true, button: 0, ...modifier });
+                expect(link.dispatchEvent(click)).toBe(true);
+            }
+            // Wait past the 220 ms menu delay; no menu may appear.
+            await new Promise((resolve) => setTimeout(resolve, 320));
+            expect(findButton("Open link")).toBeUndefined();
+            expect(findButton("Customize section")).toBeUndefined();
+        });
+
+        it("offers Open link for the email link too, and keeps the menu for non-link clicks unchanged", async () => {
+            const page = renderWithPersonalDetails();
+            const email = await waitFor(() => {
+                const node = page.querySelector<HTMLAnchorElement>('a[href^="mailto:"]');
+                expect(node).not.toBeNull();
+                return node as HTMLAnchorElement;
+            });
+            const click = new MouseEvent("click", { bubbles: true, cancelable: true, button: 0 });
+            expect(email.dispatchEvent(click)).toBe(false);
+            await waitFor(() => expect(findButton("Open link")).toBeTruthy());
+            cleanup();
+
+            const page2 = renderWithPersonalDetails();
+            const name = await waitFor(() => {
+                const node = page2.querySelector<HTMLElement>('[data-testid="resume-preview-name"]');
+                expect(node).not.toBeNull();
+                return node as HTMLElement;
+            });
+            fireEvent.click(name);
+            await waitFor(() => expect(findButton("Customize section")).toBeTruthy());
+            expect(findButton("Open link")).toBeUndefined();
+        });
     });
+
+    describe("double-click on a section heading", () => {
+        afterEach(() => cleanup());
+
+        async function renderWithExperience() {
+            const resume = createEmptyResume();
+            resume.basics.name = "Jane Doe";
+            resume.settings.contentSections = ["experience"];
+            resume.experience = [{
+                id: "exp-1",
+                hidden: false,
+                company: "Acme Systems",
+                position: "Senior Engineer",
+                start: "2024-01",
+                end: "Present",
+                location: "Remote",
+                description: "Led platform delivery",
+                highlights: [],
+                skills: [],
+                url: "",
+                urlIcon: "auto",
+            }];
+            const requestEditorNav = vi.fn();
+            useResumeStore.setState({ resume, paperSize: "a4", requestEditorNav });
+            const { container } = render(<ResumePreview />);
+            const page = container.querySelector(".resume-page") as HTMLElement;
+            const heading = await waitFor(() => {
+                const node = page.querySelector<HTMLElement>('[data-nav-kind="heading"][data-nav-section="experience"] h2');
+                expect(node).not.toBeNull();
+                return node as HTMLElement;
+            });
+            return { page, heading, requestEditorNav };
+        }
+
+        function doubleClick(element: HTMLElement) {
+            fireEvent.click(element, { detail: 1 });
+            fireEvent.click(element, { detail: 2 });
+            fireEvent.dblClick(element);
+        }
+
+        it("navigates to the section without flashing the click menu", async () => {
+            const { heading, requestEditorNav } = await renderWithExperience();
+
+            doubleClick(heading);
+
+            expect(requestEditorNav).toHaveBeenCalledTimes(1);
+            expect(requestEditorNav).toHaveBeenCalledWith("experience", null);
+            await new Promise((resolve) => setTimeout(resolve, 320));
+            expect(findButton("Customize section")).toBeUndefined();
+        });
+
+        it("keeps inline text editing for double-clicks on editable text", async () => {
+            const { page, requestEditorNav } = await renderWithExperience();
+            const editable = await waitFor(() => {
+                const node = page.querySelector<HTMLElement>('[data-nav-kind="entry"] [data-editable-field]');
+                expect(node).not.toBeNull();
+                return node as HTMLElement;
+            });
+
+            doubleClick(editable);
+
+            expect(requestEditorNav).not.toHaveBeenCalled();
+        });
+
+        it("does not follow a link inside a heading area when double-clicked", async () => {
+            const { heading, requestEditorNav } = await renderWithExperience();
+            const link = document.createElement("a");
+            link.href = "https://example.com";
+            link.textContent = "x";
+            heading.appendChild(link);
+
+            fireEvent.click(link, { detail: 1 });
+            const second = new MouseEvent("click", { bubbles: true, cancelable: true, button: 0, detail: 2 });
+            expect(link.dispatchEvent(second)).toBe(false);
+            fireEvent.dblClick(link);
+
+            expect(requestEditorNav).toHaveBeenCalledWith("experience", null);
+        });
+    });
+
 });
