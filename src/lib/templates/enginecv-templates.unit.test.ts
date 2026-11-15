@@ -130,3 +130,15 @@ describe("builtin templates and the Interests section", () => {
         }
     });
 });
+
+describe("builtin templates and the skill level meter", () => {
+    it("only ATS Plain turns the meter off; every other builtin keeps the default so applying it keeps the user's choice", () => {
+        for (const tpl of getBuiltinTemplates()) {
+            expect(tpl.settings.skillsSection, tpl.id).toEqual(
+                tpl.id === "enginecv-compact"
+                    ? { showLevels: false, levelStyle: "dots" }
+                    : { showLevels: true, levelStyle: "dots" },
+            );
+        }
+    });
+});

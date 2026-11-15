@@ -168,6 +168,9 @@ const BUILTIN_DEFS: BuiltinTemplateDef[] = [
             // A CV does not remember which template it came from, so this is a
             // setting preset, not a flag.
             interestsSection: { display: "list", showIcons: false },
+            // Level meters are graphics that parsers can drop; the text exports are
+            // also silent about levels when this is off. The user can turn it back on.
+            skillsSection: { showLevels: false },
         },
     },
     {

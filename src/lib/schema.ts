@@ -415,6 +415,27 @@ export const interestsSectionSchema = z.object({
     separator: z.enum(INTERESTS_SEPARATORS).default(DEFAULT_INTERESTS_SECTION.separator).catch(DEFAULT_INTERESTS_SECTION.separator),
 });
 
+// How a skill's level is drawn for the whole CV (or one section via an override).
+// Dots and "on" are what every CV had before this setting, so they are the default.
+export const SKILL_LEVEL_STYLES = ["dots", "bar", "text", "number"] as const;
+export type SkillLevelStyle = (typeof SKILL_LEVEL_STYLES)[number];
+
+export interface SkillsSection {
+    /** Show each skill's level at all. Stored levels are never touched. */
+    showLevels: boolean;
+    levelStyle: SkillLevelStyle;
+}
+
+export const DEFAULT_SKILLS_SECTION: SkillsSection = {
+    showLevels: true,
+    levelStyle: "dots",
+};
+
+export const skillsSectionSchema = z.object({
+    showLevels: z.boolean().default(DEFAULT_SKILLS_SECTION.showLevels).catch(DEFAULT_SKILLS_SECTION.showLevels),
+    levelStyle: z.enum(SKILL_LEVEL_STYLES).default(DEFAULT_SKILLS_SECTION.levelStyle).catch(DEFAULT_SKILLS_SECTION.levelStyle),
+});
+
 export const interestSchema = z.object({
     id: z.string().default(() => createId()),
     hidden: z.boolean().default(false),
@@ -961,6 +982,11 @@ export const settingsSchema = z.object({
         .default(() => ({ ...DEFAULT_INTERESTS_SECTION }))
         .catch(() => ({ ...DEFAULT_INTERESTS_SECTION })),
 
+    // Skills Section (level meter visibility and style; see skillsSectionSchema)
+    skillsSection: skillsSectionSchema
+        .default(() => ({ ...DEFAULT_SKILLS_SECTION }))
+        .catch(() => ({ ...DEFAULT_SKILLS_SECTION })),
+
     // Repo Badge (per-project repository chips)
     repoBadge: z.object({
         fontFamily: z.string().default(""),
@@ -1083,6 +1109,7 @@ export const SECTION_STYLE_KEYS = [
     "repoBadge",
     "languagesSection",
     "interestsSection",
+    "skillsSection",
     "linkIcon",
 ] as const;
 
@@ -1397,6 +1424,7 @@ export const resumeObjectSchema = z.object({
             tableCellPaddingY: 6,
         },
         interestsSection: { ...DEFAULT_INTERESTS_SECTION },
+        skillsSection: { ...DEFAULT_SKILLS_SECTION },
         repoBadge: {
             fontFamily: "",
             fontSize: 9,

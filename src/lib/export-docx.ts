@@ -12,6 +12,7 @@ import {
     TextRun,
     type ParagraphChild,
 } from "docx";
+import { formatDocumentSkills } from "./document-model";
 import { ensureReadableAccent, normalizeHex } from "./color-contrast";
 import {
     toDocumentLink,
@@ -218,7 +219,7 @@ function buildSection(section: DocumentSection, context: BuildContext): Paragrap
     if (section.text.trim()) body.push(...markdownParagraphs(section.text, context));
     if (section.tags.length > 0) body.push(tagParagraph(section.tags));
     for (const group of section.skillGroups) {
-        if (group.skills.length > 0) body.push(tagParagraph(group.skills, group.name || undefined));
+        if (group.skills.length > 0) body.push(tagParagraph(formatDocumentSkills(group), group.name || undefined));
     }
     for (const entry of section.entries) body.push(...buildEntry(entry, context));
 

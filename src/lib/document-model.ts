@@ -6,6 +6,7 @@ import { getMaritalStatusLabel, isHiddenMaritalStatus, isMaritalStatusKey } from
 import { visibleEntries } from "./preview/visibility";
 import { getOrderedVisibleSections, type OrderedResumeSection, type OrderedResumeSectionType } from "./resume-sections";
 import { isNativeLanguageFluency, type CustomSection, type Resume } from "./schema";
+import { getSkillLevelWord, resolveSkillsSection } from "./skills/levels";
 
 /**
  * Neutral intermediate representation between the resume document and the
@@ -43,6 +44,24 @@ export interface DocumentImage {
 export interface DocumentSkillGroup {
     name: string;
     skills: string[];
+    /**
+     * Level word per skill (same length as `skills`, "" for none), in the CV
+     * language. All "" when the level meter is off. Kept apart from the names so a
+     * format that only wants names (README badges) is unaffected.
+     */
+    levels: string[];
+}
+
+/** "Python (Expert)" when the skill has a level to show, else just the name. */
+export function formatDocumentSkill(group: DocumentSkillGroup, index: number): string {
+    const name = group.skills[index];
+    const level = group.levels[index];
+    return level ? `${name} (${level})` : name;
+}
+
+/** Every skill of a group as text, levels included when shown. */
+export function formatDocumentSkills(group: DocumentSkillGroup): string[] {
+    return group.skills.map((_, index) => formatDocumentSkill(group, index));
 }
 
 export interface DocumentEntry {
@@ -169,7 +188,14 @@ export function toDocumentModel(resume: Resume): DocumentModel {
         dateFormat,
         basics: buildBasics(resume, cvLabels),
         sections: getOrderedVisibleSections(resume).map((section) =>
-            buildSection(section, { cvLabels, heading, formatDate, formatDateRange }),
+            buildSection(section, {
+                cvLabels,
+                language,
+                showSkillLevels: resolveSkillsSection(resume, section.key).showLevels,
+                heading,
+                formatDate,
+                formatDateRange,
+            }),
         ),
     };
 }
@@ -275,6 +301,10 @@ function toDocumentImage(resume: Resume): DocumentImage | null {
 
 interface SectionContext {
     cvLabels: CvLabels;
+    /** CV language, for level words. */
+    language: string;
+    /** Whether a skill's level is written next to its name. */
+    showSkillLevels: boolean;
     heading: (key: string, fallback: string) => string;
     formatDate: (value: string) => string;
     formatDateRange: (start?: string, end?: string) => string;
@@ -458,10 +488,19 @@ function buildSection(section: OrderedResumeSection, ctx: SectionContext): Docum
         }
         case "skills": {
             const out = make(cvLabels.skills);
-            out.skillGroups = section.groups.map((group) => ({
-                name: group.name.trim(),
-                skills: group.skills.map((skill) => skill.name.trim()).filter(Boolean),
-            }));
+            out.skillGroups = section.groups.map((group) => {
+                const named = group.skills
+                    .map((skill) => ({
+                        name: skill.name.trim(),
+                        level: ctx.showSkillLevels ? getSkillLevelWord(skill.level, ctx.language) : "",
+                    }))
+                    .filter((skill) => skill.name);
+                return {
+                    name: group.name.trim(),
+                    skills: named.map((skill) => skill.name),
+                    levels: named.map((skill) => skill.level),
+                };
+            });
             return out;
         }
         case "custom":
