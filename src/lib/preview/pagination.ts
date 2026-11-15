@@ -1,3 +1,4 @@
+import { getDefaultPlacement, resolvePlacement } from "@/lib/layout/section-placement";
 import type {
     LayoutItemRender,
     LayoutSectionPlacement,
@@ -102,9 +103,9 @@ export function resolvePreviewRenderableItems(flowItems: PreviewFlowItem[]) {
     return resolved;
 }
 
+/** Kept for existing imports; the rule itself lives in lib/layout/section-placement. */
 export function getDefaultLayoutPlacement(index: number, mode: "two" | "mix"): LayoutSectionPlacement {
-    if (mode === "mix" && index === 0) return "full";
-    return index % 2 === 0 ? "left" : "right";
+    return getDefaultPlacement(index, mode);
 }
 
 export function normalizeLayoutPlacement(
@@ -112,16 +113,7 @@ export function normalizeLayoutPlacement(
     index: number,
     mode: "two" | "mix",
 ): LayoutSectionPlacement {
-    if (mode === "two") {
-        // Two columns have no full-width row: honour an explicit side, otherwise alternate.
-        return value === "left" || value === "right" ? value : getDefaultLayoutPlacement(index, "two");
-    }
-
-    if (value === "left" || value === "right" || value === "full") {
-        return value;
-    }
-
-    return getDefaultLayoutPlacement(index, "mix");
+    return resolvePlacement(value, index, mode);
 }
 
 export function chunkSectionEntries(
