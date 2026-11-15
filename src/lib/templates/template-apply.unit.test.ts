@@ -210,3 +210,41 @@ describe("templateDocumentSchema", () => {
         expect(result.success).toBe(false);
     });
 });
+
+describe("applyTemplateToResume and section placement", () => {
+    function resumeWithPlacement(placement: Record<string, "left" | "right" | "full">): Resume {
+        const resume = createEmptyResume();
+        resume.settings.contentSections = ["experience", "education", "skills", "projects"];
+        resume.settings.layout = { ...resume.settings.layout, columns: "two", sectionPlacement: placement };
+        return resume;
+    }
+
+    function templateWithPlacement(placement: Record<string, "left" | "right" | "full">): TemplateDocument {
+        const empty = createEmptyResume();
+        return buildTemplate({ layout: { ...empty.settings.layout, columns: "two", sectionPlacement: placement } });
+    }
+
+    it("takes the template's side for sections it sets and keeps the current side for the rest", () => {
+        const resume = resumeWithPlacement({ projects: "left", education: "left" });
+        const template = templateWithPlacement({ skills: "left", experience: "right", education: "right" });
+
+        const { resume: next } = applyTemplateToResume(resume, template);
+
+        expect(next.settings.layout.sectionPlacement).toEqual({
+            skills: "left",
+            experience: "right",
+            education: "right", // the template sets it, so the template wins
+            projects: "left", // the template does not touch it, so the current side stays
+        });
+    });
+
+    it("drops sides for sections the CV does not have", () => {
+        // "interests" is neither one of the built-in sections nor in this CV's content sections.
+        const resume = resumeWithPlacement({});
+        const template = templateWithPlacement({ interests: "left", skills: "left" });
+
+        const { resume: next } = applyTemplateToResume(resume, template);
+
+        expect(next.settings.layout.sectionPlacement).toEqual({ skills: "left" });
+    });
+});

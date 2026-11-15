@@ -67,6 +67,24 @@ describe("resolveSectionPlacements", () => {
         expect(resolveSectionPlacements(["a", "b", "c"], { b: "full" }, "mix", baseOf)).toEqual({ a: "full", b: "full", c: "left" });
     });
 
+    it("places a stale full from mixed mode by position in two-column mode and honours it in mixed mode", () => {
+        const stored = { a: "full", b: "full", c: "right" };
+        expect(resolveSectionPlacements(["a", "b", "c"], stored, "two", baseOf)).toEqual({ a: "left", b: "right", c: "right" });
+        expect(resolveSectionPlacements(["a", "b", "c"], stored, "mix", baseOf)).toEqual({ a: "full", b: "full", c: "right" });
+    });
+
+    it("ignores stored values that are not a side, as in files from other versions", () => {
+        const stored = { a: "middle", b: "", c: undefined } as unknown as Record<string, string>;
+        expect(resolveSectionPlacements(["a", "b", "c"], stored, "two", baseOf)).toEqual({ a: "left", b: "right", c: "left" });
+    });
+
+    it("gives every key exactly one side and never changes the stored record", () => {
+        const stored = Object.freeze({ b: "left" }) as Record<string, string>;
+        const placements = resolveSectionPlacements(["a", "b", "c"], stored, "two", baseOf);
+        expect(Object.keys(placements)).toEqual(["a", "b", "c"]);
+        expect(stored).toEqual({ b: "left" });
+    });
+
     it("tolerates a missing stored record", () => {
         expect(resolveSectionPlacements(["a"], undefined, "two", baseOf)).toEqual({ a: "left" });
     });
