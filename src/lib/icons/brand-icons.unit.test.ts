@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
     autoMatchBrand,
     BRAND_ICON_CHOICES,
+    BRAND_ICONS,
     resolveBrandValue,
 } from "./brand-icons";
 
@@ -63,5 +64,31 @@ describe("brand icon resolver", () => {
         expect(BRAND_ICON_CHOICES).toEqual(
             [...BRAND_ICON_CHOICES].sort((a, b) => a.label.localeCompare(b.label))
         );
+    });
+
+    it("recognises the technologies reported as missing, under their usual spellings", () => {
+        const expected: Record<string, string> = {
+            Java: "OpenJDK", OpenJDK: "OpenJDK", HTML: "HTML5", HTML5: "HTML5", SCSS: "Sass", Sass: "Sass",
+            HCL: "HashiCorp", Jinja: "Jinja", Jinja2: "Jinja", Dockerfile: "Docker", WebGPU: "WebGPU", wgpu: "wgpu",
+            Tailscale: "Tailscale", NetworkX: "NetworkX", MPI: "MPI", OpenMPI: "MPI", Valkey: "Valkey",
+            NeoForge: "NeoForge", Fabric: "Fabric", "Minecraft Forge": "Minecraft Forge", Forge: "Minecraft Forge", SimPy: "SimPy",
+        };
+        for (const [name, title] of Object.entries(expected)) {
+            expect(autoMatchBrand(name)?.title, name).toBe(title);
+        }
+    });
+
+    it("does not let the new short names claim unrelated words", () => {
+        expect(autoMatchBrand("JavaScript")?.title).toBe("JavaScript");
+        expect(autoMatchBrand("Prototyping")).toBeNull();
+        expect(autoMatchBrand("User Research")).toBeNull();
+    });
+
+    it("every registered icon has a title, a component and a usable colour", () => {
+        for (const [key, icon] of Object.entries(BRAND_ICONS)) {
+            expect(icon.title, key).toBeTruthy();
+            expect(icon.Comp, key).toBeTruthy();
+            if (icon.hex !== null) expect(icon.hex, key).toMatch(/^#[0-9a-fA-F]{6}$/);
+        }
     });
 });
