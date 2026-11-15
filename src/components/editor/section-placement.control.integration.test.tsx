@@ -5,6 +5,10 @@ import { createEmptyResume } from "@/lib/schema";
 import { useResumeStore } from "@/lib/store";
 import { clickSide, previewSide, renderEditor, settle, toggleSide, twoColumnResume } from "./section-placement.test.helpers";
 
+// These render the whole editor (preview + sidebar) and take 1-2 s alone; give them room when
+// the full suite runs in parallel.
+vi.setConfig({ testTimeout: 20_000 });
+
 // Feature 086: one click on a side puts the section there; clicking the side a
 // section is already stored on changes nothing.
 
@@ -73,6 +77,32 @@ describe("section placement control", () => {
         expect(placement).toEqual({ experience: "left", education: "right", skills: "left", projects: "right" });
         for (const section of ["experience", "education", "skills", "projects"]) {
             expect(toggleSide(section)).toBe(previewSide(container, section));
+        }
+    });
+
+    it("publishes the preview's sides when they change, not on every render", async () => {
+        let published = 0;
+        const unsubscribe = useResumeStore.subscribe((state, previous) => {
+            if (state.previewSectionPlacements !== previous.previewSectionPlacements) published += 1;
+        });
+        try {
+            const { container, user, raf } = await renderEditor(twoColumnResume({ education: "left" }));
+            await settle(container, raf);
+            const afterFirstLayout = published;
+            expect(afterFirstLayout).toBeGreaterThan(0);
+            expect(afterFirstLayout).toBeLessThanOrEqual(2);
+
+            // More layout passes with nothing changed publish nothing.
+            await settle(container, raf);
+            await settle(container, raf);
+            expect(published).toBe(afterFirstLayout);
+
+            // One real change publishes once.
+            await clickSide(user, "education", "Right");
+            await settle(container, raf);
+            expect(published).toBe(afterFirstLayout + 1);
+        } finally {
+            unsubscribe();
         }
     });
 

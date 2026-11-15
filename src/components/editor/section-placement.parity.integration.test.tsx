@@ -5,6 +5,10 @@ import { createEmptyResume } from "@/lib/schema";
 import { useResumeStore } from "@/lib/store";
 import { SECTIONS, previewSide, renderEditor, toggleSide, twoColumnResume } from "./section-placement.test.helpers";
 
+// These render the whole editor (preview + sidebar) and take 1-2 s alone; give them room when
+// the full suite runs in parallel.
+vi.setConfig({ testTimeout: 20_000 });
+
 // Feature 086: the side shown by a section's toggle must be the column the
 // preview draws it in. Before the fix the section list re-normalised the
 // already-resolved side with a stricter two-column rule and a different

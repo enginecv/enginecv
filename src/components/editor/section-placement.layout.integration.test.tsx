@@ -6,6 +6,10 @@ import { createEmptyResume, type Resume } from "@/lib/schema";
 import { useResumeStore } from "@/lib/store";
 import { SECTIONS, previewSide, renderEditor, settle, toggleSide, twoColumnResume } from "./section-placement.test.helpers";
 
+// These render the whole editor (preview + sidebar) and take 1-2 s alone; give them room when
+// the full suite runs in parallel.
+vi.setConfig({ testTimeout: 20_000 });
+
 // Feature 086, story 2: layout switches and edits never change a side the user
 // chose, and the toggle matches the page after each of them.
 
