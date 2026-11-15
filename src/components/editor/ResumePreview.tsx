@@ -37,11 +37,15 @@ import { resolveExternalHref } from "@/lib/external-links";
 import { getPrimaryResumeEmail, getResumeEmails } from "@/lib/emails";
 import { useTranslation } from "@/lib/i18n";
 import type { Resume, ResumeSettings } from "@/lib/schema";
-import { isNativeLanguageFluency, skillLevelRank, SKILL_LEVELS, type SkillGroup } from "@/lib/schema";
+import { DEFAULT_INTERESTS_SECTION, DEFAULT_SKILLS_SECTION, isNativeLanguageFluency, SKILL_LEVELS, type SkillGroup } from "@/lib/schema";
+import { getSkillLevelWord, skillLevelNumber } from "@/lib/skills/levels";
+import { InterestsFlow } from "./interests/InterestsFlow";
+import { InterestIconView } from "./interests/InterestIconView";
+import { parseInterestIcon } from "@/lib/interests/icon";
 import { assessedCefrSkills, CEFR_SKILL_GROUPS, CEFR_SKILLS, isCefrLevel, type CefrSkill, type CefrSkillGroup } from "@/lib/cefr";
 import { resolveSectionSettings } from "@/lib/customization";
 import type { IconComponent } from "@/lib/icons/brand-icons";
-import { getVisibleContentKeys, getVisibleSectionEntries, visibleEntries } from "@/lib/preview/visibility";
+import { getVisibleContentKeys, getVisibleSectionEntries, getVisibleSourceIndices, visibleEntries } from "@/lib/preview/visibility";
 import { getRoleFonts, roleFontStack, fontFamilyCssValue } from "@/lib/fonts";
 import { PreviewNavMenu } from "./PreviewNavMenu";
 import { RepoBadgeList } from "./RepoBadge";
@@ -51,7 +55,7 @@ import {
     blendHex,
     type BoxBorderSettings,
 } from "@/lib/preview/box-style";
-import { DEFAULT_DESIGN_BORDER, DEFAULT_DESIGN_SETTINGS, DEFAULT_DESIGN_STYLE, type DesignElement } from "@/lib/design";
+import { DEFAULT_DESIGN_BORDER, DEFAULT_DESIGN_SETTINGS, DEFAULT_DESIGN_STYLE, getDesignLayer, type DesignElement } from "@/lib/design";
 import { clampPan, computePanBounds } from "@/lib/preview/pan-bounds";
 import { derivePageGeometry } from "@/lib/preview/page-geometry";
 import { isGithubProject } from "@/lib/import/github-projects";
@@ -72,7 +76,6 @@ import {
     chunkSectionEntries,
     getMeasuredBlockFootprints,
     getPreviewSectionBaseId,
-    normalizeLayoutPlacement,
     resolvePreviewFlowOrder,
     resolvePreviewRenderableItems,
 } from "@/lib/preview/pagination";
@@ -86,6 +89,8 @@ import type {
 } from "@/lib/preview/pagination-types";
 import { DesignOverlayElementView } from "./preview/DesignOverlay";
 import { InlineEditProvider, InlineInteractiveContext, InlineField, InlineToolbar } from "./preview/PreviewInlineEdit";
+import { decideClick, decideDoubleClick } from "@/lib/preview/pointer-intent";
+import { resolveSectionPlacements } from "@/lib/layout/section-placement";
 
 interface ResumePreviewProps {
     resumeOverride?: Resume;
@@ -153,6 +158,20 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
     // therefore every visual export, which consumes this preview's pages)
     // renders only visible content. JSON export reads the raw document.
     const content = useMemo(() => getVisibleSectionEntries(resume), [resume]);
+    // The preview builds from the visible entries, but "go to this entry" is a position
+    // in the full list the editor works with; map one to the other so a hidden entry
+    // above does not shift every entry below it.
+    const sourceIndexLists = useMemo(() => new Map<string, number[]>(), [resume]);
+    const sourceEntryIndices = (sectionKey: string): number[] => {
+        let list = sourceIndexLists.get(sectionKey);
+        if (!list) {
+            list = getVisibleSourceIndices(resume, sectionKey);
+            sourceIndexLists.set(sectionKey, list);
+        }
+        return list;
+    };
+    const sourceEntryIndex = (sectionKey: string, visibleIndex: number): number =>
+        sourceEntryIndices(sectionKey)[visibleIndex] ?? visibleIndex;
     const allSkillsVisible = useMemo(
         () => content.skillGroups.flatMap((group) => group.skills),
         [content],
@@ -331,6 +350,8 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
             tableCellPaddingX: 8,
             tableCellPaddingY: 6,
         },
+        interestsSection: { ...DEFAULT_INTERESTS_SECTION },
+        skillsSection: { ...DEFAULT_SKILLS_SECTION },
         design: DEFAULT_DESIGN_SETTINGS,
     };
 
@@ -380,6 +401,14 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
             ...defaultSettings.languagesSection,
             ...((resume.settings as any)?.languagesSection || {}),
         },
+        interestsSection: {
+            ...defaultSettings.interestsSection,
+            ...((resume.settings as any)?.interestsSection || {}),
+        },
+        skillsSection: {
+            ...defaultSettings.skillsSection,
+            ...((resume.settings as any)?.skillsSection || {}),
+        },
         design: {
             ...defaultSettings.design,
             ...((resume.settings as any)?.design || {}),
@@ -423,6 +452,8 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
     const languageLayout: "list" | "table" | "cefr" =
         storedLanguageLayout === "table" || storedLanguageLayout === "cefr" ? storedLanguageLayout : "list";
     const languagesStyle = getScopedSettings("languages").languagesSection;
+    const scopedInterests = getScopedSettings("interests");
+    const interestsStyle = scopedInterests.interestsSection;
     const projectsStyle = getScopedSettings("projects");
     const languageColumns = languageLayout === "list" ? Math.min(3, Math.max(1, languagesStyle.columns ?? 1)) : 1;
     // Custom entry spacing replaces the global spacing.itemSpacing part of the wrapper margin.
@@ -486,8 +517,9 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
     const panStart = useRef({ x: 0, y: 0, panX: 0, panY: 0 });
     const isMobile = useRef(false);
     // Element-selection context menu (opened by clicking a preview element).
-    const [navMenu, setNavMenu] = useState<{ x: number; y: number; section: string; entryIndex: number | null; kind: string } | null>(null);
+    const [navMenu, setNavMenu] = useState<{ x: number; y: number; section: string; entryIndex: number | null; kind: string; href: string | null } | null>(null);
     const requestEditorNav = useResumeStore((state) => state.requestEditorNav);
+    const setPreviewSectionPlacements = useResumeStore((state) => state.setPreviewSectionPlacements);
     const requestCustomizeSection = useResumeStore((state) => state.requestCustomizeSection);
     const requestCustomizePanel = useResumeStore((state) => state.requestCustomizePanel);
     const pendingPreviewCommand = useResumeStore((state) => state.pendingPreviewCommand);
@@ -665,45 +697,90 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
         };
 
         // Left click on a tagged preview element opens the selection menu.
+        const clearNavTimer = () => {
+            if (navClickTimer.current) { clearTimeout(navClickTimer.current); navClickTimer.current = null; }
+        };
+
+        // The click rules live in lib/preview/pointer-intent so they stay in one
+        // tested table. A plain click on a link inside a selectable element opens
+        // the menu (with "Open link"); Ctrl/Cmd+click follows the link.
         const handleClick = (e: MouseEvent) => {
-            if (thumbnailMode) return;
-            if (e.button !== 0 || didDrag.current || spaceHeld.current) return;
             const target = e.target as HTMLElement;
-            // Clicks inside an actively-edited element place the caret; never
-            // hijack them into the selection menu.
-            if (target.isContentEditable) return;
-            // Links retain native browser behavior. Element navigation remains
-            // available by clicking surrounding personal-detail/entry content.
             const linkEl = target.closest('a[href]') as HTMLAnchorElement | null;
-            if (linkEl) {
-                setNavMenu(null);
-                return;
-            }
-            // Second click of a double-click: cancel the deferred menu so the
-            // element's own double-click (inline edit) proceeds unobstructed.
-            if (e.detail >= 2) {
-                if (navClickTimer.current) { clearTimeout(navClickTimer.current); navClickTimer.current = null; }
-                return;
-            }
             const el = target.closest('[data-nav-section]') as HTMLElement | null;
-            if (!el) {
-                if (navClickTimer.current) { clearTimeout(navClickTimer.current); navClickTimer.current = null; }
-                setNavMenu(null);
-                return;
+            const decision = decideClick({
+                thumbnailMode,
+                button: e.button,
+                detail: e.detail,
+                didDrag: didDrag.current,
+                spaceHeld: spaceHeld.current,
+                ctrlKey: e.ctrlKey,
+                metaKey: e.metaKey,
+                isContentEditable: target.isContentEditable,
+                linkHref: linkEl ? linkEl.href : null,
+                navSection: el?.getAttribute('data-nav-section') || null,
+            });
+            switch (decision.kind) {
+                case 'ignore':
+                    return;
+                case 'native':
+                    clearNavTimer();
+                    if (decision.closeMenu) setNavMenu(null);
+                    return;
+                case 'cancel-timer':
+                    // Second click of a double-click: the element's own double-click
+                    // (inline edit or heading navigation) proceeds unobstructed.
+                    clearNavTimer();
+                    if (decision.preventDefault) e.preventDefault();
+                    return;
+                case 'close-menu':
+                    clearNavTimer();
+                    setNavMenu(null);
+                    return;
+                case 'open-menu': {
+                    if (!el) return;
+                    const section = el.getAttribute('data-nav-section');
+                    if (!section) return;
+                    const idxAttr = el.getAttribute('data-nav-entry-index');
+                    const entryIndex = idxAttr != null && idxAttr !== '' ? Number(idxAttr) : null;
+                    const kind = el.getAttribute('data-nav-kind') || 'entry';
+                    e.preventDefault();
+                    // Defer: a double-click within ~220ms clears this before it fires.
+                    const payload = { x: e.clientX, y: e.clientY, section, entryIndex, kind, href: decision.href };
+                    clearNavTimer();
+                    navClickTimer.current = setTimeout(() => {
+                        setNavMenu(payload);
+                        navClickTimer.current = null;
+                    }, 220);
+                    return;
+                }
             }
-            const section = el.getAttribute('data-nav-section');
-            if (!section) return;
-            const idxAttr = el.getAttribute('data-nav-entry-index');
-            const entryIndex = idxAttr != null && idxAttr !== '' ? Number(idxAttr) : null;
-            const kind = el.getAttribute('data-nav-kind') || 'entry';
+        };
+
+        // Double-click on a section heading or an entry jumps to it in the sidebar.
+        // Editable text keeps its own double-click (inline edit); Alt+double-click
+        // navigates from anywhere, text included.
+        const handleDblClick = (e: MouseEvent) => {
+            const target = e.target as HTMLElement;
+            const el = target.closest('[data-nav-section]') as HTMLElement | null;
+            const idxAttr = el?.getAttribute('data-nav-entry-index');
+            const decision = decideDoubleClick({
+                thumbnailMode,
+                altKey: e.altKey,
+                isContentEditable: target.isContentEditable,
+                hasEditableAncestor: target.closest('[data-editable-field]') != null,
+                navSection: el?.getAttribute('data-nav-section') || null,
+                navKind: el?.getAttribute('data-nav-kind') || null,
+                navEntryIndex: idxAttr != null && idxAttr !== '' ? Number(idxAttr) : null,
+            });
+            if (decision.kind !== 'navigate') return;
+            clearNavTimer();
+            setNavMenu(null);
             e.preventDefault();
-            // Defer: a double-click within ~220ms clears this before it fires.
-            const payload = { x: e.clientX, y: e.clientY, section, entryIndex, kind };
-            if (navClickTimer.current) clearTimeout(navClickTimer.current);
-            navClickTimer.current = setTimeout(() => {
-                setNavMenu(payload);
-                navClickTimer.current = null;
-            }, 220);
+            // This listener runs before React's, so stopping here also keeps an
+            // Alt+double-click on editable text from starting inline edit.
+            e.stopPropagation();
+            requestEditorNav(decision.section, decision.entryIndex);
         };
 
         // Middle-button "auxclick" would otherwise autoscroll / open links.
@@ -713,12 +790,14 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
 
         container.addEventListener('mousedown', handleMouseDown);
         container.addEventListener('click', handleClick);
+        container.addEventListener('dblclick', handleDblClick);
         container.addEventListener('auxclick', handleAuxClick);
         window.addEventListener('mousemove', handleMouseMove);
         window.addEventListener('mouseup', handleMouseUp);
         return () => {
             container.removeEventListener('mousedown', handleMouseDown);
             container.removeEventListener('click', handleClick);
+            container.removeEventListener('dblclick', handleDblClick);
             container.removeEventListener('auxclick', handleAuxClick);
             window.removeEventListener('mousemove', handleMouseMove);
             window.removeEventListener('mouseup', handleMouseUp);
@@ -2144,6 +2223,43 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
 
     // Multi-column list renders as one grid block (like the table) instead of per-entry blocks.
     // Each cell keeps the regular entry styling, so the outer div is only a spacer.
+    // Icon element for an interest, or null when it has no usable icon.
+    const renderInterestIcon = (interest: { icon?: string }) =>
+        parseInterestIcon(interest.icon) ? <InterestIconView value={interest.icon} /> : null;
+
+    // Title of an interest in the `list` display. Without an icon (or with icons
+    // off) this is the plain name, exactly as before.
+    const renderInterestListTitle = (interest: any): React.ReactNode => {
+        const name = interest.name || interestLabel;
+        const icon = interestsStyle.showIcons ? renderInterestIcon(interest) : null;
+        if (!icon) return name;
+        return (
+            <span className="inline-flex items-center gap-1.5">
+                <span aria-hidden="true" className="inline-flex shrink-0 items-center" style={{ color: settings.colors.accent }}>{icon}</span>
+                {name}
+            </span>
+        );
+    };
+
+    // Inline / Chips / Icon grid: the whole Interests section as one block. The
+    // `list` display keeps the per-entry rendering (default, unchanged).
+    const renderInterestsFlow = (interests: any[]) => (
+        <InterestsFlow
+            interests={interests}
+            display={interestsStyle.display === "list" ? "inline" : interestsStyle.display}
+            separator={interestsStyle.separator}
+            columns={interestsStyle.columns}
+            showIcons={interestsStyle.showIcons}
+            fallbackLabel={interestLabel}
+            titleFontSize={scopedInterests.entryLayout.titleFontSize}
+            accentColor={settings.colors.accent}
+            itemSpacing={settings.spacing.itemSpacing}
+            navSection="interests"
+            sourceIndices={sourceEntryIndices("interests")}
+            renderIcon={renderInterestIcon}
+        />
+    );
+
     const renderLanguageGrid = (languages: any[]) => (
         <div
             data-testid="resume-languages-grid"
@@ -2378,7 +2494,9 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
         const iconColor = skillIconColorMode === "custom"
             ? (settings.colors.skillIconCustomColor || settings.colors.accent)
             : (brandHex ?? settings.colors.accent);
-        const rank = skillLevelRank(skill.level || "");
+        const skillsStyle = getScopedSettings("skills").skillsSection;
+        const rank = skillsStyle.showLevels ? skillLevelNumber(skill.level) : 0;
+        const levelWord = rank > 0 ? getSkillLevelWord(skill.level, settings.language) : "";
         return (
             <span
                 key={`${skill.id || "skill"}-${index}`}
@@ -2387,8 +2505,8 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
             >
                 {showIcon && SkillIcon && <SkillIcon className="h-[1.1em] w-[1.1em] shrink-0" style={{ color: iconColor }} />}
                 {showName && skill.name && <span className="font-medium">{skill.name}</span>}
-                {rank > 0 && (
-                    <span className="inline-flex items-center gap-[2px]">
+                {rank > 0 && skillsStyle.levelStyle === "dots" && (
+                    <span role="img" aria-label={levelWord} data-testid="resume-skill-level-dots" className="inline-flex items-center gap-[2px]">
                         {SKILL_LEVELS.map((_, i) => (
                             <span
                                 key={i}
@@ -2401,6 +2519,32 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
                                 }}
                             />
                         ))}
+                    </span>
+                )}
+                {rank > 0 && skillsStyle.levelStyle === "bar" && (
+                    <span
+                        role="img"
+                        aria-label={levelWord}
+                        data-testid="resume-skill-level-bar"
+                        className="inline-block overflow-hidden rounded-full"
+                        style={{ height: "0.42em", width: "2.6em", backgroundColor: "color-mix(in srgb, currentColor 25%, transparent)" }}
+                    >
+                        <span className="block h-full rounded-full" style={{ width: `${(rank / SKILL_LEVELS.length) * 100}%`, backgroundColor: settings.colors.accent }} />
+                    </span>
+                )}
+                {rank > 0 && skillsStyle.levelStyle === "text" && (
+                    <span data-testid="resume-skill-level-text" className="text-[0.85em] font-medium" style={{ color: settings.colors.accent }}>
+                        {levelWord}
+                    </span>
+                )}
+                {rank > 0 && skillsStyle.levelStyle === "number" && (
+                    <span
+                        data-testid="resume-skill-level-number"
+                        aria-label={levelWord}
+                        className="text-[0.85em] font-medium tabular-nums"
+                        style={{ color: settings.colors.accent }}
+                    >
+                        {rank}/{SKILL_LEVELS.length}
                     </span>
                 )}
             </span>
@@ -3062,26 +3206,35 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
             section: "interests",
             node: renderSectionHeading("interests", interestsLabel),
         });
-        content.interests.forEach((interest: any, i: number) => {
+        if (interestsStyle.display !== "list") {
             pushBlock({
-                key: `interest-${interest.id || i}`,
+                key: "interests-flow",
                 kind: "entry",
                 section: "interests",
-                node: renderEntry(
-                    interest.name || interestLabel,
-                    null,
-                    null,
-                    null,
-                    interest.description ? (
-                        <ReactMarkdown components={markdownComponents} remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw, rehypeSanitize]}>{interest.description}</ReactMarkdown>
-                    ) : null,
-                    undefined,
-                    undefined,
-                    undefined,
-                    getConfiguredSectionKey("interests"),
-                ),
+                node: renderInterestsFlow(content.interests),
             });
-        });
+        } else {
+            content.interests.forEach((interest: any, i: number) => {
+                pushBlock({
+                    key: `interest-${interest.id || i}`,
+                    kind: "entry",
+                    section: "interests",
+                    node: renderEntry(
+                        renderInterestListTitle(interest),
+                        null,
+                        null,
+                        null,
+                        interest.description ? (
+                            <ReactMarkdown components={markdownComponents} remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw, rehypeSanitize]}>{interest.description}</ReactMarkdown>
+                        ) : null,
+                        undefined,
+                        undefined,
+                        undefined,
+                        getConfiguredSectionKey("interests"),
+                    ),
+                });
+            });
+        }
     }
 
     if (shouldRenderConfiguredSection("languages") && content.languages && content.languages.length > 0) {
@@ -3415,23 +3568,25 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
             key: getConfiguredSectionKey("interests"),
             base: "interests",
             headingNode: renderSectionHeading("interests", interestsLabel),
-            entryNodes: content.interests.map((interest: any, i: number) => (
-                <div key={`layout-interest-${interest.id || i}`}>
-                    {renderEntry(
-                        interest.name || interestLabel,
-                        null,
-                        null,
-                        null,
-                        interest.description ? (
-                            <ReactMarkdown components={markdownComponents} remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw, rehypeSanitize]}>{interest.description}</ReactMarkdown>
-                        ) : null,
-                        undefined,
-                        undefined,
-                        undefined,
-                        getConfiguredSectionKey("interests"),
-                    )}
-                </div>
-            )),
+            entryNodes: interestsStyle.display !== "list"
+                ? [<div key="layout-interests-flow">{renderInterestsFlow(content.interests)}</div>]
+                : content.interests.map((interest: any, i: number) => (
+                    <div key={`layout-interest-${interest.id || i}`}>
+                        {renderEntry(
+                            renderInterestListTitle(interest),
+                            null,
+                            null,
+                            null,
+                            interest.description ? (
+                                <ReactMarkdown components={markdownComponents} remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw, rehypeSanitize]}>{interest.description}</ReactMarkdown>
+                            ) : null,
+                            undefined,
+                            undefined,
+                            undefined,
+                            getConfiguredSectionKey("interests"),
+                        )}
+                    </div>
+                )),
         });
     }
 
@@ -3598,7 +3753,7 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
                 kind: "entry",
                 section: section.base,
                 navSection: section.key,
-                navEntryIndex: index,
+                navEntryIndex: sourceEntryIndex(section.key, index),
                 node: entryNode,
             });
         });
@@ -3614,21 +3769,23 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
 
     const orderedStructuredItems = orderedRenderableItems;
     const profilePlacement: LayoutSectionPlacement = "full";
-    let structuredContentIndex = 0;
-    const structuredSectionPlacements = orderedFlowItems.reduce<Record<string, LayoutSectionPlacement>>((acc, item) => {
-        if (item.kind !== "section" || !item.section) {
-            return acc;
-        }
-
-        const section = item.section;
-        acc[section.key] = normalizeLayoutPlacement(
-            settings.layout.sectionPlacement?.[section.key] || settings.layout.sectionPlacement?.[section.base],
-            structuredContentIndex,
-            settings.layout.columns === "mix" ? "mix" : "two",
-        );
-        structuredContentIndex += 1;
-        return acc;
-    }, {});
+    // Sides come from the one shared rule, counted over the sections that actually
+    // render here (separators and page breaks are not sections), so the Customize
+    // section list can show exactly what this page drew.
+    const renderedLayoutSections = orderedFlowItems.flatMap((item) => (item.kind === "section" && item.section ? [item.section] : []));
+    const renderedSectionBases = new Map(renderedLayoutSections.map((section) => [section.key, section.base]));
+    const structuredSectionPlacements: Record<string, LayoutSectionPlacement> = resolveSectionPlacements(
+        renderedLayoutSections.map((section) => section.key),
+        settings.layout.sectionPlacement,
+        settings.layout.columns === "mix" ? "mix" : "two",
+        (key) => renderedSectionBases.get(key) ?? key,
+    );
+    const publishesPlacements = !thumbnailMode && !resumeOverride && settings.layout.columns !== "one";
+    const placementsSignature = publishesPlacements ? JSON.stringify(structuredSectionPlacements) : "";
+    useEffect(() => {
+        // Only the interactive main preview publishes: thumbnails and overrides draw other CVs.
+        setPreviewSectionPlacements(publishesPlacements ? (JSON.parse(placementsSignature) as Record<string, LayoutSectionPlacement>) : {});
+    }, [publishesPlacements, placementsSignature, setPreviewSectionPlacements]);
     const useStructuredPreview = isStructuredLayout && hasContent;
 
     // Rebuild a positioned item's node from current render data. State stores
@@ -3663,7 +3820,7 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
                             <div
                                 key={`${section.key}:entry-fragment:${entryIndex}`}
                                 data-nav-section={section.key}
-                                data-nav-entry-index={entryIndex}
+                                data-nav-entry-index={sourceEntryIndex(section.key, entryIndex)}
                                 data-nav-kind="entry"
                                 style={{ display: "flow-root" }}
                             >
@@ -4054,9 +4211,12 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
         );
     };
 
-    const renderDesignOverlayLayer = (pageIndex: number) => {
+    // Elements in the "behind" layer are drawn beneath the page content (the layer is
+    // placed before it and sent to z-index -1 inside the document's own stacking
+    // context, so it stays above the page background); "front" elements are above it.
+    const renderDesignOverlayLayer = (pageIndex: number, layer: "front" | "behind" = "front") => {
         const pageElements = designElements
-            .filter((element: DesignElement) => element.pageIndex === pageIndex)
+            .filter((element: DesignElement) => element.pageIndex === pageIndex && getDesignLayer(element) === layer)
             .sort((left: DesignElement, right: DesignElement) => left.zIndex - right.zIndex);
 
         if (pageElements.length === 0) {
@@ -4064,7 +4224,12 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
         }
 
         return (
-            <div className="pointer-events-none absolute inset-0 z-20" data-no-drag>
+            <div
+                className={`pointer-events-none absolute inset-0 ${layer === "front" ? "z-20" : ""}`}
+                style={layer === "behind" ? { zIndex: -1 } : undefined}
+                data-no-drag
+                data-design-layer={layer}
+            >
                 {pageElements.map((element: DesignElement) => (
                     <DesignOverlayElementView
                         key={element.id}
@@ -4072,6 +4237,8 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
                         accentColor={settings.colors.accent}
                         pageWidth={pageContentWidth}
                         pageHeight={pageContentHeight}
+                        marginX={marginHorizontalPx}
+                        marginY={marginVerticalPx}
                         pageScale={scale}
                         isSelected={isInteractiveDesignPreview && selectedDesignElementId === element.id}
                         interactive={isInteractiveDesignPreview}
@@ -4126,6 +4293,14 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
                         else requestCustomizeSection(navMenu.section);
                         setNavMenu(null);
                     }}
+                    onOpenLink={navMenu.href ? () => {
+                        const href = navMenu.href as string;
+                        // mailto: and tel: hand off to the mail/phone app in place; web links
+                        // open in a new tab without giving the target access to this one.
+                        if (/^(mailto|tel):/i.test(href)) window.location.href = href;
+                        else window.open(href, "_blank", "noopener,noreferrer");
+                        setNavMenu(null);
+                    } : undefined}
                     onClose={() => setNavMenu(null)}
                 />
             )}
@@ -4282,8 +4457,10 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
                                 height: '100%',
                                 boxSizing: 'border-box',
                                 position: "relative",
+                                isolation: "isolate",
                             }}
                         >
+                            {renderDesignOverlayLayer(pageIdx, "behind")}
                             {blockIndices.map((idx) => {
                                 const block = resumeBlocks[idx];
                                 if (!block) return null;
@@ -4330,9 +4507,11 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
                                 height: '100%',
                                 boxSizing: 'border-box',
                                 position: "relative",
+                                isolation: "isolate",
                             }}
                         >
                             <div className="relative w-full h-full">
+                                {renderDesignOverlayLayer(pageIdx, "behind")}
                                 {pageItems.map((item) => (
                                     <div
                                         key={item.key}

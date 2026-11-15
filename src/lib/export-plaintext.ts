@@ -1,4 +1,5 @@
 import { toDocumentLink, type DocumentDetail, type DocumentEntry, type DocumentLink, type DocumentModel, type DocumentSection } from "./document-model";
+import { formatDocumentSkills } from "./document-model";
 import { parseMarkdownBlocks, type InlineToken } from "./markdown-inline";
 
 /**
@@ -106,7 +107,7 @@ function buildSection(section: DocumentSection): string | null {
         section.tags.join(", "),
         ...section.skillGroups
             .filter((group) => group.skills.length > 0)
-            .map((group) => (group.name ? `${group.name}: ${group.skills.join(", ")}` : group.skills.join(", "))),
+            .map((group) => (group.name ? `${group.name}: ${formatDocumentSkills(group).join(", ")}` : formatDocumentSkills(group).join(", "))),
         ...section.entries.map(buildEntry),
     ].filter((block): block is string => Boolean(block && block.trim()));
 

@@ -381,11 +381,70 @@ export const languageSchema = z.object({
         : language
 ));
 
+// How the Interests section is laid out. `list` is the original look (one entry
+// per interest, with its description), so it is the default and existing CVs do
+// not change. The other styles render all interests as one compact block.
+export const INTERESTS_DISPLAYS = ["list", "inline", "chips", "iconGrid"] as const;
+export const INTERESTS_SEPARATORS = ["dot", "comma", "pipe", "slash"] as const;
+export type InterestsDisplay = (typeof INTERESTS_DISPLAYS)[number];
+export type InterestsSeparator = (typeof INTERESTS_SEPARATORS)[number];
+
+export interface InterestsSection {
+    display: InterestsDisplay;
+    /** Show per-interest icons in the styles that can (list, chips, icon grid). */
+    showIcons: boolean;
+    /** Icon grid: number of columns (1-4). */
+    columns: number;
+    /** Inline style: what goes between interests. */
+    separator: InterestsSeparator;
+}
+
+export const DEFAULT_INTERESTS_SECTION: InterestsSection = {
+    display: "list",
+    showIcons: true,
+    columns: 3,
+    separator: "dot",
+};
+
+// Unknown or out-of-range values fall back to the default instead of failing
+// the whole resume (older files, imports, hand-edited JSON).
+export const interestsSectionSchema = z.object({
+    display: z.enum(INTERESTS_DISPLAYS).default(DEFAULT_INTERESTS_SECTION.display).catch(DEFAULT_INTERESTS_SECTION.display),
+    showIcons: z.boolean().default(DEFAULT_INTERESTS_SECTION.showIcons).catch(DEFAULT_INTERESTS_SECTION.showIcons),
+    columns: z.number().int().min(1).max(4).default(DEFAULT_INTERESTS_SECTION.columns).catch(DEFAULT_INTERESTS_SECTION.columns),
+    separator: z.enum(INTERESTS_SEPARATORS).default(DEFAULT_INTERESTS_SECTION.separator).catch(DEFAULT_INTERESTS_SECTION.separator),
+});
+
+// How a skill's level is drawn for the whole CV (or one section via an override).
+// Dots and "on" are what every CV had before this setting, so they are the default.
+export const SKILL_LEVEL_STYLES = ["dots", "bar", "text", "number"] as const;
+export type SkillLevelStyle = (typeof SKILL_LEVEL_STYLES)[number];
+
+export interface SkillsSection {
+    /** Show each skill's level at all. Stored levels are never touched. */
+    showLevels: boolean;
+    levelStyle: SkillLevelStyle;
+}
+
+export const DEFAULT_SKILLS_SECTION: SkillsSection = {
+    showLevels: true,
+    levelStyle: "dots",
+};
+
+export const skillsSectionSchema = z.object({
+    showLevels: z.boolean().default(DEFAULT_SKILLS_SECTION.showLevels).catch(DEFAULT_SKILLS_SECTION.showLevels),
+    levelStyle: z.enum(SKILL_LEVEL_STYLES).default(DEFAULT_SKILLS_SECTION.levelStyle).catch(DEFAULT_SKILLS_SECTION.levelStyle),
+});
+
 export const interestSchema = z.object({
     id: z.string().default(() => createId()),
     hidden: z.boolean().default(false),
     name: z.string().default(""),
     description: z.string().default(""),
+    // Optional icon: `lucide:<catalog-name>` or a single emoji. Meaning and
+    // validation live in lib/interests/icon.ts; anything unusable is simply "no
+    // icon", so bad values here must never fail the whole resume.
+    icon: z.string().max(64).optional().catch(undefined),
 });
 
 const variantSchema = z.object({
@@ -572,6 +631,8 @@ const designElementSchema = z.object({
     width: z.number().default(220),
     height: z.number().default(120),
     zIndex: z.number().int().default(1),
+    // Drawn above the CV's content (default, as every element was before) or beneath it.
+    layer: z.enum(["front", "behind"]).default("front").catch("front"),
     text: z.string().default(""),
     imageSrc: z.string().default(""),
     shape: z.enum(["rectangle", "ellipse"]).default("rectangle"),
@@ -918,6 +979,16 @@ export const settingsSchema = z.object({
         tableCellPaddingY: 6,
     }),
 
+    // Interests Section (display style and icons; see interestsSectionSchema)
+    interestsSection: interestsSectionSchema
+        .default(() => ({ ...DEFAULT_INTERESTS_SECTION }))
+        .catch(() => ({ ...DEFAULT_INTERESTS_SECTION })),
+
+    // Skills Section (level meter visibility and style; see skillsSectionSchema)
+    skillsSection: skillsSectionSchema
+        .default(() => ({ ...DEFAULT_SKILLS_SECTION }))
+        .catch(() => ({ ...DEFAULT_SKILLS_SECTION })),
+
     // Repo Badge (per-project repository chips)
     repoBadge: z.object({
         fontFamily: z.string().default(""),
@@ -1039,6 +1110,8 @@ export const SECTION_STYLE_KEYS = [
     "entryLayout",
     "repoBadge",
     "languagesSection",
+    "interestsSection",
+    "skillsSection",
     "linkIcon",
 ] as const;
 
@@ -1352,6 +1425,8 @@ export const resumeObjectSchema = z.object({
             tableCellPaddingX: 8,
             tableCellPaddingY: 6,
         },
+        interestsSection: { ...DEFAULT_INTERESTS_SECTION },
+        skillsSection: { ...DEFAULT_SKILLS_SECTION },
         repoBadge: {
             fontFamily: "",
             fontSize: 9,

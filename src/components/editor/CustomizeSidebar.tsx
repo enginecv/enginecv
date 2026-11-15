@@ -11,7 +11,9 @@ import { getBuiltinTemplates } from "@/lib/templates/enginecv-templates";
 import { FONT_ROLES, PRESET_FONTS, type FontRole, type RoleFonts, roleRef, parseRoleRef, getRoleFonts } from "@/lib/fonts";
 import { getVisibleContentKeys } from "@/lib/preview/visibility";
 import { hasSectionStyleOverride, resolveSectionSettings } from "@/lib/customization";
-import type { ResumeSettings, SectionStyleKey } from "@/lib/schema";
+import type { InterestsDisplay, InterestsSeparator, ResumeSettings, SectionStyleKey, SkillLevelStyle } from "@/lib/schema";
+import { DEFAULT_INTERESTS_SECTION, DEFAULT_SKILLS_SECTION } from "@/lib/schema";
+import { resolvePlacement, resolveSectionPlacements } from "@/lib/layout/section-placement";
 import type { LucideIcon } from "lucide-react";
 import { createContext, useContext, useId, useState, useRef, useEffect, useMemo, type ChangeEvent, type ReactNode } from "react";
 import {
@@ -26,6 +28,9 @@ import {
     DEFAULT_DESIGN_SETTINGS,
     DEFAULT_DESIGN_STYLE,
     DESIGN_OBJECT_FITS,
+    getDesignLayer,
+    getOverlayMaxSize,
+    getOverlayPositionLimits,
     type DesignElement,
     type DesignElementType,
     type DesignObjectFit,
@@ -734,23 +739,6 @@ function createLayoutPageBreakKey() {
     return `${LAYOUT_PAGE_BREAK_PREFIX}${createId()}`;
 }
 
-function getDefaultSectionPlacement(index: number, mode: "two" | "mix"): SectionPlacement {
-    if (mode === "mix" && index === 0) return "full";
-    return index % 2 === 0 ? "left" : "right";
-}
-
-function normalizeSectionPlacement(value: string | undefined, index: number, mode: "two" | "mix"): SectionPlacement {
-    if (mode === "two") {
-        return value === "right" ? "right" : getDefaultSectionPlacement(index, "two");
-    }
-
-    if (value === "left" || value === "right" || value === "full") {
-        return value;
-    }
-
-    return getDefaultSectionPlacement(index, "mix");
-}
-
 function resolveLayoutSectionOrder(order: string[], items: LayoutSectionItem[]) {
     const itemMap = new Map(items.map((item) => [item.key, item]));
     const used = new Set<string>();
@@ -835,13 +823,11 @@ function DraggableSectionList({
                 const item = itemMap.get(key);
                 if (!item) return null;
                 const { label, caption, icon: Icon } = item;
-                const placement = item.isSeparator || item.isVerticalSeparator || item.isPageBreak || layoutMode === "one"
+                // `placements` already holds each section's resolved side (what the preview
+                // drew), so show it as is. Re-resolving here once disagreed with the page.
+                const placement: SectionPlacement | null = item.isSeparator || item.isVerticalSeparator || item.isPageBreak || layoutMode === "one"
                     ? null
-                    : normalizeSectionPlacement(
-                        placements[key] || placements[item.base],
-                        contentIndexMap.get(key) ?? index,
-                        layoutMode,
-                    );
+                    : placements[key] ?? placements[item.base] ?? resolvePlacement(undefined, contentIndexMap.get(key) ?? index, layoutMode);
                 return (
                     <div
                         {...itemProps}
@@ -878,7 +864,11 @@ function DraggableSectionList({
                                 </div>
                                 <div className="text-[11px] text-faint truncate">{caption}</div>
                                 {placement && (
-                                    <div className="flex items-center gap-1.5 mt-2">
+                                    <div
+                                        role="group"
+                                        aria-label={t("customize.placementGroup", { section: label })}
+                                        className="flex items-center gap-1.5 mt-2"
+                                    >
                                         {(layoutMode === "mix"
                                             ? ([
                                                 { value: "full", label: t("customize.full") },
@@ -894,6 +884,7 @@ function DraggableSectionList({
                                                 key={option.value}
                                                 type="button"
                                                 onClick={() => onPlacementChange(key, option.value)}
+                                                aria-pressed={placement === option.value}
                                                 className={`px-2.5 h-7 rounded-lg border text-[11px] font-medium transition-colors ${placement === option.value
                                                     ? "bg-edge border-accent text-strong"
                                                     : "bg-surface-4 border-edge text-faint hover:text-strong hover:border-faint"
@@ -924,6 +915,8 @@ function DraggableSectionList({
                                 type="button"
                                 onClick={() => moveSection(index, "up")}
                                 disabled={index === 0}
+                                aria-label={`${t("editor.moveUp")}: ${label}`}
+                                title={t("editor.moveUp")}
                                 className="w-7 h-7 rounded-lg border border-edge text-faint hover:text-strong hover:border-faint disabled:opacity-35 disabled:hover:text-faint disabled:hover:border-edge transition-colors flex items-center justify-center"
                             >
                                 <ChevronDown className="w-3.5 h-3.5 rotate-180" />
@@ -932,6 +925,8 @@ function DraggableSectionList({
                                 type="button"
                                 onClick={() => moveSection(index, "down")}
                                 disabled={index === validOrder.length - 1}
+                                aria-label={`${t("editor.moveDown")}: ${label}`}
+                                title={t("editor.moveDown")}
                                 className="w-7 h-7 rounded-lg border border-edge text-faint hover:text-strong hover:border-faint disabled:opacity-35 disabled:hover:text-faint disabled:hover:border-edge transition-colors flex items-center justify-center"
                             >
                                 <ChevronDown className="w-3.5 h-3.5" />
@@ -1851,6 +1846,7 @@ function CustomizeSectionCard({
 export function CustomizeSidebar() {
     const { t } = useTranslation();
     const resume = useResumeStore((state) => state.resume);
+    const publishedPlacements = useResumeStore((state) => state.previewSectionPlacements);
     const updateSettings = useResumeStore((state) => state.updateSettings);
     const updateSectionStyle = useResumeStore((state) => state.updateSectionStyle);
     const clearSectionStyle = useResumeStore((state) => state.clearSectionStyle);
@@ -1874,6 +1870,7 @@ export function CustomizeSidebar() {
     const removeDesignElement = useResumeStore((state) => state.removeDesignElement);
     const duplicateDesignElement = useResumeStore((state) => state.duplicateDesignElement);
     const moveDesignElementLayer = useResumeStore((state) => state.moveDesignElementLayer);
+    const setDesignElementLayer = useResumeStore((state) => state.setDesignElementLayer);
     const designImageInputRef = useRef<HTMLInputElement>(null);
     const [activeCustomizeSection, setActiveCustomizeSection] = useState<CustomizeSectionKey | null>(null);
 
@@ -2017,6 +2014,8 @@ export function CustomizeSidebar() {
             tableCellPaddingX: 8,
             tableCellPaddingY: 6,
         },
+        interestsSection: { ...DEFAULT_INTERESTS_SECTION },
+        skillsSection: { ...DEFAULT_SKILLS_SECTION },
         design: DEFAULT_DESIGN_SETTINGS,
     };
 
@@ -2066,6 +2065,14 @@ export function CustomizeSidebar() {
         languagesSection: {
             ...defaultSettings.languagesSection,
             ...((resume.settings as any)?.languagesSection || {}),
+        },
+        interestsSection: {
+            ...defaultSettings.interestsSection,
+            ...((resume.settings as any)?.interestsSection || {}),
+        },
+        skillsSection: {
+            ...defaultSettings.skillsSection,
+            ...((resume.settings as any)?.skillsSection || {}),
         },
         design: {
             ...defaultSettings.design,
@@ -2149,13 +2156,28 @@ export function CustomizeSidebar() {
     const resolvedContentOrder = resolvedLayoutOrder.filter(
         (key) => !isLayoutSeparatorKey(key) && !isLayoutVerticalSeparatorKey(key) && !isLayoutPageBreakKey(key)
     );
+    // The side shown for each section is the side the preview drew (it publishes it).
+    // Without a mounted preview (phone content tab) fall back to the same shared rule,
+    // counting sections that would render; hidden or empty ones do not shift the others.
+    const placementMode = settings.layout.columns === "mix" ? "mix" : "two";
+    const visibleContentKeys = new Set(getVisibleContentKeys(resume));
+    const fallbackPlacements = isMultiColumnLayout
+        ? resolveSectionPlacements(
+            resolvedContentOrder.filter((key) => visibleContentKeys.has(key)),
+            settings.layout.sectionPlacement,
+            placementMode,
+            getSectionBaseId,
+        )
+        : {};
     const resolvedSectionPlacements = resolvedContentOrder.reduce<Record<string, SectionPlacement>>((acc, key, contentIndex) => {
         if (!isMultiColumnLayout) return acc;
-        acc[key] = normalizeSectionPlacement(
-            settings.layout.sectionPlacement?.[key] || settings.layout.sectionPlacement?.[getSectionBaseId(key)],
-            contentIndex,
-            settings.layout.columns === "mix" ? "mix" : "two"
-        );
+        acc[key] = publishedPlacements[key]
+            ?? fallbackPlacements[key]
+            ?? resolvePlacement(
+                settings.layout.sectionPlacement?.[key] || settings.layout.sectionPlacement?.[getSectionBaseId(key)],
+                contentIndex,
+                placementMode,
+            );
         return acc;
     }, {});
 
@@ -2198,7 +2220,7 @@ export function CustomizeSidebar() {
         if (
             scope === "section"
             && selectedCustomizeSection
-            && (["headings", "contentStyle", "entryLayout", "repoBadge", "languagesSection", "linkIcon"] as string[]).includes(category)
+            && (["headings", "contentStyle", "entryLayout", "repoBadge", "languagesSection", "interestsSection", "skillsSection", "linkIcon"] as string[]).includes(category)
         ) {
             updateSectionStyle(
                 selectedCustomizeSection,
@@ -2453,15 +2475,41 @@ export function CustomizeSidebar() {
             return <p className="text-xs leading-relaxed text-faint">{t("customize.designSelectHint")}</p>;
         }
 
+        const selectedLimits = getOverlayPositionLimits(selectedDesignElement.width, selectedDesignElement.height, designCanvas.width, designCanvas.height);
         return (
             <>
                 <div className="grid grid-cols-2 gap-3">
-                    <InspectorSlider label="X" value={selectedDesignElement.x} onChange={(value) => handleSelectedDesignUpdate({ x: value })} min={0} max={designCanvas.width} step={1} ticks={9} suffix="px" />
-                    <InspectorSlider label="Y" value={selectedDesignElement.y} onChange={(value) => handleSelectedDesignUpdate({ y: value })} min={0} max={designCanvas.height} step={1} ticks={9} suffix="px" />
-                    <InspectorSlider label={t("customize.width")} value={selectedDesignElement.width} onChange={(value) => handleSelectedDesignUpdate({ width: value })} min={24} max={designCanvas.width} step={1} ticks={9} suffix="px" />
-                    <InspectorSlider label={t("customize.height")} value={selectedDesignElement.height} onChange={(value) => handleSelectedDesignUpdate({ height: value })} min={24} max={designCanvas.height} step={1} ticks={9} suffix="px" />
+                    <InspectorSlider label="X" value={selectedDesignElement.x} onChange={(value) => handleSelectedDesignUpdate({ x: value })} min={selectedLimits.minX} max={selectedLimits.maxX} step={1} ticks={9} suffix="px" />
+                    <InspectorSlider label="Y" value={selectedDesignElement.y} onChange={(value) => handleSelectedDesignUpdate({ y: value })} min={selectedLimits.minY} max={selectedLimits.maxY} step={1} ticks={9} suffix="px" />
+                    <InspectorSlider label={t("customize.width")} value={selectedDesignElement.width} onChange={(value) => handleSelectedDesignUpdate({ width: value })} min={24} max={getOverlayMaxSize(designCanvas.width, designCanvas.height).width} step={1} ticks={9} suffix="px" />
+                    <InspectorSlider label={t("customize.height")} value={selectedDesignElement.height} onChange={(value) => handleSelectedDesignUpdate({ height: value })} min={24} max={getOverlayMaxSize(designCanvas.width, designCanvas.height).height} step={1} ticks={9} suffix="px" />
                     <div className="col-span-2">
                         <InspectorSlider label={t("customize.designOpacity")} value={selectedDesignElement.style.opacity} onChange={(value) => handleSelectedDesignStyleUpdate({ opacity: value })} min={0} max={100} step={1} ticks={11} suffix="%" />
+                    </div>
+                </div>
+
+                <div>
+                    <label className="text-xs font-semibold text-strong/90 mb-2 block">{t("customize.designLayerSide")}</label>
+                    <div className="flex bg-surface-1 p-1 rounded-xl border border-edge" role="group" aria-label={t("customize.designLayerSide")}>
+                        {([
+                            { value: "front" as const, labelKey: "customize.designInFront" },
+                            { value: "behind" as const, labelKey: "customize.designBehind" },
+                        ]).map((opt) => (
+                            <button
+                                key={opt.value}
+                                type="button"
+                                data-testid={`design-layer-${opt.value}`}
+                                aria-pressed={getDesignLayer(selectedDesignElement) === opt.value}
+                                onClick={() => setDesignElementLayer(selectedDesignElement.id, opt.value)}
+                                className={`flex-1 px-2 py-2 text-xs font-medium rounded-lg transition-colors ${
+                                    getDesignLayer(selectedDesignElement) === opt.value
+                                        ? "bg-edge text-strong"
+                                        : "text-faint hover:text-strong"
+                                }`}
+                            >
+                                {t(opt.labelKey)}
+                            </button>
+                        ))}
                     </div>
                 </div>
 
@@ -2708,6 +2756,10 @@ export function CustomizeSidebar() {
         } as Record<string, string>)[settings.entryLayout.layout] || "customize.entryLayoutContentRight"),
         repoBadge: settings.repoBadge.colorMode,
         languagesSection: `${settings.languagesSection.columns}`,
+        interestsSection: t(`customize.interestsStyle${({ list: "List", inline: "Inline", chips: "Chips", iconGrid: "IconGrid" } as Record<string, string>)[settings.interestsSection.display] ?? "List"}`),
+        skillsSection: settings.skillsSection.showLevels
+            ? t(`customize.skillsLevelStyle${({ dots: "Dots", bar: "Bar", text: "Text", number: "Number" } as Record<string, string>)[settings.skillsSection.levelStyle] ?? "Dots"}`)
+            : t("palette.optionOff"),
         linkIcons: t(`customize.${settings.linkIcon.side}`),
         headerLinkIndicators: t(`customize.${settings.headerIcon.side}`),
         designOverlays: `${settings.design.elements.length}`,
@@ -4313,6 +4365,150 @@ export function CustomizeSidebar() {
             </CustomizeSectionCard>
             )}
 
+            {matchSearch(["customize.skillsSection", "customize.skillsShowLevels", "customize.skillsLevelStyle"]) && (
+            <CustomizeSectionCard
+                sectionKey="skillsSection"
+            >
+                <div className="space-y-6" data-testid="skills-section-controls">
+                    <ApplyToCheckbox
+                        label={t("customize.skillsShowLevels")}
+                        checked={settings.skillsSection.showLevels}
+                        onChange={(checked) => handleUpdate('skillsSection', { showLevels: checked })}
+                    />
+                    {settings.skillsSection.showLevels && (
+                        <div>
+                            <label className="text-xs font-semibold text-strong/90 mb-3 block">{t("customize.skillsLevelStyle")}</label>
+                            <div className="flex flex-wrap bg-surface-1 p-1 rounded-xl border border-edge" role="group" aria-label={t("customize.skillsLevelStyle")}>
+                                {([
+                                    { value: "dots" as SkillLevelStyle, labelKey: "customize.skillsLevelStyleDots" },
+                                    { value: "bar" as SkillLevelStyle, labelKey: "customize.skillsLevelStyleBar" },
+                                    { value: "text" as SkillLevelStyle, labelKey: "customize.skillsLevelStyleText" },
+                                    { value: "number" as SkillLevelStyle, labelKey: "customize.skillsLevelStyleNumber" },
+                                ]).map((opt) => (
+                                    <button
+                                        key={opt.value}
+                                        type="button"
+                                        data-testid={`skills-level-style-${opt.value}`}
+                                        aria-pressed={settings.skillsSection.levelStyle === opt.value}
+                                        onClick={() => handleUpdate('skillsSection', { levelStyle: opt.value })}
+                                        className={`flex-1 min-w-[4.5rem] px-2 py-2 text-sm font-medium rounded-lg transition-colors ${
+                                            settings.skillsSection.levelStyle === opt.value
+                                                ? "bg-edge text-strong"
+                                                : "text-faint hover:text-strong"
+                                        }`}
+                                    >
+                                        {t(opt.labelKey)}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </CustomizeSectionCard>
+            )}
+
+            {matchSearch(["customize.interestsSection", "customize.interestsStyle", "customize.interestsShowIcons", "customize.interestsSeparator", "customize.interestsColumns"]) && (
+            <CustomizeSectionCard
+                sectionKey="interestsSection"
+            >
+                <div className="space-y-6" data-testid="interests-section-controls">
+                    <div>
+                        <label className="text-xs font-semibold text-strong/90 mb-3 block">{t("customize.interestsStyle")}</label>
+                        <div className="flex flex-wrap bg-surface-1 p-1 rounded-xl border border-edge" role="group" aria-label={t("customize.interestsStyle")}>
+                            {([
+                                { value: "list" as InterestsDisplay, labelKey: "customize.interestsStyleList" },
+                                { value: "inline" as InterestsDisplay, labelKey: "customize.interestsStyleInline" },
+                                { value: "chips" as InterestsDisplay, labelKey: "customize.interestsStyleChips" },
+                                { value: "iconGrid" as InterestsDisplay, labelKey: "customize.interestsStyleIconGrid" },
+                            ]).map((opt) => (
+                                <button
+                                    key={opt.value}
+                                    type="button"
+                                    data-testid={`interests-style-${opt.value}`}
+                                    aria-pressed={settings.interestsSection.display === opt.value}
+                                    onClick={() => handleUpdate('interestsSection', { display: opt.value })}
+                                    className={`flex-1 min-w-[5.5rem] px-2 py-2 text-sm font-medium rounded-lg transition-colors ${
+                                        settings.interestsSection.display === opt.value
+                                            ? "bg-edge text-strong"
+                                            : "text-faint hover:text-strong"
+                                    }`}
+                                >
+                                    {t(opt.labelKey)}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {settings.interestsSection.display !== "list" && (resume.interests || []).some((interest) => (interest.description || "").trim() !== "") && (
+                        <p className="text-xs text-faint" data-testid="interests-descriptions-hidden">
+                            {t("customize.interestsDescriptionsHidden")}
+                        </p>
+                    )}
+
+                    {settings.interestsSection.display !== "inline" && (
+                        <ApplyToCheckbox
+                            label={t("customize.interestsShowIcons")}
+                            checked={settings.interestsSection.showIcons}
+                            onChange={(checked) => handleUpdate('interestsSection', { showIcons: checked })}
+                        />
+                    )}
+
+                    {settings.interestsSection.display === "inline" && (
+                        <div>
+                            <label className="text-xs font-semibold text-strong/90 mb-3 block">{t("customize.interestsSeparator")}</label>
+                            <div className="flex flex-wrap bg-surface-1 p-1 rounded-xl border border-edge" role="group" aria-label={t("customize.interestsSeparator")}>
+                                {([
+                                    { value: "dot" as InterestsSeparator, labelKey: "customize.interestsSeparatorDot" },
+                                    { value: "comma" as InterestsSeparator, labelKey: "customize.interestsSeparatorComma" },
+                                    { value: "pipe" as InterestsSeparator, labelKey: "customize.interestsSeparatorPipe" },
+                                    { value: "slash" as InterestsSeparator, labelKey: "customize.interestsSeparatorSlash" },
+                                ]).map((opt) => (
+                                    <button
+                                        key={opt.value}
+                                        type="button"
+                                        data-testid={`interests-separator-${opt.value}`}
+                                        aria-pressed={settings.interestsSection.separator === opt.value}
+                                        onClick={() => handleUpdate('interestsSection', { separator: opt.value })}
+                                        className={`flex-1 min-w-[4rem] px-2 py-2 text-sm font-medium rounded-lg transition-colors ${
+                                            settings.interestsSection.separator === opt.value
+                                                ? "bg-edge text-strong"
+                                                : "text-faint hover:text-strong"
+                                        }`}
+                                    >
+                                        {t(opt.labelKey)}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {settings.interestsSection.display === "iconGrid" && (
+                        <div>
+                            <label className="text-xs font-semibold text-strong/90 mb-3 block">{t("customize.interestsColumns")}</label>
+                            <div className="flex bg-surface-1 p-1 rounded-xl border border-edge" role="group" aria-label={t("customize.interestsColumns")}>
+                                {[1, 2, 3, 4].map((count) => (
+                                    <button
+                                        key={count}
+                                        type="button"
+                                        data-testid={`interests-columns-${count}`}
+                                        aria-pressed={settings.interestsSection.columns === count}
+                                        onClick={() => handleUpdate('interestsSection', { columns: count })}
+                                        className={`flex-1 py-2 text-sm font-medium rounded-lg transition-colors ${
+                                            settings.interestsSection.columns === count
+                                                ? "bg-edge text-strong"
+                                                : "text-faint hover:text-strong"
+                                        }`}
+                                    >
+                                        {count}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </CustomizeSectionCard>
+            )}
+
             {matchSearch(["customize.colors", "customize.textColor", "customize.backgroundColor", "customize.accentColor", "customize.applyAccentColor", "customize.basic", "customize.advanced", "customize.border", "customize.palette", "customize.skillLogoColor", "customize.skillLogoMono", "customize.skillLogoBrand", "customize.skillLogoCustom", "customize.skillLogoCustomColor"]) && (
             <CustomizeSectionCard
                 sectionKey="colors"
@@ -4725,12 +4921,16 @@ export function CustomizeSidebar() {
                             layoutMode={settings.layout.columns}
                             placements={resolvedSectionPlacements}
                             onChange={(newOrder) => handleUpdate('layout', { sectionOrder: newOrder })}
-                            onPlacementChange={(key, placement) => handleUpdate('layout', {
-                                sectionPlacement: {
-                                    ...(settings.layout.sectionPlacement || {}),
-                                    [key]: placement,
-                                },
-                            })}
+                            onPlacementChange={(key, placement) => {
+                                // Clicking the side a section is already stored on changes nothing.
+                                if (settings.layout.sectionPlacement?.[key] === placement) return;
+                                handleUpdate('layout', {
+                                    sectionPlacement: {
+                                        ...(settings.layout.sectionPlacement || {}),
+                                        [key]: placement,
+                                    },
+                                });
+                            }}
                             onRemove={removeLayoutFlowItem}
                         />
                         <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-2">
@@ -5315,7 +5515,7 @@ export function CustomizeSidebar() {
                                                     </div>
                                                 </div>
                                                 <span className="rounded-lg border border-current/10 px-2 py-1 text-[10px] font-medium text-current/70">
-                                                    z{element.zIndex}
+                                                    {getDesignLayer(element) === "behind" ? `${t("customize.designBehind")} · ` : ""}z{element.zIndex}
                                                 </span>
                                             </div>
                                         </button>

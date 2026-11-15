@@ -6,6 +6,8 @@ export const DESIGN_FILL_MODES = ["solid", "gradient"] as const;
 export const DESIGN_FONT_WEIGHTS = ["100", "200", "300", "400", "500", "600", "700", "800", "900", "1000", "normal", "medium", "semibold", "bold", "extrabold"] as const;
 export const DESIGN_OBJECT_FITS = ["cover", "contain", "fill"] as const;
 export const DESIGN_PLACEMENTS = ["overlay"] as const;
+/** Whether an element is drawn above the CV's content (default) or beneath it. */
+export const DESIGN_LAYERS = ["front", "behind"] as const;
 
 export type DesignElementType = typeof DESIGN_ELEMENT_TYPES[number];
 export type DesignElementShape = typeof DESIGN_ELEMENT_SHAPES[number];
@@ -13,6 +15,7 @@ export type DesignFillMode = typeof DESIGN_FILL_MODES[number];
 export type DesignFontWeight = typeof DESIGN_FONT_WEIGHTS[number];
 export type DesignObjectFit = typeof DESIGN_OBJECT_FITS[number];
 export type DesignPlacement = typeof DESIGN_PLACEMENTS[number];
+export type DesignLayer = typeof DESIGN_LAYERS[number];
 
 export interface DesignBorder {
     style: "solid" | "dotted" | "dashed";
@@ -66,10 +69,39 @@ export interface DesignElement {
     width: number;
     height: number;
     zIndex: number;
+    layer: DesignLayer;
     text: string;
     imageSrc: string;
     shape: DesignElementShape;
     style: DesignElementStyle;
+}
+
+export function getDesignLayer(element: { layer?: DesignLayer }): DesignLayer {
+    return element.layer === "behind" ? "behind" : "front";
+}
+
+/**
+ * How far an element may sit outside the paper. At least this much must stay on
+ * the page so it can always be grabbed again; whatever is outside is clipped by
+ * the page when printed or exported.
+ */
+export const OVERLAY_MIN_VISIBLE_PX = 24;
+
+/** Smallest and largest top-left position for an element of the given size. */
+export function getOverlayPositionLimits(width: number, height: number, pageWidth: number, pageHeight: number) {
+    const visibleX = Math.min(OVERLAY_MIN_VISIBLE_PX, width);
+    const visibleY = Math.min(OVERLAY_MIN_VISIBLE_PX, height);
+    return {
+        minX: visibleX - width,
+        maxX: pageWidth - visibleX,
+        minY: visibleY - height,
+        maxY: pageHeight - visibleY,
+    };
+}
+
+/** Largest width and height: twice the paper, enough for a full-bleed band even when rotated. */
+export function getOverlayMaxSize(pageWidth: number, pageHeight: number) {
+    return { width: pageWidth * 2, height: pageHeight * 2 };
 }
 
 export interface DesignSettings {
@@ -189,6 +221,7 @@ export function createDesignElement(
         width: 220,
         height: 120,
         zIndex,
+        layer: "front",
         text: "",
         imageSrc: "",
         shape: "rectangle",
@@ -320,23 +353,51 @@ export function moveDesignElementLayer(
 
     const pageElements = normalized.filter((element) => element.pageIndex === target.pageIndex);
     const otherElements = normalized.filter((element) => element.pageIndex !== target.pageIndex);
-    const index = pageElements.findIndex((element) => element.id === id);
+
+    // Ordering is within the element's own layer: an element behind the text never
+    // jumps in front of it (or the other way round) by being moved forward/back.
+    const layer = getDesignLayer(target);
+    const sameLayer = pageElements.filter((element) => getDesignLayer(element) === layer);
+    const index = sameLayer.findIndex((element) => element.id === id);
     if (index === -1) {
         return normalized;
     }
 
-    const nextPageElements = [...pageElements];
-    const [current] = nextPageElements.splice(index, 1);
+    const reordered = [...sameLayer];
+    const [current] = reordered.splice(index, 1);
 
     if (direction === "back") {
-        nextPageElements.unshift(current);
+        reordered.unshift(current);
     } else if (direction === "front") {
-        nextPageElements.push(current);
+        reordered.push(current);
     } else if (direction === "forward") {
-        nextPageElements.splice(Math.min(index + 1, nextPageElements.length), 0, current);
+        reordered.splice(Math.min(index + 1, reordered.length), 0, current);
     } else {
-        nextPageElements.splice(Math.max(index - 1, 0), 0, current);
+        reordered.splice(Math.max(index - 1, 0), 0, current);
     }
 
+    // Put the reordered layer back into the slots that layer occupied.
+    let next = 0;
+    // The new position must become the new z-index; normalising alone would sort by the
+    // old values and undo the move.
+    const nextPageElements = pageElements
+        .map((element) => (getDesignLayer(element) === layer ? reordered[next++] : element))
+        .map((element, position) => ({ ...element, zIndex: position + 1 }));
+
     return normalizeDesignElementOrder([...otherElements, ...nextPageElements]);
+}
+
+/** Move an element to the other layer, on top of that layer's elements. */
+export function setDesignElementLayerSide(elements: DesignElement[], id: string, layer: DesignLayer): DesignElement[] {
+    const normalized = normalizeDesignElementOrder(elements);
+    const target = normalized.find((element) => element.id === id);
+    if (!target || getDesignLayer(target) === layer) {
+        return normalized;
+    }
+    const top = normalized
+        .filter((element) => element.pageIndex === target.pageIndex)
+        .reduce((max, element) => Math.max(max, element.zIndex), 0);
+    return normalizeDesignElementOrder(
+        normalized.map((element) => (element.id === id ? { ...element, layer, zIndex: top + 1 } : element)),
+    );
 }

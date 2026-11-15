@@ -1,4 +1,5 @@
 import type { DocumentDetail, DocumentEntry, DocumentLink, DocumentModel, DocumentSection } from "./document-model";
+import { formatDocumentSkills } from "./document-model";
 
 /**
  * GitHub-Flavored Markdown serializer over the document model.
@@ -146,7 +147,7 @@ function buildSection(section: DocumentSection): string[] {
 
     for (const group of section.skillGroups) {
         if (group.skills.length === 0) continue;
-        const skills = tagList(group.skills);
+        const skills = tagList(formatDocumentSkills(group));
         body.push(group.name ? `**${escapeInline(group.name)}:** ${skills}` : skills);
     }
 

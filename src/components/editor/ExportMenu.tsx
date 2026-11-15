@@ -2,16 +2,18 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { AlertTriangle, AlignLeft, Check, Coffee, Copy, Download, FileCode, FileImage, FileJson, FileText, FileType, Github, Globe, Image as ImageIcon, Loader2, Lock, UserRound, X, type LucideIcon } from "lucide-react";
+import { AlertTriangle, AlignLeft, Check, Coffee, Copy, Download, FileCode, FileJson, FileText, FileType, Github, Globe, Loader2, Lock, Sigma, UserRound, X, type LucideIcon } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
 import { ConversionLossSummary } from "@/components/import/ConversionLossSummary";
 import { resumeToJsonResume } from "@/lib/json-resume/from-resume";
 import type { Resume } from "@/lib/schema";
-import { EXPORT_FORMATS, getExportFormat, type ResumeExportFormat } from "@/lib/export-formats";
+import { EXPORT_FORMATS, getExportFormat, isResumeExportFormat, type ResumeExportFormat } from "@/lib/export-formats";
 import { ExportModuleLoadError, getResumeExportBaseName, loadDocxExporter, runResumeExport, type ResumeExportNotice } from "@/lib/resume-export";
 import { ClipboardDeniedError, copyTextToClipboard } from "@/lib/export-clipboard";
-import { buildResumeHtmlDocument, hasPreviewPages, waitForPreviewPages } from "@/lib/export";
+import { buildSelfContainedHtmlDocument, hasPreviewPages, waitForPreviewPages } from "@/lib/export";
+import { ExportEmbedError } from "@/lib/export-embed";
 import { toDocumentModel } from "@/lib/document-model";
+import { toLatex } from "@/lib/export-latex";
 import { toMarkdown } from "@/lib/export-markdown";
 import { toPlainText } from "@/lib/export-plaintext";
 import type { ClientPreferences } from "@/lib/preferences/schema";
@@ -51,12 +53,15 @@ interface ExportDialogProps {
 type ExportPrefs = ClientPreferences["export"];
 
 /** Formats whose output is text the user can paste straight into a form or editor. */
-const COPYABLE_FORMATS = ["txt", "md", "html"] as const satisfies readonly ResumeExportFormat[];
+const COPYABLE_FORMATS = ["txt", "md", "html", "tex"] as const satisfies readonly ResumeExportFormat[];
 type CopyableFormat = (typeof COPYABLE_FORMATS)[number];
 
 function isCopyableFormat(format: ResumeExportFormat): format is CopyableFormat {
     return (COPYABLE_FORMATS as readonly ResumeExportFormat[]).includes(format);
 }
+
+/** Columns in the format picker; keep in sync with the grid-cols class below. */
+const FORMAT_GRID_COLUMNS = 4;
 
 const DEFAULT_EXPORT_PREFS: ExportPrefs = {
     format: "pdf",
@@ -71,9 +76,8 @@ export const EXPORT_FORMAT_ICONS: Record<ResumeExportFormat, LucideIcon> = {
     docx: FileText,
     md: FileCode,
     txt: AlignLeft,
+    tex: Sigma,
     html: Globe,
-    png: FileImage,
-    svg: ImageIcon,
 };
 
 function isMobilePdfExportEnvironment() {
@@ -110,8 +114,10 @@ export function ExportDialog({ open, onClose, resume, paperSize, onNeedPreview }
     // Off by default and not remembered: the photo is written into the file as image data.
     const [jsonResumeIncludePhoto, setJsonResumeIncludePhoto] = useState(false);
     const [exportNotices, setExportNotices] = useState<ResumeExportNotice[]>([]);
+    const [fallbackFonts, setFallbackFonts] = useState<string[]>([]);
     const [copyStatus, setCopyStatus] = useState<"idle" | "copying" | "copied">("idle");
-    const [selectedFormat, setSelectedFormat] = useState<ResumeExportFormat>(prefs.format);
+    // A remembered format that no longer exists (PNG and SVG were removed) opens on the default.
+    const [selectedFormat, setSelectedFormat] = useState<ResumeExportFormat>(isResumeExportFormat(prefs.format) ? prefs.format : DEFAULT_EXPORT_PREFS.format);
     const [jsonEncrypt, setJsonEncrypt] = useState(false);
     const [exporting, setExporting] = useState(false);
     const [exportingFormat, setExportingFormat] = useState<ResumeExportFormat | null>(null);
@@ -223,11 +229,12 @@ export function ExportDialog({ open, onClose, resume, paperSize, onNeedPreview }
 
         setExportError(null);
         setExportNotices([]);
+        setFallbackFonts([]);
         setExporting(true);
         setExportingFormat(format);
         try {
             if (!(await ensurePreviewPages(format))) throw new Error(t("export.failed"));
-            const { notices } = await runResumeExport({
+            const { notices, fallbackFonts: fonts } = await runResumeExport({
                 resume,
                 paperSize,
                 format,
@@ -243,10 +250,13 @@ export function ExportDialog({ open, onClose, resume, paperSize, onNeedPreview }
                 useExportSupportPromptStore.getState().show();
             }
             // Keep the dialog open when the export succeeded with a caveat worth reading.
+            if (fonts?.length) setFallbackFonts(fonts);
             if (notices.length > 0) setExportNotices(notices);
             else onClose();
         } catch (error) {
-            setExportError(error instanceof ExportModuleLoadError
+            setExportError(error instanceof ExportEmbedError
+                ? t("export.htmlEmbedFailed")
+                : error instanceof ExportModuleLoadError
                 ? t("export.docxLoadFailed")
                 : error instanceof Error ? error.message : t("export.failed"));
         } finally {
@@ -256,13 +266,17 @@ export function ExportDialog({ open, onClose, resume, paperSize, onNeedPreview }
     };
 
     /** Same payload as the downloaded file, so a paste matches what Export would save. */
-    const serializeForCopy = (format: CopyableFormat): string => {
+    const serializeForCopy = (format: CopyableFormat): string | Promise<string> => {
         if (format === "html") {
-            const html = buildResumeHtmlDocument(paperSize, `resume-${getResumeExportBaseName(resume)}.html`);
-            if (html === null) throw new Error(t("export.failed"));
-            return html;
+            // Embedding styles and fonts takes time, so hand the clipboard a promise
+            // (started now, inside the user gesture) instead of awaiting here.
+            return buildSelfContainedHtmlDocument(paperSize, `resume-${getResumeExportBaseName(resume)}.html`).then((result) => {
+                if (result === null) throw new Error(t("export.failed"));
+                return result.html;
+            });
         }
         const model = toDocumentModel(resume);
+        if (format === "tex") return toLatex(model, { paperSize });
         return format === "md" ? toMarkdown(model) : toPlainText(model);
     };
 
@@ -279,7 +293,11 @@ export function ExportDialog({ open, onClose, resume, paperSize, onNeedPreview }
             setCopyStatus("copied");
         } catch (error) {
             setCopyStatus("idle");
-            setExportError(error instanceof ClipboardDeniedError ? t("export.copyFailed") : t("export.failed"));
+            setExportError(
+                error instanceof ClipboardDeniedError ? t("export.copyFailed")
+                    : error instanceof ExportEmbedError ? t("export.htmlEmbedFailed")
+                    : t("export.failed"),
+            );
         }
     };
 
@@ -508,13 +526,17 @@ export function ExportDialog({ open, onClose, resume, paperSize, onNeedPreview }
                     </h2>
                     <p className="mt-1 text-xs leading-relaxed text-mid">{t("export.subtitle")}</p>
 
-                    <div className="mt-4 grid grid-cols-3 gap-1 rounded-xl border border-edge bg-surface-2 p-1">
-                        {formatCards.map((format) => {
+                    <div className="mt-4 grid grid-cols-4 gap-1 rounded-xl border border-edge bg-surface-2 p-1">
+                        {formatCards.map((format, index) => {
                             const active = selectedFormat === format.id;
+                            // The last card fills the cells left in its row (7 cards: 4 + 3, so it spans 2).
+                            const leftover = formatCards.length % FORMAT_GRID_COLUMNS;
+                            const span = index === formatCards.length - 1 && leftover !== 0 ? FORMAT_GRID_COLUMNS - leftover + 1 : 1;
                             return (
                                 <button
                                     key={format.id}
                                     type="button"
+                                    style={span > 1 ? { gridColumn: `span ${span}` } : undefined}
                                     onClick={() => selectFormat(format.id)}
                                     data-testid={`export-format-${format.id}`}
                                     disabled={exporting}
@@ -568,9 +590,21 @@ export function ExportDialog({ open, onClose, resume, paperSize, onNeedPreview }
                             : renderDefaultOptions()}
                     </div>
 
+                    {selectedFormat === "tex" && (
+                        <div className="mt-3">
+                            {renderNotice(t("export.latexNoteTitle"), t("export.latexNote"), "export-latex-note")}
+                        </div>
+                    )}
+
                     {exportNotices.includes("docxPhotoSkipped") && (
                         <div className="mt-3">
                             {renderNotice(t("export.docxPhotoSkippedTitle"), t("export.docxPhotoSkipped"), "export-docx-photo-skipped")}
+                        </div>
+                    )}
+
+                    {exportNotices.includes("htmlFontFallback") && (
+                        <div className="mt-3">
+                            {renderNotice(t("export.htmlFontFallbackTitle"), t("export.htmlFontFallback", { fonts: fallbackFonts.join(", ") }), "export-html-font-fallback")}
                         </div>
                     )}
 

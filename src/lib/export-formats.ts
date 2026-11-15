@@ -7,7 +7,7 @@
  * Kept free of UI imports: icons are mapped by the component layer.
  */
 
-export const EXPORT_FORMAT_IDS = ["json", "jsonresume", "pdf", "html", "png", "svg", "docx", "md", "txt"] as const;
+export const EXPORT_FORMAT_IDS = ["json", "jsonresume", "pdf", "html", "docx", "md", "txt", "tex"] as const;
 
 export type ResumeExportFormat = (typeof EXPORT_FORMAT_IDS)[number];
 
@@ -35,9 +35,8 @@ export const EXPORT_FORMATS: readonly ExportFormatDescriptor[] = [
     { id: "docx", extension: "docx", mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document", labelKey: "export.docx", descriptionKey: "export.docxDesc", supportsEncryption: false, options: ["photo"], needsPreview: false },
     { id: "md", extension: "md", mimeType: "text/markdown;charset=utf-8", labelKey: "export.markdown", descriptionKey: "export.markdownDesc", supportsEncryption: false, options: [], needsPreview: false },
     { id: "txt", extension: "txt", mimeType: "text/plain;charset=utf-8", labelKey: "export.txt", descriptionKey: "export.txtDesc", supportsEncryption: false, options: [], needsPreview: false },
+    { id: "tex", extension: "tex", mimeType: "application/x-tex;charset=utf-8", labelKey: "export.latex", descriptionKey: "export.latexDesc", supportsEncryption: false, options: [], needsPreview: false },
     { id: "html", extension: "html", mimeType: "text/html", labelKey: "export.html", descriptionKey: "export.htmlDesc", supportsEncryption: false, options: [], needsPreview: true },
-    { id: "png", extension: "png", mimeType: "image/png", labelKey: "export.png", descriptionKey: "export.pngDesc", supportsEncryption: false, options: [], needsPreview: true },
-    { id: "svg", extension: "svg", mimeType: "image/svg+xml", labelKey: "export.svg", descriptionKey: "export.svgDesc", supportsEncryption: false, options: [], needsPreview: true },
 ];
 
 export function isResumeExportFormat(value: unknown): value is ResumeExportFormat {

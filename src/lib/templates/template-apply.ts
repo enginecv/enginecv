@@ -1,4 +1,6 @@
 import { type Resume } from "../schema";
+import { resolveInterestsSectionForTemplate } from "../interests/settings";
+import { resolveSkillsSectionForTemplate } from "../skills/levels";
 import { type TemplateDocument } from "./template-schema";
 
 export type TemplateApplyResult = {
@@ -39,6 +41,11 @@ export function applyTemplateToResume(
         visaDisplay: cur.visaDisplay,
         militaryServiceDisplay: cur.militaryServiceDisplay,
         languagesSection: cur.languagesSection,
+        // Kept unless the template deliberately sets a non-default Interests style
+        // (ATS Plain: plain list, icons off).
+        interestsSection: resolveInterestsSectionForTemplate(cur.interestsSection, tplSettings.interestsSection),
+        // Same rule for the skill level meter (ATS Plain turns it off).
+        skillsSection: resolveSkillsSectionForTemplate(cur.skillsSection, tplSettings.skillsSection),
         ai: cur.ai,
 
         // Preserve current resume's content section set and visibility; do not

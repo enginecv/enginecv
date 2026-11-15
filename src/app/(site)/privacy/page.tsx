@@ -20,7 +20,7 @@ export default function PrivacyPage() {
                 <p>
                     Resumes, version history, templates, and preferences are stored in your browser on this device
                     (IndexedDB and localStorage). EngineCV has no account system and keeps no server copy of your resumes.
-                    Editing, preview, version history, and exports to PDF, DOCX, Markdown, plain text, HTML, and JSON happen
+                    Editing, preview, version history, and exports to PDF, DOCX, Markdown, plain text, HTML, LaTeX, and JSON happen
                     in your browser without sending your resume anywhere.
                 </p>
                 <p>

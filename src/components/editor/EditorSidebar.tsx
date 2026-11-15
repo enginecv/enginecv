@@ -1,6 +1,7 @@
 "use client";
 
 import { useResumeStore } from "@/lib/store";
+import { resolveSkillsSection } from "@/lib/skills/levels";
 import { setJsonEditorSlot } from "./json-editor-slot";
 import { requestJsonEditorLeave } from "@/lib/editor-json-session";
 import { allSkills, createUngroupedSkillGroup, isNativeLanguageFluency, SKILL_LEVELS, UNGROUPED_SKILL_GROUP_ID, type SkillGroup, type SkillLevel, type CustomSection, type CustomEntry } from "@/lib/schema";
@@ -11,6 +12,7 @@ import { createId } from "@/lib/id";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { EntryForm } from "./EntryForm";
+import { InterestIconField } from "./interests/InterestIconField";
 import { GetTipsLink } from "./GetTipsLink";
 import { MarkdownField } from "./MarkdownField";
 import { RepoLinksEditor } from "./RepoLinksEditor";
@@ -1542,6 +1544,11 @@ function SectionEditForm({
                             );
                         })}
                     </div>
+                    {!resolveSkillsSection(resume).showLevels && (
+                        <p className="text-xs text-faint" data-testid="skill-levels-hidden-hint">
+                            {t("editor.skillLevelsHidden")}
+                        </p>
+                    )}
                 </div>
 
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -2222,6 +2229,12 @@ function SectionEditForm({
                 descriptionKey: "description",
                 descriptionLabel: t("editor.additionalInformation"),
                 dateMode: "none" as const,
+                extraFields: (item: any, onChange: (updated: any) => void) => (
+                    <InterestIconField
+                        value={item.icon}
+                        onChange={(icon) => onChange({ ...item, icon })}
+                    />
+                ),
             };
             return renderEntryEditor({
                 items,

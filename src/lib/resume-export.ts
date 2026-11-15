@@ -3,14 +3,13 @@ import {
     exportToEncryptedJson,
     exportToHtml,
     exportToJson,
-    exportToPng,
-    exportToSvg,
     triggerPdfPrint,
     type ExportMessages,
 } from "./export";
 import { getExportFormat, type ResumeExportFormat } from "./export-formats";
 import { resumeToJsonResume } from "./json-resume/from-resume";
 import type { ConversionReport } from "./json-resume/report";
+import { toLatex } from "./export-latex";
 import { toMarkdown } from "./export-markdown";
 import { toPlainText } from "./export-plaintext";
 import type { Resume } from "./schema";
@@ -18,10 +17,12 @@ import { deliverFile } from "./share";
 
 export type { ResumeExportFormat } from "./export-formats";
 
-export type ResumeExportNotice = "docxPhotoSkipped";
+export type ResumeExportNotice = "docxPhotoSkipped" | "htmlFontFallback";
 
 export interface RunResumeExportResult {
     notices: ResumeExportNotice[];
+    /** Fonts the HTML export could not embed (they fall back to a generic family). */
+    fallbackFonts?: string[];
     /** What the format could not hold, for formats that cannot hold everything. */
     report?: ConversionReport;
 }
@@ -86,6 +87,7 @@ export async function runResumeExport({
     const baseName = getResumeExportBaseName(resume);
     const notices: ResumeExportNotice[] = [];
     let report: ConversionReport | undefined;
+    let fallbackFonts: string[] | undefined;
 
     switch (format) {
         case "json":
@@ -122,19 +124,22 @@ export async function runResumeExport({
             await triggerPdfPrint(paperSize, `resume-${baseName}.pdf`, messages);
             break;
         case "html":
-            await exportToHtml(paperSize, `resume-${baseName}.html`);
+        {
+            const fonts = await exportToHtml(paperSize, `resume-${baseName}.html`);
+            if (fonts.length > 0) {
+                notices.push("htmlFontFallback");
+                fallbackFonts = fonts;
+            }
             break;
-        case "png":
-            await exportToPng(`resume-${baseName}.png`);
-            break;
-        case "svg":
-            await exportToSvg(`resume-${baseName}.svg`);
-            break;
+        }
         case "md":
             await deliverFile(textBlob(toMarkdown(toDocumentModel(resume)), format), `resume-${baseName}.md`);
             break;
         case "txt":
             await deliverFile(textBlob(toPlainText(toDocumentModel(resume)), format), `resume-${baseName}.txt`);
+            break;
+        case "tex":
+            await deliverFile(textBlob(toLatex(toDocumentModel(resume), { paperSize }), format), `resume-${baseName}.tex`);
             break;
         case "docx": {
             const { buildDocx } = await loadDocxExporter();
@@ -157,5 +162,5 @@ export async function runResumeExport({
         }
     }
 
-    return { notices, ...(report ? { report } : {}) };
+    return { notices, ...(fallbackFonts ? { fallbackFonts } : {}), ...(report ? { report } : {}) };
 }

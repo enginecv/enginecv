@@ -151,16 +151,27 @@ const BUILTIN_DEFS: BuiltinTemplateDef[] = [
         description: "One plain column with no icons or graphics, built for applicant tracking systems.",
         tags: ["ATS", "Single Column", "Plain"],
         paperSize: "a4",
-        settingsOverride: latexSettings({
-            font: "Inter",
-            size: 10.5,
-            lineHeight: 1.4,
-            itemSpacing: 8,
-            name: { size: 24 },
-            heading: { size: 11, spacing: 0.5 },
-            align: "left",
-            entry: { layout: "singleCol", subtitleFontStyle: "normal", subtitleFontWeight: "600" },
-        }),
+        settingsOverride: {
+            ...latexSettings({
+                font: "Inter",
+                size: 10.5,
+                lineHeight: 1.4,
+                itemSpacing: 8,
+                name: { size: 24 },
+                heading: { size: 11, spacing: 0.5 },
+                align: "left",
+                entry: { layout: "singleCol", subtitleFontStyle: "normal", subtitleFontWeight: "600" },
+            }),
+            // Plain text only: applicant tracking systems can drop or garble icons.
+            // Applying this template turns the Interests icons off (list is already
+            // the default style); the user can switch them back on deliberately.
+            // A CV does not remember which template it came from, so this is a
+            // setting preset, not a flag.
+            interestsSection: { display: "list", showIcons: false },
+            // Level meters are graphics that parsers can drop; the text exports are
+            // also silent about levels when this is off. The user can turn it back on.
+            skillsSection: { showLevels: false },
+        },
     },
     {
         id: "enginecv-sidebar",

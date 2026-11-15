@@ -45,7 +45,7 @@ Current product capabilities include:
 - dashboard for creating and managing multiple resumes
 - structured editor for basics, experience, education, certificates, projects, skills, and layout customization
 - live resume preview while editing
-- export to `PDF`, `DOCX`, `Markdown`, plain text, `HTML`, `PNG`, `SVG`, `JSON`, and `Encrypted JSON`, plus copy to clipboard
+- export to `PDF`, `DOCX`, `Markdown`, plain text, `HTML` (one self-contained file that works offline), `JSON`, `JSON Resume`, and `Encrypted JSON`, plus copy to clipboard
 - import from JSON, LinkedIn data-export archives, Europass CVs (PDF/XML), and public GitHub profiles
 - encrypted JSON backup/import using a user-supplied key
 - local persistence with IndexedDB
@@ -145,7 +145,7 @@ The near and mid-term roadmap looks like this:
 - `Dexie` + `IndexedDB` for local persistence
 - `Zod` for schema validation
 - `react-resizable-panels` for editor layout
-- browser print for PDF, `docx` for DOCX, and `html-to-image` for PNG/SVG exports
+- browser print for PDF, `docx` for DOCX, and an in-house embedder (styles and only the fonts used) for the self-contained HTML export
 
 ## Development
 

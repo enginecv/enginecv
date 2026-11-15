@@ -132,10 +132,32 @@ describe("ExportDialog new formats", () => {
         vi.unstubAllGlobals();
     });
 
+    it("shows eight format cards as two full rows of four, none spanning", () => {
+        renderDialog();
+        const cards = Array.from(document.querySelectorAll<HTMLElement>('[data-testid^="export-format-"]'))
+            .filter((node) => /^export-format-[a-z]+$/.test(node.getAttribute("data-testid") ?? ""));
+        expect(cards).toHaveLength(8);
+        expect(cards[0].parentElement?.className).toContain("grid-cols-4");
+        // 8 = 4 + 4: both rows are full without any card spanning.
+        expect(cards.every((card) => card.style.gridColumn === "")).toBe(true);
+    });
+
+    it("opens on the default format when the remembered one no longer exists", () => {
+        useClientPreferencesStore.setState({
+            preferences: { ...useClientPreferencesStore.getState().preferences, export: { format: "png" as never, pdfIncludeSidecar: false, docxIncludePhoto: false } },
+            hydrated: true,
+        });
+        renderDialog();
+        expect(screen.getByTestId("export-format-pdf")).toHaveAttribute("aria-pressed", "true");
+    });
+
     it("lists every registry format and hides encryption for formats without it", () => {
         renderDialog();
-        for (const id of ["json", "jsonresume", "pdf", "docx", "md", "txt", "html", "png", "svg"]) {
+        for (const id of ["json", "jsonresume", "pdf", "docx", "md", "txt", "tex", "html"]) {
             expect(screen.getByTestId(`export-format-${id}`)).toBeInTheDocument();
+        }
+        for (const removed of ["png", "svg"]) {
+            expect(screen.queryByTestId(`export-format-${removed}`), removed).not.toBeInTheDocument();
         }
         fireEvent.click(screen.getByTestId("export-format-json"));
         expect(screen.getByRole("switch", { name: /Encrypt/i })).toBeInTheDocument();
@@ -251,6 +273,71 @@ describe("ExportDialog new formats", () => {
         expect(onClose).not.toHaveBeenCalled();
     });
 
+    it("keeps the dialog open and names the fonts that were replaced in the HTML export", async () => {
+        const page = document.createElement("div");
+        page.className = "resume-page";
+        document.body.appendChild(page);
+        mocks.runOverride = vi.fn().mockResolvedValue({ notices: ["htmlFontFallback"], fallbackFonts: ["Lora", "Merriweather"] });
+
+        try {
+            const onClose = renderDialog();
+            fireEvent.click(screen.getByTestId("export-format-html"));
+            fireEvent.click(screen.getByTestId("export-confirm-button"));
+
+            const notice = await screen.findByTestId("export-html-font-fallback");
+
+            expect(notice).toHaveTextContent("Font replaced");
+            expect(notice).toHaveTextContent("Lora, Merriweather");
+            expect(onClose).not.toHaveBeenCalled();
+        } finally {
+            page.remove();
+        }
+    });
+
+    it("shows a translated error and saves nothing when the HTML file cannot be built", async () => {
+        const { ExportEmbedError } = await import("@/lib/export-embed");
+        const page = document.createElement("div");
+        page.className = "resume-page";
+        document.body.appendChild(page);
+        mocks.runOverride = vi.fn().mockRejectedValue(new ExportEmbedError("stylesheet", "Could not read stylesheet"));
+
+        try {
+            const onClose = renderDialog();
+            fireEvent.click(screen.getByTestId("export-format-html"));
+            fireEvent.click(screen.getByTestId("export-confirm-button"));
+
+            expect(await screen.findByText(/could not be built with everything it needs/)).toBeInTheDocument();
+            expect(screen.queryByTestId("export-html-font-fallback")).toBeNull();
+            expect(onClose).not.toHaveBeenCalled();
+        } finally {
+            page.remove();
+        }
+    });
+
+    it("copies HTML through a promised clipboard item, and reports a failed build as the HTML error", async () => {
+        const write = vi.fn(async (items: ClipboardItem[]) => {
+            const blob = await (items[0] as unknown as { items: Record<string, Promise<Blob>> }).items["text/plain"];
+            expect(await blob.text()).toMatch(/^<!DOCTYPE html>/i);
+        });
+        vi.stubGlobal("ClipboardItem", class { constructor(public items: Record<string, Promise<Blob>>) {} });
+        Object.defineProperty(navigator, "clipboard", { configurable: true, value: { write, writeText: vi.fn() } });
+        const page = document.createElement("div");
+        page.className = "resume-page";
+        page.textContent = "Rendered Ada page";
+        document.body.appendChild(page);
+
+        try {
+            renderDialog();
+            fireEvent.click(screen.getByTestId("export-format-html"));
+            fireEvent.click(screen.getByTestId("export-copy-clipboard"));
+            expect(await screen.findByText("Resume copied to clipboard")).toBeInTheDocument();
+            expect(write).toHaveBeenCalledTimes(1);
+        } finally {
+            page.remove();
+            vi.unstubAllGlobals();
+        }
+    });
+
     it("explains a failed DOCX load and allows retry", async () => {
         mocks.runOverride = vi.fn()
             .mockRejectedValueOnce(new ExportModuleLoadError())
@@ -264,9 +351,9 @@ describe("ExportDialog new formats", () => {
         await waitFor(() => expect(onClose).toHaveBeenCalled());
     });
 
-    it("offers a copy button only on the Text, Markdown and HTML tabs", () => {
+    it("offers a copy button only on the Text, Markdown, LaTeX and HTML tabs", () => {
         renderDialog();
-        for (const id of ["pdf", "json", "docx", "png", "svg"]) {
+        for (const id of ["pdf", "json", "docx"]) {
             fireEvent.click(screen.getByTestId(`export-format-${id}`));
             expect(screen.queryByTestId("export-copy-clipboard"), id).not.toBeInTheDocument();
         }
@@ -274,8 +361,57 @@ describe("ExportDialog new formats", () => {
         expect(screen.getByTestId("export-copy-clipboard")).toHaveTextContent("Copy Text");
         fireEvent.click(screen.getByTestId("export-format-md"));
         expect(screen.getByTestId("export-copy-clipboard")).toHaveTextContent("Copy Markdown");
+        fireEvent.click(screen.getByTestId("export-format-tex"));
+        expect(screen.getByTestId("export-copy-clipboard")).toHaveTextContent("Copy LaTeX");
         fireEvent.click(screen.getByTestId("export-format-html"));
         expect(screen.getByTestId("export-copy-clipboard")).toHaveTextContent("Copy HTML");
+    });
+
+    it("says what the LaTeX file is: a standard layout, no template styling, no photo", () => {
+        renderDialog();
+        expect(screen.queryByTestId("export-latex-note")).not.toBeInTheDocument();
+        fireEvent.click(screen.getByTestId("export-format-tex"));
+        const note = screen.getByTestId("export-latex-note");
+        expect(note).toHaveTextContent("A starting point, not your template");
+        expect(note).toHaveTextContent(/standard CV layout/);
+        expect(note).toHaveTextContent(/photo/);
+        expect(note).toHaveTextContent(/XeLaTeX/);
+        fireEvent.click(screen.getByTestId("export-format-md"));
+        expect(screen.queryByTestId("export-latex-note")).not.toBeInTheDocument();
+    });
+
+    it("downloads a .tex file whose text is exactly what Copy LaTeX puts on the clipboard", async () => {
+        const writeText = vi.fn().mockResolvedValue(undefined);
+        Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText } });
+
+        const onClose = renderDialog();
+        fireEvent.click(screen.getByTestId("export-format-tex"));
+        fireEvent.click(screen.getByTestId("export-copy-clipboard"));
+        expect(await screen.findByText("Resume copied to clipboard")).toBeInTheDocument();
+        const copied = writeText.mock.calls[0][0] as string;
+
+        fireEvent.click(screen.getByTestId("export-confirm-button"));
+        await waitFor(() => expect(mocks.deliverFile).toHaveBeenCalledTimes(1));
+        const [blob, name] = mocks.deliverFile.mock.calls[0];
+        expect(name).toBe("resume-ada-lovelace.tex");
+        const downloaded = await blobText(blob);
+        expect(downloaded).toBe(copied);
+        expect(downloaded).toContain("\\documentclass");
+        expect(downloaded).toContain("Ada Lovelace");
+        expect(downloaded).toContain("\\textbf{first}");
+        await waitFor(() => expect(onClose).toHaveBeenCalled());
+    });
+
+    it("shows the LaTeX card and note in every language", () => {
+        for (const locale of ["bs", "de", "fr", "es"] as const) {
+            act(() => useI18nStore.setState({ locale }));
+            renderDialog();
+            fireEvent.click(screen.getByTestId("export-format-tex"));
+            const note = screen.getByTestId("export-latex-note");
+            expect(note.textContent, locale).toMatch(/XeLaTeX/);
+            expect(note.textContent, locale).not.toMatch(/A starting point/);
+            cleanup();
+        }
     });
 
     it("copies the standalone HTML document from the HTML tab", async () => {

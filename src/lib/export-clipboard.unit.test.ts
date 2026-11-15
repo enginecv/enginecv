@@ -6,6 +6,14 @@ import { createQaFullResume } from "./qa/sample-resumes";
 
 const model = toDocumentModel(createQaFullResume());
 
+function readBlob(blob: Blob): Promise<string> {
+    return new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result));
+        reader.readAsText(blob);
+    });
+}
+
 function mockClipboard(clipboard: Partial<Clipboard> | undefined) {
     Object.defineProperty(navigator, "clipboard", { configurable: true, value: clipboard });
 }
@@ -99,5 +107,59 @@ describe("copyTextToClipboard", () => {
 
         mockClipboard(undefined);
         await expect(copyTextToClipboard("x")).rejects.toBeInstanceOf(ClipboardDeniedError);
+    });
+});
+
+describe("copyTextToClipboard with a promise", () => {
+    it("hands the clipboard a promised item so Safari keeps the user gesture", async () => {
+        let resolveText: (value: string) => void = () => undefined;
+        const text = new Promise<string>((resolve) => { resolveText = resolve; });
+        const write = vi.fn().mockResolvedValue(undefined);
+        vi.stubGlobal("ClipboardItem", class { constructor(public items: Record<string, Promise<Blob>>) {} });
+        mockClipboard({ write, writeText: vi.fn() });
+
+        const done = copyTextToClipboard(text);
+        // The write started before the text existed.
+        expect(write).toHaveBeenCalledTimes(1);
+        resolveText("<html></html>");
+        await done;
+
+        const item = write.mock.calls[0][0][0] as unknown as { items: Record<string, Promise<Blob>> };
+        expect(await readBlob(await item.items["text/plain"])).toBe("<html></html>");
+    });
+
+    it("waits for the text first where promised items are not supported", async () => {
+        const writeText = vi.fn().mockResolvedValue(undefined);
+        mockClipboard({ writeText });
+
+        await copyTextToClipboard(Promise.resolve("<html></html>"));
+
+        expect(writeText).toHaveBeenCalledWith("<html></html>");
+    });
+
+    it("falls back to writeText when the promised write is rejected for a non-permission reason", async () => {
+        const writeText = vi.fn().mockResolvedValue(undefined);
+        vi.stubGlobal("ClipboardItem", class { constructor(public items: Record<string, Promise<Blob>>) {} });
+        mockClipboard({ write: vi.fn().mockRejectedValue(domError("DataError")), writeText });
+
+        await copyTextToClipboard(Promise.resolve("x"));
+
+        expect(writeText).toHaveBeenCalledWith("x");
+    });
+
+    it("reports a denied clipboard", async () => {
+        vi.stubGlobal("ClipboardItem", class { constructor(public items: Record<string, Promise<Blob>>) {} });
+        mockClipboard({ write: vi.fn().mockRejectedValue(domError("NotAllowedError")), writeText: vi.fn() });
+
+        await expect(copyTextToClipboard(Promise.resolve("x"))).rejects.toBeInstanceOf(ClipboardDeniedError);
+    });
+
+    it("lets an error from building the text surface unchanged", async () => {
+        vi.stubGlobal("ClipboardItem", class { constructor(public items: Record<string, Promise<Blob>>) {} });
+        mockClipboard({ write: vi.fn().mockRejectedValue(new Error("build failed")), writeText: vi.fn() });
+        const failing = Promise.reject(new Error("build failed"));
+        failing.catch(() => undefined);
+
+        await expect(copyTextToClipboard(failing)).rejects.toThrow("build failed");
     });
 });

@@ -1,0 +1,138 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`print window document > pins the whole document so sharing the builder cannot change the PDF path 1`] = `
+"<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <base href="http://localhost:3000/">
+    <title>resume-jane.pdf</title>
+    <link rel="stylesheet" href="http://localhost:3000/_next/static/css/app.css">
+<style>.resume-scope-x { color: red; }</style>
+    <style>
+        html, body {
+            margin: 0;
+            padding: 0;
+            background: #ffffff;
+        }
+
+        body {
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        /* Resume text stays selectable in the printed/exported PDF. */
+        .resume-document, .resume-document * {
+            -webkit-user-select: text;
+            user-select: text;
+        }
+
+        /* Paint containment makes Chrome rasterize text on print — force it off
+           so the whole page prints as real, selectable text. */
+        .print-exact-page-wrapper,
+        .print-exact-page-wrapper * {
+            contain: none !important;
+            content-visibility: visible !important;
+        }
+
+        /* Any compositing/GPU-layer trigger on an ancestor of the text makes
+           interactive "Save as PDF" rasterize the whole page (killing text
+           selection AND link annotations). Neutralise them on the page and
+           document wrappers. Scoped to ancestors so per-element effects (a
+           rotated design shape, a filtered photo) still render. */
+        .print-exact-page-wrapper,
+        .print-exact-page-wrapper .resume-document {
+            will-change: auto !important;
+            transform: none !important;
+            filter: none !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            perspective: none !important;
+            isolation: auto !important;
+            mix-blend-mode: normal !important;
+            opacity: 1 !important;
+            mask: none !important;
+            clip-path: none !important;
+        }
+
+        /* The preview's interactive hover outline must never render here. */
+        [data-nav-section]:hover {
+            outline: none !important;
+        }
+
+        .print-exact-scroll-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0 !important;
+            padding: 0;
+            background: #ffffff;
+        }
+
+        .print-exact-page-wrapper {
+            box-shadow: none !important;
+            break-after: page;
+            page-break-after: always;
+        }
+
+        .print-exact-page-wrapper:last-child {
+            break-after: auto;
+            page-break-after: auto;
+        }
+
+        @media print {
+            @page {
+                size: A4;
+                margin: 0;
+            }
+
+            .print-exact-scroll-wrapper {
+                transform: none !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                gap: 0 !important;
+            }
+
+            /* Override the app's @media print rules that force 100% sizing.
+               Use the preview's exact intrinsic px so typography matches 1:1. */
+            .print-exact-page-wrapper {
+                transform: none !important;
+                zoom: 1 !important;
+                margin: 0 !important;
+                box-shadow: none !important;
+                width: 794px !important;
+                height: 1123px !important;
+                min-height: 1123px !important;
+                max-height: 1123px !important;
+                overflow: hidden !important;
+            }
+
+            .print-exact-page-wrapper .resume-document {
+                width: 100% !important;
+                height: 100% !important;
+                min-height: 100% !important;
+                max-height: 100% !important;
+                margin: 0 !important;
+                box-shadow: none !important;
+                background-color: white !important;
+                overflow: hidden !important;
+            }
+
+            section, .print-exact-page-wrapper .resume-document > div {
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
+
+            .heading-style {
+                break-after: avoid;
+                page-break-after: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="print-exact-scroll-wrapper"><div class="print-exact-page-wrapper"><p>Hello</p></div></div>
+</body>
+</html>"
+`;

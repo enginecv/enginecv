@@ -25,7 +25,7 @@ import {
     type LucideIcon,
 } from "lucide-react";
 import { buildBoxBorderStyles } from "@/lib/preview/box-style";
-import { DEFAULT_DESIGN_BORDER, type DesignElement } from "@/lib/design";
+import { DEFAULT_DESIGN_BORDER, getOverlayMaxSize, getOverlayPositionLimits, type DesignElement } from "@/lib/design";
 import { useTranslation } from "@/lib/i18n";
 
 type OverlayRect = Pick<DesignElement, "x" | "y" | "width" | "height">;
@@ -215,6 +215,8 @@ export function DesignOverlayElementView({
     accentColor,
     pageWidth,
     pageHeight,
+    marginX = 0,
+    marginY = 0,
     pageScale,
     isSelected,
     interactive,
@@ -229,6 +231,9 @@ export function DesignOverlayElementView({
     accentColor: string;
     pageWidth: number;
     pageHeight: number;
+    /** Page margins in px; the margin lines are snap targets. */
+    marginX?: number;
+    marginY?: number;
     pageScale: number;
     isSelected: boolean;
     interactive: boolean;
@@ -268,6 +273,46 @@ export function DesignOverlayElementView({
         if (!isSelected) return;
         moveableRef.current?.updateRect();
     }, [element.height, element.width, element.x, element.y, isSelected]);
+
+    // Holding Alt while dragging or resizing turns snapping off.
+    const [bypassSnap, setBypassSnap] = useState(false);
+    useEffect(() => {
+        if (!isSelected || !interactive) return;
+        const sync = (event: KeyboardEvent) => setBypassSnap(event.altKey);
+        const clear = () => setBypassSnap(false);
+        window.addEventListener("keydown", sync);
+        window.addEventListener("keyup", sync);
+        window.addEventListener("blur", clear);
+        return () => {
+            window.removeEventListener("keydown", sync);
+            window.removeEventListener("keyup", sync);
+            window.removeEventListener("blur", clear);
+            setBypassSnap(false);
+        };
+    }, [interactive, isSelected]);
+
+    // Arrow keys nudge the selected element by 1px (10px with Shift), never while typing.
+    useEffect(() => {
+        if (!isSelected || !interactive || editing) return;
+        const onKeyDown = (event: KeyboardEvent) => {
+            const deltas: Record<string, [number, number]> = {
+                ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1],
+            };
+            const delta = deltas[event.key];
+            if (!delta || event.ctrlKey || event.metaKey || event.altKey) return;
+            const active = document.activeElement as HTMLElement | null;
+            if (active && (active.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(active.tagName))) return;
+            event.preventDefault();
+            const step = event.shiftKey ? 10 : 1;
+            const limits = getOverlayPositionLimits(element.width, element.height, pageWidth, pageHeight);
+            onCommit(element.id, {
+                x: clampOverlayValue(element.x + delta[0] * step, limits.minX, limits.maxX),
+                y: clampOverlayValue(element.y + delta[1] * step, limits.minY, limits.maxY),
+            });
+        };
+        window.addEventListener("keydown", onKeyDown);
+        return () => window.removeEventListener("keydown", onKeyDown);
+    }, [editing, element.height, element.id, element.width, element.x, element.y, interactive, isSelected, onCommit, pageHeight, pageWidth]);
 
     const selectTarget = useCallback(() => {
         if (interactive) onSelect();
@@ -439,11 +484,11 @@ export function DesignOverlayElementView({
                     renderDirections={["nw", "n", "ne", "e", "se", "s", "sw", "w"]}
                     origin={false}
                     edge={false}
-                    snappable
+                    snappable={!bypassSnap}
                     snapContainer={target.parentElement}
                     elementGuidelines={elementGuidelines}
-                    horizontalGuidelines={[pageHeight / 2]}
-                    verticalGuidelines={[pageWidth / 2]}
+                    horizontalGuidelines={[0, marginY, pageHeight / 2, pageHeight - marginY, pageHeight]}
+                    verticalGuidelines={[0, marginX, pageWidth / 2, pageWidth - marginX, pageWidth]}
                     snapThreshold={5}
                     isDisplaySnapDigit={false}
                     zoom={1 / Math.max(pageScale, 0.2)}
@@ -457,8 +502,9 @@ export function DesignOverlayElementView({
                         setIsTransforming(true);
                     }}
                     onDrag={(event) => {
-                        const nextX = clampOverlayValue(element.x + event.beforeTranslate[0], 0, Math.max(0, pageWidth - element.width));
-                        const nextY = clampOverlayValue(element.y + event.beforeTranslate[1], 0, Math.max(0, pageHeight - element.height));
+                        const limits = getOverlayPositionLimits(element.width, element.height, pageWidth, pageHeight);
+                        const nextX = clampOverlayValue(element.x + event.beforeTranslate[0], limits.minX, limits.maxX);
+                        const nextY = clampOverlayValue(element.y + event.beforeTranslate[1], limits.minY, limits.maxY);
                         draftRectRef.current = { x: nextX, y: nextY, width: element.width, height: element.height };
                         event.target.style.transform = `translate(${nextX - element.x}px, ${nextY - element.y}px)`;
                     }}
@@ -472,16 +518,19 @@ export function DesignOverlayElementView({
                     onResizeStart={(event) => {
                         event.set([element.width, element.height]);
                         event.setMin([minWidth, minHeight]);
-                        event.setMax([pageWidth, pageHeight]);
+                        const maxSize = getOverlayMaxSize(pageWidth, pageHeight);
+                        event.setMax([maxSize.width, maxSize.height]);
                         if (event.dragStart) event.dragStart.set([0, 0]);
                         draftRectRef.current = { x: element.x, y: element.y, width: element.width, height: element.height };
                         setIsTransforming(true);
                     }}
                     onResize={(event) => {
-                        const nextWidth = clampOverlayValue(event.width, minWidth, pageWidth);
-                        const nextHeight = clampOverlayValue(event.height, minHeight, pageHeight);
-                        const nextX = clampOverlayValue(element.x + event.drag.beforeTranslate[0], 0, Math.max(0, pageWidth - nextWidth));
-                        const nextY = clampOverlayValue(element.y + event.drag.beforeTranslate[1], 0, Math.max(0, pageHeight - nextHeight));
+                        const maxSize = getOverlayMaxSize(pageWidth, pageHeight);
+                        const nextWidth = clampOverlayValue(event.width, minWidth, maxSize.width);
+                        const nextHeight = clampOverlayValue(event.height, minHeight, maxSize.height);
+                        const limits = getOverlayPositionLimits(nextWidth, nextHeight, pageWidth, pageHeight);
+                        const nextX = clampOverlayValue(element.x + event.drag.beforeTranslate[0], limits.minX, limits.maxX);
+                        const nextY = clampOverlayValue(element.y + event.drag.beforeTranslate[1], limits.minY, limits.maxY);
                         draftRectRef.current = { x: nextX, y: nextY, width: nextWidth, height: nextHeight };
                         event.target.style.width = `${nextWidth}px`;
                         event.target.style.height = `${nextHeight}px`;

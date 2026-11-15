@@ -7,6 +7,17 @@ import { useResumeStore } from "@/lib/store";
 import { useI18nStore } from "@/lib/i18n";
 import { ResumePreview } from "./ResumePreview";
 
+/** Position of a skill group in the full list (the schema adds an empty "ungrouped" group first). */
+function resume_groupIndex(resume: Resume, groupId: string) {
+    return resume.skillGroups.findIndex((group) => group.id === groupId);
+}
+
+/** Finds a button in the preview's body-level selection menu by its label. */
+function findButton(label: string) {
+    return Array.from(document.body.querySelectorAll<HTMLButtonElement>("button"))
+        .find((candidate) => candidate.textContent?.includes(label));
+}
+
 const PX_PER_MM = 96 / 25.4;
 const defaultResizeObserver = globalThis.ResizeObserver;
 
@@ -261,7 +272,7 @@ describe("ResumePreview", () => {
         expect(page.getByText("personal@example.com").closest("a")).toHaveAttribute("href", "mailto:personal@example.com");
     });
 
-    it("keeps personal links clickable and normalizes supported URL forms", async () => {
+    it("keeps personal links followable (Ctrl/Cmd+click) and normalizes supported URL forms", async () => {
         const resume = createEmptyResume();
         resume.basics.name = "Alicia Vector";
         resume.basics.customLinks = [{
@@ -278,8 +289,12 @@ describe("ResumePreview", () => {
         const link = await within(previewPage).findByRole("link", { name: /Case studies/ });
 
         expect(link).toHaveAttribute("href", "HTTPS://example.com/case-studies");
-        const click = new MouseEvent("click", { bubbles: true, cancelable: true, button: 0 });
-        expect(link.dispatchEvent(click)).toBe(true);
+        // In the editor a plain click selects the element (menu); a modified
+        // click follows the link, so the browser default must not be prevented.
+        const ctrlClick = new MouseEvent("click", { bubbles: true, cancelable: true, button: 0, ctrlKey: true });
+        expect(link.dispatchEvent(ctrlClick)).toBe(true);
+        const metaClick = new MouseEvent("click", { bubbles: true, cancelable: true, button: 0, metaKey: true });
+        expect(link.dispatchEvent(metaClick)).toBe(true);
     });
 
     it("keeps resume labels tied to CV language when app locale changes", async () => {
@@ -1686,6 +1701,7 @@ describe("ResumePreview", () => {
                 width: 220,
                 height: 84,
                 zIndex: 1,
+                layer: "front",
                 text: "Overlay headline",
                 imageSrc: "",
                 shape: "rectangle",
@@ -1739,6 +1755,7 @@ describe("ResumePreview", () => {
                 width: 240,
                 height: 140,
                 zIndex: 1,
+                layer: "front",
                 text: "",
                 imageSrc: "",
                 shape: "ellipse",
@@ -2497,6 +2514,526 @@ describe("ResumePreview", () => {
             expect(state.sidebarTab).toBe("customize");
             expect(state.customizeScope).toBe("resume");
             expect(state.pendingCustomizeNav).toMatchObject({ scope: "resume", panel: "personalDetails" });
+        });
+
+        async function renderWithPortfolioLink() {
+            const resume = createEmptyResume();
+            resume.basics.name = "Alicia Vector";
+            resume.settings.contentSections = [];
+            resume.basics.customLinks = [{
+                id: "portfolio",
+                name: "Portfolio",
+                label: "Case studies",
+                icon: "auto",
+                url: "https://example.com/case-studies",
+            }];
+            useResumeStore.setState({ resume, paperSize: "a4" });
+            const { container } = render(<ResumePreview />);
+            const page = container.querySelector(".resume-page") as HTMLElement;
+            return within(page).findByRole("link", { name: /Case studies/ });
+        }
+
+        it("opens the menu instead of following a link on a plain click, with Open link", async () => {
+            const link = await renderWithPortfolioLink();
+            const open = vi.spyOn(window, "open").mockImplementation(() => null);
+
+            const click = new MouseEvent("click", { bubbles: true, cancelable: true, button: 0 });
+            // preventDefault() was called, so the browser would not follow the link.
+            expect(link.dispatchEvent(click)).toBe(false);
+
+            const openLink = await waitFor(() => {
+                const button = findButton("Open link");
+                expect(button).toBeTruthy();
+                return button as HTMLButtonElement;
+            });
+            expect(findButton("Go to")).toBeTruthy();
+            expect(findButton("Customize section")).toBeTruthy();
+
+            fireEvent.click(openLink);
+            expect(open).toHaveBeenCalledWith("https://example.com/case-studies", "_blank", "noopener,noreferrer");
+            expect(findButton("Open link")).toBeUndefined();
+            open.mockRestore();
+        });
+
+        it("follows a link on Ctrl+click and Cmd+click without opening the menu", async () => {
+            const link = await renderWithPortfolioLink();
+
+            for (const modifier of [{ ctrlKey: true }, { metaKey: true }]) {
+                const click = new MouseEvent("click", { bubbles: true, cancelable: true, button: 0, ...modifier });
+                expect(link.dispatchEvent(click)).toBe(true);
+            }
+            // Wait past the 220 ms menu delay; no menu may appear.
+            await new Promise((resolve) => setTimeout(resolve, 320));
+            expect(findButton("Open link")).toBeUndefined();
+            expect(findButton("Customize section")).toBeUndefined();
+        });
+
+        it("offers Open link for the email link too, and keeps the menu for non-link clicks unchanged", async () => {
+            const page = renderWithPersonalDetails();
+            const email = await waitFor(() => {
+                const node = page.querySelector<HTMLAnchorElement>('a[href^="mailto:"]');
+                expect(node).not.toBeNull();
+                return node as HTMLAnchorElement;
+            });
+            const click = new MouseEvent("click", { bubbles: true, cancelable: true, button: 0 });
+            expect(email.dispatchEvent(click)).toBe(false);
+            await waitFor(() => expect(findButton("Open link")).toBeTruthy());
+            cleanup();
+
+            const page2 = renderWithPersonalDetails();
+            const name = await waitFor(() => {
+                const node = page2.querySelector<HTMLElement>('[data-testid="resume-preview-name"]');
+                expect(node).not.toBeNull();
+                return node as HTMLElement;
+            });
+            fireEvent.click(name);
+            await waitFor(() => expect(findButton("Customize section")).toBeTruthy());
+            expect(findButton("Open link")).toBeUndefined();
+        });
+    });
+
+    describe("double-click on a section heading", () => {
+        afterEach(() => cleanup());
+
+        async function renderWithExperience() {
+            const resume = createEmptyResume();
+            resume.basics.name = "Jane Doe";
+            resume.settings.contentSections = ["experience"];
+            resume.experience = [{
+                id: "exp-1",
+                hidden: false,
+                company: "Acme Systems",
+                position: "Senior Engineer",
+                start: "2024-01",
+                end: "Present",
+                location: "Remote",
+                description: "Led platform delivery",
+                highlights: [],
+                skills: [],
+                url: "",
+                urlIcon: "auto",
+            }];
+            const requestEditorNav = vi.fn();
+            useResumeStore.setState({ resume, paperSize: "a4", requestEditorNav });
+            const { container } = render(<ResumePreview />);
+            const page = container.querySelector(".resume-page") as HTMLElement;
+            const heading = await waitFor(() => {
+                const node = page.querySelector<HTMLElement>('[data-nav-kind="heading"][data-nav-section="experience"] h2');
+                expect(node).not.toBeNull();
+                return node as HTMLElement;
+            });
+            return { page, heading, requestEditorNav };
+        }
+
+        function doubleClick(element: HTMLElement) {
+            fireEvent.click(element, { detail: 1 });
+            fireEvent.click(element, { detail: 2 });
+            fireEvent.dblClick(element);
+        }
+
+        it("navigates to the section without flashing the click menu", async () => {
+            const { heading, requestEditorNav } = await renderWithExperience();
+
+            doubleClick(heading);
+
+            expect(requestEditorNav).toHaveBeenCalledTimes(1);
+            expect(requestEditorNav).toHaveBeenCalledWith("experience", null);
+            await new Promise((resolve) => setTimeout(resolve, 320));
+            expect(findButton("Customize section")).toBeUndefined();
+        });
+
+        it("keeps inline text editing for double-clicks on editable text", async () => {
+            const { page, requestEditorNav } = await renderWithExperience();
+            const editable = await waitFor(() => {
+                const node = page.querySelector<HTMLElement>('[data-nav-kind="entry"] [data-editable-field]');
+                expect(node).not.toBeNull();
+                return node as HTMLElement;
+            });
+
+            doubleClick(editable);
+
+            expect(requestEditorNav).not.toHaveBeenCalled();
+        });
+
+        it("navigates to the entry when the entry area (not its text) is double-clicked", async () => {
+            const { page, requestEditorNav } = await renderWithExperience();
+            const entry = await waitFor(() => {
+                const node = page.querySelector<HTMLElement>('[data-nav-kind="entry"][data-nav-section="experience"]');
+                expect(node).not.toBeNull();
+                return node as HTMLElement;
+            });
+
+            doubleClick(entry);
+
+            expect(requestEditorNav).toHaveBeenCalledTimes(1);
+            expect(requestEditorNav).toHaveBeenCalledWith("experience", 0);
+            await new Promise((resolve) => setTimeout(resolve, 320));
+            expect(findButton("Go to entry")).toBeUndefined();
+        });
+
+        it("navigates from editable text on Alt+double-click without starting inline edit", async () => {
+            const { page, requestEditorNav } = await renderWithExperience();
+            const editable = await waitFor(() => {
+                const node = page.querySelector<HTMLElement>('[data-nav-kind="entry"] [data-editable-field]');
+                expect(node).not.toBeNull();
+                return node as HTMLElement;
+            });
+
+            fireEvent.dblClick(editable, { altKey: true });
+
+            expect(requestEditorNav).toHaveBeenCalledTimes(1);
+            expect(requestEditorNav).toHaveBeenCalledWith("experience", 0);
+            expect(page.querySelector('[contenteditable="true"], textarea, input')).toBeNull();
+        });
+
+        it("does not follow a link inside a heading area when double-clicked", async () => {
+            const { heading, requestEditorNav } = await renderWithExperience();
+            const link = document.createElement("a");
+            link.href = "https://example.com";
+            link.textContent = "x";
+            heading.appendChild(link);
+
+            fireEvent.click(link, { detail: 1 });
+            const second = new MouseEvent("click", { bubbles: true, cancelable: true, button: 0, detail: 2 });
+            expect(link.dispatchEvent(second)).toBe(false);
+            fireEvent.dblClick(link);
+
+            expect(requestEditorNav).toHaveBeenCalledWith("experience", null);
+        });
+    });
+
+    describe("navigating to an entry when earlier entries are hidden", () => {
+        afterEach(() => cleanup());
+
+        const experience = (id: string, company: string, hidden: boolean) => ({
+            id, hidden, company, position: "Engineer", start: "2024-01", end: "Present",
+            location: "", description: "", highlights: [], skills: [], url: "", urlIcon: "auto",
+        });
+
+        async function renderWith(configure: (resume: Resume) => void, section: string) {
+            const resume = createEmptyResume();
+            resume.basics.name = "Jane Doe";
+            configure(resume);
+            const requestEditorNav = vi.fn();
+            useResumeStore.setState({ resume, paperSize: "a4", requestEditorNav });
+            const { container } = render(<ResumePreview />);
+            const page = container.querySelector(".resume-page") as HTMLElement;
+            const entries = await waitFor(() => {
+                const nodes = Array.from(page.querySelectorAll<HTMLElement>(`[data-nav-kind="entry"][data-nav-section="${section}"]`));
+                expect(nodes.length).toBeGreaterThan(0);
+                return nodes;
+            });
+            return { page, entries, requestEditorNav };
+        }
+
+        function doubleClick(element: HTMLElement) {
+            fireEvent.click(element, { detail: 1 });
+            fireEvent.click(element, { detail: 2 });
+            fireEvent.dblClick(element);
+        }
+
+        it("reports the entry's position in the full list, not among the visible ones", async () => {
+            const { entries, requestEditorNav } = await renderWith((resume) => {
+                resume.settings.contentSections = ["experience"];
+                resume.experience = [experience("e1", "Hidden Co", true), experience("e2", "Shown Co", false)];
+            }, "experience");
+
+            expect(entries).toHaveLength(1);
+            // The only visible entry is the second one in the editor.
+            expect(entries[0]).toHaveAttribute("data-nav-entry-index", "1");
+
+            doubleClick(entries[0]);
+            expect(requestEditorNav).toHaveBeenCalledWith("experience", 1);
+        });
+
+        it("the click menu's Go to entry uses the same full-list position", async () => {
+            const { entries, requestEditorNav } = await renderWith((resume) => {
+                resume.settings.contentSections = ["experience"];
+                resume.experience = [experience("e1", "Hidden Co", true), experience("e2", "Shown Co", false)];
+            }, "experience");
+
+            fireEvent.click(entries[0]);
+            const goTo = await waitFor(() => {
+                const button = findButton("Go to entry");
+                expect(button).toBeTruthy();
+                return button as HTMLButtonElement;
+            });
+            fireEvent.click(goTo);
+
+            expect(requestEditorNav).toHaveBeenCalledWith("experience", 1);
+        });
+
+        it("keeps working when several entries are hidden and when none are", async () => {
+            const hiddenMix = await renderWith((resume) => {
+                resume.settings.contentSections = ["experience"];
+                resume.experience = [
+                    experience("e1", "A", true), experience("e2", "B", false), experience("e3", "C", true),
+                    experience("e4", "D", false), experience("e5", "E", false),
+                ];
+            }, "experience");
+            expect(hiddenMix.entries.map((entry) => entry.getAttribute("data-nav-entry-index"))).toEqual(["1", "3", "4"]);
+            cleanup();
+
+            const none = await renderWith((resume) => {
+                resume.settings.contentSections = ["experience"];
+                resume.experience = [experience("e1", "A", false), experience("e2", "B", false)];
+            }, "experience");
+            expect(none.entries.map((entry) => entry.getAttribute("data-nav-entry-index"))).toEqual(["0", "1"]);
+        });
+
+        it("maps projects and custom sections the same way", async () => {
+            const project = (id: string, name: string, hidden: boolean) => ({
+                id, hidden, name, subtitle: "", description: "", highlights: [], keywords: [], skills: [],
+                start: "", end: "", url: "", urlIcon: "auto", repos: [], icon: "", visibility: "",
+            });
+            const projects = await renderWith((resume) => {
+                resume.settings.contentSections = ["projects"];
+                resume.projects = [project("p1", "Hidden", true), project("p2", "Shown", false)] as never;
+            }, "projects");
+            expect(projects.entries[0]).toHaveAttribute("data-nav-entry-index", "1");
+            cleanup();
+
+            const custom = await renderWith((resume) => {
+                resume.settings.contentSections = ["custom:c1"];
+                resume.customSections = [{
+                    id: "c1", hidden: false, title: "Extra", icon: "auto", layout: "entries", text: "", tags: [],
+                    entries: [
+                        { id: "x1", hidden: true, title: "Hidden entry", subtitle: "", location: "", start: "", end: "", description: "", url: "", urlIcon: "auto" },
+                        { id: "x2", hidden: false, title: "Shown entry", subtitle: "", location: "", start: "", end: "", description: "", url: "", urlIcon: "auto" },
+                    ],
+                }] as never;
+            }, "custom:c1");
+            expect(custom.entries[0]).toHaveAttribute("data-nav-entry-index", "1");
+        });
+
+        it("maps skill groups to their position in the full group list", async () => {
+            const skill = (id: string) => ({ id, hidden: false, name: id, description: "", level: "", icon: "auto", display: "name", keywords: [] });
+            const { entries } = await renderWith((resume) => {
+                resume.settings.contentSections = ["skills"];
+                resume.skillGroups = [
+                    { id: "g1", name: "Hidden group", hidden: true, skills: [skill("a")] },
+                    { id: "g2", name: "Shown group", hidden: false, skills: [skill("b")] },
+                ] as never;
+            }, "skills");
+
+            const shownGroup = resume_groupIndex(useResumeStore.getState().resume, "g2");
+            expect(entries[0]).toHaveAttribute("data-nav-entry-index", String(shownGroup));
+        });
+
+        it("maps interests shown as chips the same way", async () => {
+            const { entries } = await renderWith((resume) => {
+                resume.settings.contentSections = ["interests"];
+                resume.settings.interestsSection = { ...resume.settings.interestsSection, display: "chips" };
+                resume.interests = [
+                    { id: "i1", hidden: true, name: "Hidden hobby", description: "" },
+                    { id: "i2", hidden: false, name: "Chess", description: "" },
+                ];
+            }, "interests");
+
+            expect(entries.some((entry) => entry.textContent === "Chess" && entry.getAttribute("data-nav-entry-index") === "1")).toBe(true);
+        });
+    });
+
+    describe("interests display styles", () => {
+        afterEach(() => cleanup());
+
+        type Display = "list" | "inline" | "chips" | "iconGrid";
+
+        function buildInterests(count = 4) {
+            const base = [
+                { id: "i1", hidden: false, name: "Chess", description: "Club player since 2015" },
+                { id: "i2", hidden: false, name: "Hiking", description: "" },
+                { id: "i3", hidden: true, name: "Secret hobby", description: "Not shown" },
+                { id: "i4", hidden: false, name: "Reading", description: "" },
+            ];
+            const extra = Array.from({ length: Math.max(0, count - base.length) }, (_, index) => ({
+                id: `x${index}`,
+                hidden: false,
+                name: `Hobby ${index + 1}`,
+                description: "",
+            }));
+            return [...base, ...extra];
+        }
+
+        async function renderInterests(options: {
+            display?: Display;
+            omitSetting?: boolean;
+            count?: number;
+            columns?: "one" | "two";
+            extra?: Partial<Resume["settings"]["interestsSection"]>;
+            /** Interest name -> stored icon value. */
+            icons?: Record<string, string>;
+        } = {}) {
+            const resume = createEmptyResume();
+            resume.basics.name = "Jane Doe";
+            resume.settings.contentSections = ["interests"];
+            resume.interests = buildInterests(options.count).map((interest) => (
+                options.icons?.[interest.name] ? { ...interest, icon: options.icons[interest.name] } : interest
+            ));
+            if (options.columns) resume.settings.layout.columns = options.columns;
+            if (options.omitSetting) {
+                delete (resume.settings as Partial<Resume["settings"]>).interestsSection;
+            } else {
+                resume.settings.interestsSection = {
+                    ...resume.settings.interestsSection,
+                    display: options.display ?? "list",
+                    ...(options.extra ?? {}),
+                };
+            }
+            const requestEditorNav = vi.fn();
+            useResumeStore.setState({ resume, paperSize: "a4", requestEditorNav });
+            const { container } = render(<ResumePreview />);
+            const page = container.querySelector(".resume-page") as HTMLElement;
+            await waitFor(() => expect(within(page).getByText("Chess")).toBeInTheDocument());
+            return { container, page, requestEditorNav };
+        }
+
+        it("keeps today's per-entry list, with descriptions, when no style was ever chosen", async () => {
+            const { page } = await renderInterests({ omitSetting: true });
+
+            expect(page.querySelector('[data-testid="resume-interests-flow"]')).toBeNull();
+            expect(within(page).getByText("Club player since 2015")).toBeInTheDocument();
+            expect(within(page).getByText("Hiking")).toBeInTheDocument();
+            expect(within(page).queryByText("Secret hobby")).toBeNull();
+        });
+
+        it("renders the default list identically whether the style is missing or explicitly list", async () => {
+            const missing = await renderInterests({ omitSetting: true });
+            const missingHtml = missing.page.querySelector('[data-nav-section="interests"]')?.parentElement?.innerHTML;
+            cleanup();
+            const explicit = await renderInterests({ display: "list" });
+            const explicitHtml = explicit.page.querySelector('[data-nav-section="interests"]')?.parentElement?.innerHTML;
+
+            expect(missingHtml).toBeTruthy();
+            expect(explicitHtml).toBe(missingHtml);
+        });
+
+        for (const display of ["inline", "chips", "iconGrid"] as const) {
+            it(`renders the ${display} style as one block without descriptions or hidden interests`, async () => {
+                const { page } = await renderInterests({ display });
+
+                const flow = page.querySelector<HTMLElement>('[data-testid="resume-interests-flow"]');
+                expect(flow).not.toBeNull();
+                expect(flow).toHaveAttribute("data-display", display);
+                expect(page.querySelectorAll('[data-testid="resume-interests-flow"]')).toHaveLength(1);
+                expect(flow?.textContent).toContain("Chess");
+                expect(flow?.textContent).toContain("Hiking");
+                expect(flow?.textContent).toContain("Reading");
+                expect(page.textContent).not.toContain("Club player since 2015");
+                expect(page.textContent).not.toContain("Secret hobby");
+            });
+        }
+
+        it("fits 30 interests in the chips style as a single block on one page", async () => {
+            const { container, page } = await renderInterests({ display: "chips", count: 30 });
+
+            expect(page.querySelectorAll('[data-testid="resume-interest-item"]')).toHaveLength(29);
+            expect(container.querySelectorAll(".resume-page")).toHaveLength(1);
+        });
+
+        it("targets the right entry when an item in a compact style is clicked", async () => {
+            const { page, requestEditorNav } = await renderInterests({ display: "chips" });
+            const items = page.querySelectorAll<HTMLElement>('[data-testid="resume-interest-item"]');
+            // The hidden "Secret hobby" (position 2) is not shown, so the third visible item is
+            // "Reading", whose position in the full list is 3.
+            fireEvent.click(items[2]);
+
+            const goTo = await waitFor(() => {
+                const button = findButton("Go to entry");
+                expect(button).toBeTruthy();
+                return button as HTMLButtonElement;
+            });
+            fireEvent.click(goTo);
+
+            expect(requestEditorNav).toHaveBeenCalledWith("interests", 3);
+        });
+
+        const ICONS = { Chess: "lucide:crown", Hiking: "🥾", Reading: "lucide:not-a-real-icon" };
+
+        it("shows icons before the name in the list style, only for interests that have a usable one", async () => {
+            const { page } = await renderInterests({ display: "list", icons: ICONS });
+
+            const svgs = page.querySelectorAll('[data-testid="interest-icon-svg"]');
+            const emoji = page.querySelectorAll('[data-testid="interest-icon-emoji"]');
+            expect(svgs).toHaveLength(1);
+            expect(emoji).toHaveLength(1);
+            expect(emoji[0]).toHaveTextContent("🥾");
+            // The icon sits in the same title as the name, before it.
+            const chessTitle = within(page).getByText("Chess");
+            expect(chessTitle.querySelector('[data-testid="interest-icon-svg"]')).not.toBeNull();
+            // "Reading" holds an unknown icon name: it renders as plain text with no icon.
+            expect(within(page).getByText("Reading").querySelector("svg")).toBeNull();
+            // Descriptions still show in the list style.
+            expect(within(page).getByText("Club player since 2015")).toBeInTheDocument();
+        });
+
+        it("hides icons everywhere when 'Show icons' is off", async () => {
+            for (const display of ["list", "chips", "iconGrid"] as const) {
+                const { page } = await renderInterests({ display, icons: ICONS, extra: { showIcons: false } });
+                expect(page.querySelectorAll('[data-testid="interest-icon-svg"]'), display).toHaveLength(0);
+                expect(page.querySelectorAll('[data-testid="interest-icon-emoji"]'), display).toHaveLength(0);
+                cleanup();
+            }
+        });
+
+        it("shows vector icons and emoji in chips and the icon grid, and never in the inline style", async () => {
+            for (const display of ["chips", "iconGrid"] as const) {
+                const { page } = await renderInterests({ display, icons: ICONS });
+                const flow = page.querySelector('[data-testid="resume-interests-flow"]') as HTMLElement;
+                expect(flow.querySelectorAll('[data-testid="interest-icon-svg"]'), display).toHaveLength(1);
+                expect(flow.querySelectorAll('[data-testid="interest-icon-emoji"]'), display).toHaveLength(1);
+                // Decorative: hidden from assistive technology, the name carries the meaning.
+                expect(flow.querySelector('[data-testid="interest-icon-svg"]')).toHaveAttribute("aria-hidden", "true");
+                cleanup();
+            }
+
+            const { page } = await renderInterests({ display: "inline", icons: ICONS });
+            const flow = page.querySelector('[data-testid="resume-interests-flow"]') as HTMLElement;
+            expect(flow.querySelectorAll('[data-testid="interest-icon-svg"], [data-testid="interest-icon-emoji"]')).toHaveLength(0);
+        });
+
+        it("keeps the icon on the interest when switching to a style that does not show it, and shows it again after", async () => {
+            const first = await renderInterests({ display: "inline", icons: ICONS });
+            expect(first.page.querySelectorAll('[data-testid="interest-icon-svg"]')).toHaveLength(0);
+            const stored = useResumeStore.getState().resume.interests.find((interest) => interest.name === "Chess");
+            expect(stored?.icon).toBe("lucide:crown");
+            cleanup();
+
+            const second = await renderInterests({ display: "chips", icons: ICONS });
+            expect(second.page.querySelectorAll('[data-testid="interest-icon-svg"]')).toHaveLength(1);
+        });
+
+        // Keep this test last in the block: the manual rAF controller it installs
+        // leaves state behind that makes the next single-column render start empty.
+        it("renders the chosen style in the two-column layout path too", async () => {
+            const raf = installRafController();
+            const resume = createEmptyResume();
+            resume.basics.name = "Jane Doe";
+            resume.settings.contentSections = ["interests"];
+            resume.settings.layout.columns = "two";
+            resume.settings.layout.sectionOrder = ["interests"];
+            resume.settings.layout.sectionPlacement = { interests: "left" };
+            resume.interests = buildInterests(4);
+            resume.settings.interestsSection = { ...resume.settings.interestsSection, display: "chips" };
+            useResumeStore.setState({ resume, paperSize: "a4" });
+
+            const { container, unmount } = render(<ResumePreview />);
+            applyStructuredMeasurements(container, {
+                "basic:profile": 120,
+                "interests:heading": 40,
+                "interests:entry:0": 60,
+            });
+            await raf.flushAll();
+            await waitFor(() => {
+                expect(container.querySelectorAll(".resume-page")).toHaveLength(1);
+            });
+
+            const page = container.querySelector(".resume-page") as HTMLElement;
+            const flow = page.querySelector<HTMLElement>('[data-testid="resume-interests-flow"]');
+            expect(flow).not.toBeNull();
+            expect(flow).toHaveAttribute("data-display", "chips");
+            expect(page.querySelectorAll('[data-testid="resume-interests-flow"]')).toHaveLength(1);
+            unmount();
         });
     });
 });

@@ -1,13 +1,10 @@
-import { toPng, toSvg } from "html-to-image";
+import { ExportEmbedError, assertSelfContained, buildEmbeddedStyles } from "./export-embed";
 import { isJsonResumeDocument } from "./agent/authoring/detect";
 import { jsonResumeToResume } from "./json-resume/to-resume";
 import { MAX_JSON_RESUME_BYTES } from "./json-resume/schema";
 import { clampResumeSettings, resumeSchema, type Resume } from "./schema";
 import { isDataExport, resumesFromDataExport } from "./storage-registry/export-file";
 import type { ZodIssue } from "zod";
-
-// Self-hosted fonts declare woff2 and woff sources; embed only the smaller woff2.
-const EMBEDDED_FONT_FORMAT = "woff2";
 
 const ENCRYPTED_JSON_ITERATIONS = 250000;
 const ENCRYPTED_JSON_SALT_BYTES = 16;
@@ -143,10 +140,6 @@ export function waitForPreviewPages(timeoutMs = 5_000): Promise<boolean> {
     });
 }
 
-function filterIndicators(element: Element) {
-    return !(element instanceof HTMLElement && element.dataset.pageBreakIndicator);
-}
-
 // ResumePreview scopes its CSS to a dynamic per-instance class on an ancestor
 // of .resume-page (e.g. ".resume-preview-scope-r1 .resume-document"). Export
 // clones only the .resume-page node, so the scope ancestor is lost and the
@@ -173,15 +166,6 @@ export function downloadBlob(blob: Blob, filename: string) {
     anchor.click();
     document.body.removeChild(anchor);
     setTimeout(() => URL.revokeObjectURL(url), DOWNLOAD_URL_LIFETIME_MS);
-}
-
-function downloadDataUrl(dataUrl: string, filename: string) {
-    const anchor = document.createElement("a");
-    anchor.href = dataUrl;
-    anchor.download = filename;
-    document.body.appendChild(anchor);
-    anchor.click();
-    document.body.removeChild(anchor);
 }
 
 function bytesToBase64(bytes: Uint8Array) {
@@ -358,152 +342,6 @@ async function decryptImportedResume(payload: EncryptedResumeExport, passphrase:
     }
 }
 
-function decodeSvgDataUrl(dataUrl: string) {
-    const parts = dataUrl.split(",", 2);
-    if (parts.length !== 2) {
-        throw new Error("Invalid SVG data URL.");
-    }
-
-    const [, payload] = parts;
-    if (dataUrl.includes(";base64,")) {
-        return atob(payload);
-    }
-
-    return decodeURIComponent(payload);
-}
-
-function parseSvgSize(value: string | null, fallback: number) {
-    if (!value) return fallback;
-
-    const numericValue = Number.parseFloat(value);
-    return Number.isFinite(numericValue) ? numericValue : fallback;
-}
-
-function getSvgDimensions(svgElement: SVGSVGElement, fallbackWidth: number, fallbackHeight: number) {
-    const viewBox = svgElement.getAttribute("viewBox");
-    if (viewBox) {
-        const [, , width, height] = viewBox.split(/[\s,]+/).map((value) => Number.parseFloat(value));
-        if (Number.isFinite(width) && Number.isFinite(height)) {
-            return { width, height };
-        }
-    }
-
-    return {
-        width: parseSvgSize(svgElement.getAttribute("width"), fallbackWidth),
-        height: parseSvgSize(svgElement.getAttribute("height"), fallbackHeight),
-    };
-}
-
-function combineSvgPages(svgPages: Array<{ markup: string; width: number; height: number }>) {
-    const parser = new DOMParser();
-    const serializer = new XMLSerializer();
-    const svgDocument = document.implementation.createDocument("http://www.w3.org/2000/svg", "svg", null);
-    const combinedSvg = svgDocument.documentElement;
-
-    combinedSvg.setAttribute("xmlns", "http://www.w3.org/2000/svg");
-    combinedSvg.setAttribute("xmlns:xlink", "http://www.w3.org/1999/xlink");
-
-    const totalHeight = svgPages.reduce((sum, page) => sum + page.height, 0);
-    const maxWidth = svgPages.reduce((max, page) => Math.max(max, page.width), 0);
-
-    combinedSvg.setAttribute("width", `${maxWidth}`);
-    combinedSvg.setAttribute("height", `${totalHeight}`);
-    combinedSvg.setAttribute("viewBox", `0 0 ${maxWidth} ${totalHeight}`);
-
-    let offsetY = 0;
-
-    svgPages.forEach((page) => {
-        const pageDocument = parser.parseFromString(page.markup, "image/svg+xml");
-        const pageSvg = svgDocument.importNode(pageDocument.documentElement, true) as unknown as SVGSVGElement;
-
-        pageSvg.setAttribute("x", "0");
-        pageSvg.setAttribute("y", `${offsetY}`);
-        pageSvg.setAttribute("width", `${page.width}`);
-        pageSvg.setAttribute("height", `${page.height}`);
-        pageSvg.setAttribute("viewBox", pageSvg.getAttribute("viewBox") ?? `0 0 ${page.width} ${page.height}`);
-        pageSvg.setAttribute("preserveAspectRatio", "xMinYMin meet");
-
-        combinedSvg.appendChild(pageSvg);
-        offsetY += page.height;
-    });
-
-    return serializer.serializeToString(svgDocument);
-}
-
-async function captureUnscaledPage<T>(
-    pageNode: HTMLElement,
-    capture: (node: HTMLElement, width: number, height: number) => Promise<T>
-) {
-    const exportContainer = document.createElement("div");
-    const exportNode = pageNode.cloneNode(true) as HTMLElement;
-    const { width, height } = getIntrinsicPageSize(pageNode);
-
-    const scopeClass = getResumeScopeClass(pageNode);
-    if (scopeClass) {
-        exportNode.classList.add(scopeClass);
-    }
-
-    exportContainer.style.position = "fixed";
-    exportContainer.style.left = "-10000px";
-    exportContainer.style.top = "0";
-    exportContainer.style.visibility = "hidden";
-    exportContainer.style.pointerEvents = "none";
-    exportContainer.style.overflow = "hidden";
-    exportContainer.style.background = "#ffffff";
-
-    // The preview's hover outline is :hover-only, but guard against a hovered
-    // element leaking into the captured image by forcing it off on the clone.
-    const outlineReset = document.createElement("style");
-    outlineReset.textContent = "[data-nav-section]{outline:none !important;}";
-    exportContainer.appendChild(outlineReset);
-
-    exportNode.style.transform = "none";
-    exportNode.style.transformOrigin = "top left";
-    exportNode.style.zoom = "1";
-    exportNode.style.margin = "0";
-    exportNode.style.marginBottom = "0";
-    exportNode.style.boxShadow = "none";
-    exportNode.style.width = `${width}px`;
-    exportNode.style.height = `${height}px`;
-    exportNode.style.minHeight = `${height}px`;
-    exportNode.style.maxHeight = `${height}px`;
-    exportNode.style.overflow = "hidden";
-
-    exportContainer.appendChild(exportNode);
-    document.body.appendChild(exportContainer);
-
-    try {
-        return await capture(exportNode, width, height);
-    } finally {
-        document.body.removeChild(exportContainer);
-    }
-}
-
-async function captureUnscaledPageSvg(pageNode: HTMLElement) {
-    return captureUnscaledPage(pageNode, (node, width, height) =>
-        toSvg(node, {
-            width,
-            height,
-            pixelRatio: 1,
-            filter: filterIndicators,
-            preferredFontFormat: EMBEDDED_FONT_FORMAT,
-        })
-    );
-}
-
-async function captureUnscaledPagePng(pageNode: HTMLElement) {
-    return captureUnscaledPage(pageNode, async (node, width, height) => {
-        const dataUrl = await toPng(node, {
-            width,
-            height,
-            pixelRatio: 3,
-            filter: filterIndicators,
-            preferredFontFormat: EMBEDDED_FONT_FORMAT,
-        });
-        return { dataUrl, width, height };
-    });
-}
-
 function getPrintableStyles() {
     const stylesheetLinks = Array.from(document.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]'))
         .map((link) => `<link rel="stylesheet" href="${link.href}">`)
@@ -522,12 +360,18 @@ function buildPrintableDocument({
     printablePagesMarkup,
     pageWidthPx,
     pageHeightPx,
+    styles = getPrintableStyles(),
+    includeBase = true,
 }: {
     filename: string;
     paperSize: "a4" | "letter";
     printablePagesMarkup: string;
     pageWidthPx: number;
     pageHeightPx: number;
+    /** Head styles. The default links the live stylesheets (right for the print window). */
+    styles?: string;
+    /** The print window needs a base address; a downloaded file must not have one. */
+    includeBase?: boolean;
 }) {
     const pageLabel = paperSize === "a4" ? "A4" : "letter";
 
@@ -536,9 +380,9 @@ function buildPrintableDocument({
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <base href="${window.location.href}">
+    ${includeBase ? `<base href="${window.location.href}">` : ""}
     <title>${filename}</title>
-    ${getPrintableStyles()}
+    ${styles}
     <style>
         html, body {
             margin: 0;
@@ -782,6 +626,7 @@ function preparePageForPrint(pageNode: HTMLElement) {
 export const __testing = {
     getIntrinsicPageSize,
     preparePageForPrint,
+    buildPrintableDocument,
 };
 
 function waitForPrintAssets(printWindow: Window, printDocument: Document) {
@@ -873,52 +718,24 @@ export async function triggerPdfPrint(
     await printResumePreview(paperSize, filename, exportMessages);
 }
 
-export async function exportToPng(filename: string = "resume.png") {
-    const pageNodes = getPageNodes();
-    if (pageNodes.length === 0) return;
-
-    if (pageNodes.length === 1) {
-        const { dataUrl } = await captureUnscaledPagePng(pageNodes[0]);
-        downloadDataUrl(dataUrl, filename);
-        return;
-    }
-
-    const images: HTMLImageElement[] = [];
-    let totalHeight = 0;
-    let maxWidth = 0;
-
-    for (const node of pageNodes) {
-        const { dataUrl } = await captureUnscaledPagePng(node);
-        const image = await loadImage(dataUrl);
-        images.push(image);
-        totalHeight += image.height;
-        maxWidth = Math.max(maxWidth, image.width);
-    }
-
-    const canvas = document.createElement("canvas");
-    canvas.width = maxWidth;
-    canvas.height = totalHeight;
-    const context = canvas.getContext("2d");
-    if (!context) return;
-
-    let offsetY = 0;
-    for (const image of images) {
-        context.drawImage(image, 0, offsetY);
-        offsetY += image.height;
-    }
-
-    canvas.toBlob((blob) => {
-        if (blob) {
-            downloadBlob(blob, filename);
-        }
-    }, "image/png");
+export interface SelfContainedHtml {
+    html: string;
+    /** Web font families that could not be embedded and fall back to a generic family. */
+    fallbackFonts: string[];
 }
 
-/** Standalone HTML document of the rendered preview pages, or null when no pages are mounted. */
-export function buildResumeHtmlDocument(
+/**
+ * One self-contained HTML file of the rendered preview pages: same markup and
+ * page rules as the PDF print window, but with the app's CSS and the fonts in
+ * use embedded and no <base>, <link> or <script>, so it looks the same offline,
+ * on another computer, or after the site is redeployed. Null when no pages are
+ * mounted. Throws ExportEmbedError rather than produce a file that still needs
+ * the site.
+ */
+export async function buildSelfContainedHtmlDocument(
     paperSize: "a4" | "letter" = "a4",
     filename: string = "resume.html"
-): string | null {
+): Promise<SelfContainedHtml | null> {
     const pageNodes = getPageNodes();
     if (pageNodes.length === 0) return null;
 
@@ -926,19 +743,33 @@ export function buildResumeHtmlDocument(
     const printablePagesMarkup = Array.from(pageNodes)
         .map((pageNode) => preparePageForPrint(pageNode).outerHTML)
         .join("\n");
+    const { styles, fallbackFamilies } = await buildEmbeddedStyles(Array.from(pageNodes));
 
-    return buildPrintableDocument({ filename, paperSize, printablePagesMarkup, pageWidthPx, pageHeightPx });
+    const html = buildPrintableDocument({
+        filename,
+        paperSize,
+        printablePagesMarkup,
+        pageWidthPx,
+        pageHeightPx,
+        styles,
+        includeBase: false,
+    });
+    const problems = assertSelfContained(html);
+    if (problems.length > 0) throw new ExportEmbedError("not-self-contained", problems.join("; "));
+    return { html, fallbackFonts: fallbackFamilies };
 }
 
+/** Downloads the self-contained HTML file. Returns the fonts that fell back, if any. */
 export async function exportToHtml(
     paperSize: "a4" | "letter" = "a4",
     filename: string = "resume.html"
-) {
-    const html = buildResumeHtmlDocument(paperSize, filename);
-    if (html === null) return;
+): Promise<string[]> {
+    const result = await buildSelfContainedHtmlDocument(paperSize, filename);
+    if (result === null) return [];
 
-    const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+    const blob = new Blob([result.html], { type: "text/html;charset=utf-8" });
     downloadBlob(blob, filename);
+    return result.fallbackFonts;
 }
 
 export async function exportToEncryptedJson(
@@ -1046,34 +877,4 @@ export async function importResumeFromJsonText(
     const clampedFields = clampResumeSettings(parsed.data);
 
     return { kind: "resume" as const, resume: parsed.data, clampedFields };
-}
-
-function loadImage(src: string): Promise<HTMLImageElement> {
-    return new Promise((resolve, reject) => {
-        const image = new Image();
-        image.onload = () => resolve(image);
-        image.onerror = reject;
-        image.src = src;
-    });
-}
-
-export async function exportToSvg(filename: string = "resume.svg") {
-    const pageNodes = getPageNodes();
-    if (pageNodes.length === 0) return;
-
-    const svgPages = await Promise.all(
-        Array.from(pageNodes).map(async (pageNode) => {
-            const svgDataUrl = await captureUnscaledPageSvg(pageNode);
-
-            const markup = decodeSvgDataUrl(svgDataUrl);
-            const parsedSvg = new DOMParser().parseFromString(markup, "image/svg+xml").documentElement as unknown as SVGSVGElement;
-            const { width, height } = getSvgDimensions(parsedSvg, pageNode.offsetWidth, pageNode.offsetHeight);
-
-            return { markup, width, height };
-        })
-    );
-
-    const svgText = combineSvgPages(svgPages);
-    const blob = new Blob([svgText], { type: "image/svg+xml;charset=utf-8" });
-    downloadBlob(blob, filename);
 }

@@ -99,3 +99,37 @@ export function getVisibleContentKeys(resume: Resume): string[] {
         return visibleEntries(entries).length > 0;
     });
 }
+
+function sourceIndicesOf(entries: HideableEntry[]): number[] {
+    return entries.flatMap((entry, index) => (entry.hidden === true ? [] : [index]));
+}
+
+/**
+ * For each entry the preview shows (in order), its position in the full,
+ * unfiltered list the editor works with. The preview builds from the visible
+ * list, so the index it reports for "go to this entry" must be mapped back,
+ * otherwise a hidden entry above shifts every entry below it by one.
+ *
+ * Skills map the groups the preview shows (not hidden, at least one visible skill)
+ * to their position in `skillGroups`. Unknown section
+ * types return an empty list (callers fall back to the visible position).
+ */
+export function getVisibleSourceIndices(resume: Resume, sectionKey: string): number[] {
+    const base = sectionBaseKey(sectionKey);
+    if (base === "custom") {
+        const id = sectionKey.slice("custom:".length);
+        const custom = (resume.customSections ?? []).find((section) => section.id === id);
+        return sourceIndicesOf((custom?.entries ?? []) as HideableEntry[]);
+    }
+    if (base === "skills") {
+        // The preview shows one entry per group that is not hidden and still has a
+        // visible skill, so those are the positions to map back.
+        return (resume.skillGroups ?? []).flatMap((group, index) =>
+            group.hidden === true || visibleEntries(group.skills).length === 0 ? [] : [index],
+        );
+    }
+    if ((ENTRY_ARRAYS as readonly string[]).includes(base)) {
+        return sourceIndicesOf((resume[base as EntryArrayName] ?? []) as HideableEntry[]);
+    }
+    return [];
+}

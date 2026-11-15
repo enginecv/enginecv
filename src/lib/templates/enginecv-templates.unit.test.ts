@@ -106,3 +106,39 @@ describe("builtin templates", () => {
         }
     });
 });
+
+describe("builtin templates and the Interests section", () => {
+    it("ATS Plain turns Interests icons off and keeps the plain list style", () => {
+        const ats = getBuiltinTemplateById("enginecv-compact");
+        expect(ats?.settings.interestsSection).toEqual({
+            display: "list",
+            showIcons: false,
+            columns: 3,
+            separator: "dot",
+        });
+    });
+
+    it("every other builtin template leaves Interests at the default so applying it keeps the user's style", () => {
+        for (const tpl of getBuiltinTemplates()) {
+            if (tpl.id === "enginecv-compact") continue;
+            expect(tpl.settings.interestsSection, tpl.id).toEqual({
+                display: "list",
+                showIcons: true,
+                columns: 3,
+                separator: "dot",
+            });
+        }
+    });
+});
+
+describe("builtin templates and the skill level meter", () => {
+    it("only ATS Plain turns the meter off; every other builtin keeps the default so applying it keeps the user's choice", () => {
+        for (const tpl of getBuiltinTemplates()) {
+            expect(tpl.settings.skillsSection, tpl.id).toEqual(
+                tpl.id === "enginecv-compact"
+                    ? { showLevels: false, levelStyle: "dots" }
+                    : { showLevels: true, levelStyle: "dots" },
+            );
+        }
+    });
+});

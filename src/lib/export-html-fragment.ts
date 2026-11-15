@@ -1,4 +1,5 @@
 import { ensureReadableAccent } from "./color-contrast";
+import { formatDocumentSkills } from "./document-model";
 import { toDocumentLink, type DocumentDetail, type DocumentEntry, type DocumentLink, type DocumentModel, type DocumentSection } from "./document-model";
 import { parseMarkdownBlocks, type InlineToken } from "./markdown-inline";
 
@@ -93,7 +94,7 @@ function buildSection(section: DocumentSection, accent: string): string {
         section.tags.length > 0 ? `<p>${escapeHtml(section.tags.join(", "))}</p>` : "",
         ...section.skillGroups
             .filter((group) => group.skills.length > 0)
-            .map((group) => `<p>${group.name ? `<strong>${escapeHtml(group.name)}:</strong> ` : ""}${escapeHtml(group.skills.join(", "))}</p>`),
+            .map((group) => `<p>${group.name ? `<strong>${escapeHtml(group.name)}:</strong> ` : ""}${escapeHtml(formatDocumentSkills(group).join(", "))}</p>`),
         ...section.entries.map(buildEntry),
     ].filter(Boolean);
 

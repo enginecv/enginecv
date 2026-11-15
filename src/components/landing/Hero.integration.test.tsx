@@ -65,6 +65,7 @@ describe("Hero template showcase", () => {
 
         const proofLine = screen.getByTestId("landing-hero-proof-line");
         expect(proofLine).toHaveTextContent("Runs in your browser");
+        expect(getExportFormatCount()).toBe(8);
         expect(proofLine).toHaveTextContent(`${getExportFormatCount()} export formats`);
         expect(proofLine).toHaveTextContent("PDF export is free");
         expect(proofLine).toHaveTextContent("Open source (AGPL-3.0)");

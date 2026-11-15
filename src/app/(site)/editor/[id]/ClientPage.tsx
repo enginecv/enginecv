@@ -1550,7 +1550,7 @@ export default function EditorPage({ params }: { params: Promise<{ id: string }>
             group: t("palette.group.file"),
             label: t("palette.exportMenu"),
             icon: Download,
-            keywords: ["export", "pdf", "png", "svg", "download", "print"],
+            keywords: ["export", "pdf", "download", "print"],
             childrenPlaceholder: t("palette.exportPlaceholder"),
             children: exportActions,
         },
