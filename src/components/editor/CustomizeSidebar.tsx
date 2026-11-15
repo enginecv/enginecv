@@ -13,6 +13,7 @@ import { getVisibleContentKeys } from "@/lib/preview/visibility";
 import { hasSectionStyleOverride, resolveSectionSettings } from "@/lib/customization";
 import type { InterestsDisplay, InterestsSeparator, ResumeSettings, SectionStyleKey } from "@/lib/schema";
 import { DEFAULT_INTERESTS_SECTION } from "@/lib/schema";
+import { resolvePlacement, resolveSectionPlacements } from "@/lib/layout/section-placement";
 import type { LucideIcon } from "lucide-react";
 import { createContext, useContext, useId, useState, useRef, useEffect, useMemo, type ChangeEvent, type ReactNode } from "react";
 import {
@@ -735,23 +736,6 @@ function createLayoutPageBreakKey() {
     return `${LAYOUT_PAGE_BREAK_PREFIX}${createId()}`;
 }
 
-function getDefaultSectionPlacement(index: number, mode: "two" | "mix"): SectionPlacement {
-    if (mode === "mix" && index === 0) return "full";
-    return index % 2 === 0 ? "left" : "right";
-}
-
-function normalizeSectionPlacement(value: string | undefined, index: number, mode: "two" | "mix"): SectionPlacement {
-    if (mode === "two") {
-        return value === "right" ? "right" : getDefaultSectionPlacement(index, "two");
-    }
-
-    if (value === "left" || value === "right" || value === "full") {
-        return value;
-    }
-
-    return getDefaultSectionPlacement(index, "mix");
-}
-
 function resolveLayoutSectionOrder(order: string[], items: LayoutSectionItem[]) {
     const itemMap = new Map(items.map((item) => [item.key, item]));
     const used = new Set<string>();
@@ -836,13 +820,11 @@ function DraggableSectionList({
                 const item = itemMap.get(key);
                 if (!item) return null;
                 const { label, caption, icon: Icon } = item;
-                const placement = item.isSeparator || item.isVerticalSeparator || item.isPageBreak || layoutMode === "one"
+                // `placements` already holds each section's resolved side (what the preview
+                // drew), so show it as is. Re-resolving here once disagreed with the page.
+                const placement: SectionPlacement | null = item.isSeparator || item.isVerticalSeparator || item.isPageBreak || layoutMode === "one"
                     ? null
-                    : normalizeSectionPlacement(
-                        placements[key] || placements[item.base],
-                        contentIndexMap.get(key) ?? index,
-                        layoutMode,
-                    );
+                    : placements[key] ?? placements[item.base] ?? resolvePlacement(undefined, contentIndexMap.get(key) ?? index, layoutMode);
                 return (
                     <div
                         {...itemProps}
@@ -1852,6 +1834,7 @@ function CustomizeSectionCard({
 export function CustomizeSidebar() {
     const { t } = useTranslation();
     const resume = useResumeStore((state) => state.resume);
+    const publishedPlacements = useResumeStore((state) => state.previewSectionPlacements);
     const updateSettings = useResumeStore((state) => state.updateSettings);
     const updateSectionStyle = useResumeStore((state) => state.updateSectionStyle);
     const clearSectionStyle = useResumeStore((state) => state.clearSectionStyle);
@@ -2155,13 +2138,28 @@ export function CustomizeSidebar() {
     const resolvedContentOrder = resolvedLayoutOrder.filter(
         (key) => !isLayoutSeparatorKey(key) && !isLayoutVerticalSeparatorKey(key) && !isLayoutPageBreakKey(key)
     );
+    // The side shown for each section is the side the preview drew (it publishes it).
+    // Without a mounted preview (phone content tab) fall back to the same shared rule,
+    // counting sections that would render; hidden or empty ones do not shift the others.
+    const placementMode = settings.layout.columns === "mix" ? "mix" : "two";
+    const visibleContentKeys = new Set(getVisibleContentKeys(resume));
+    const fallbackPlacements = isMultiColumnLayout
+        ? resolveSectionPlacements(
+            resolvedContentOrder.filter((key) => visibleContentKeys.has(key)),
+            settings.layout.sectionPlacement,
+            placementMode,
+            getSectionBaseId,
+        )
+        : {};
     const resolvedSectionPlacements = resolvedContentOrder.reduce<Record<string, SectionPlacement>>((acc, key, contentIndex) => {
         if (!isMultiColumnLayout) return acc;
-        acc[key] = normalizeSectionPlacement(
-            settings.layout.sectionPlacement?.[key] || settings.layout.sectionPlacement?.[getSectionBaseId(key)],
-            contentIndex,
-            settings.layout.columns === "mix" ? "mix" : "two"
-        );
+        acc[key] = publishedPlacements[key]
+            ?? fallbackPlacements[key]
+            ?? resolvePlacement(
+                settings.layout.sectionPlacement?.[key] || settings.layout.sectionPlacement?.[getSectionBaseId(key)],
+                contentIndex,
+                placementMode,
+            );
         return acc;
     }, {});
 
@@ -4834,12 +4832,16 @@ export function CustomizeSidebar() {
                             layoutMode={settings.layout.columns}
                             placements={resolvedSectionPlacements}
                             onChange={(newOrder) => handleUpdate('layout', { sectionOrder: newOrder })}
-                            onPlacementChange={(key, placement) => handleUpdate('layout', {
-                                sectionPlacement: {
-                                    ...(settings.layout.sectionPlacement || {}),
-                                    [key]: placement,
-                                },
-                            })}
+                            onPlacementChange={(key, placement) => {
+                                // Clicking the side a section is already stored on changes nothing.
+                                if (settings.layout.sectionPlacement?.[key] === placement) return;
+                                handleUpdate('layout', {
+                                    sectionPlacement: {
+                                        ...(settings.layout.sectionPlacement || {}),
+                                        [key]: placement,
+                                    },
+                                });
+                            }}
                             onRemove={removeLayoutFlowItem}
                         />
                         <div className="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-2">

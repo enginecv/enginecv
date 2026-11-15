@@ -76,6 +76,12 @@ interface ResumeStore {
     previewCommandSequence: number;
     activeDesignPage: number;
     previewPageCount: number;
+    /**
+     * The side (left/right/full) the interactive preview drew for each section,
+     * published so the Customize section list shows exactly the page. Ephemeral:
+     * never saved, cleared whenever an editor session starts.
+     */
+    previewSectionPlacements: Record<string, "left" | "right" | "full">;
     autoSaveEnabled: boolean;
     /** Set while "delete all my data" runs (in any tab); nothing may be saved until reload. */
     persistenceSuspended: boolean;
@@ -114,6 +120,7 @@ interface ResumeStore {
     clearDesignSelection: () => void;
     setActiveDesignPage: (pageIndex: number) => void;
     setPreviewPageCount: (count: number) => void;
+    setPreviewSectionPlacements: (placements: Record<string, "left" | "right" | "full">) => void;
     requestPreviewCommand: (command: PreviewCommand) => void;
     consumePreviewCommand: () => void;
     addDesignElement: (type: DesignElement["type"], pageIndex?: number) => string;
@@ -187,6 +194,7 @@ function createEditorSurfaceState(sidebarTab: SidebarTab = DEFAULT_RESUME_SIDEBA
         pendingPreviewCommand: null,
         activeDesignPage: 0,
         previewPageCount: 1,
+        previewSectionPlacements: {},
     };
 }
 
@@ -280,6 +288,13 @@ export const useResumeStore = create<ResumeStore>((set, get) => ({
         activeDesignPage: Math.max(0, Math.floor(pageIndex)),
         sidebarTab: "customize",
     })),
+    setPreviewSectionPlacements: (placements) => set((state) => {
+        const current = state.previewSectionPlacements;
+        const keys = Object.keys(placements);
+        // No-op when nothing changed: the preview publishes on every layout pass.
+        if (keys.length === Object.keys(current).length && keys.every((key) => current[key] === placements[key])) return state;
+        return { previewSectionPlacements: { ...placements } };
+    }),
     setPreviewPageCount: (count) => set((state) => {
         const nextCount = Math.max(1, Math.floor(count));
         return {
@@ -825,6 +840,7 @@ export const useResumeStore = create<ResumeStore>((set, get) => ({
                 selectedDesignElementId: null,
                 activeDesignPage: 0,
                 previewPageCount: 1,
+                previewSectionPlacements: {},
             });
             return true;
         } catch {
@@ -1069,6 +1085,7 @@ export const useResumeStore = create<ResumeStore>((set, get) => ({
             selectedDesignElementId: null,
             activeDesignPage: 0,
             previewPageCount: 1,
+            previewSectionPlacements: {},
         });
         return true;
     },
@@ -1089,6 +1106,7 @@ export const useResumeStore = create<ResumeStore>((set, get) => ({
                 selectedDesignElementId: null,
                 activeDesignPage: 0,
                 previewPageCount: 1,
+                previewSectionPlacements: {},
             };
         }
         return {

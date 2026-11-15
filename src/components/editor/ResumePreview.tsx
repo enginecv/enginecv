@@ -75,7 +75,6 @@ import {
     chunkSectionEntries,
     getMeasuredBlockFootprints,
     getPreviewSectionBaseId,
-    normalizeLayoutPlacement,
     resolvePreviewFlowOrder,
     resolvePreviewRenderableItems,
 } from "@/lib/preview/pagination";
@@ -90,6 +89,7 @@ import type {
 import { DesignOverlayElementView } from "./preview/DesignOverlay";
 import { InlineEditProvider, InlineInteractiveContext, InlineField, InlineToolbar } from "./preview/PreviewInlineEdit";
 import { decideClick, decideDoubleClick } from "@/lib/preview/pointer-intent";
+import { resolveSectionPlacements } from "@/lib/layout/section-placement";
 
 interface ResumePreviewProps {
     resumeOverride?: Resume;
@@ -499,6 +499,7 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
     // Element-selection context menu (opened by clicking a preview element).
     const [navMenu, setNavMenu] = useState<{ x: number; y: number; section: string; entryIndex: number | null; kind: string; href: string | null } | null>(null);
     const requestEditorNav = useResumeStore((state) => state.requestEditorNav);
+    const setPreviewSectionPlacements = useResumeStore((state) => state.setPreviewSectionPlacements);
     const requestCustomizeSection = useResumeStore((state) => state.requestCustomizeSection);
     const requestCustomizePanel = useResumeStore((state) => state.requestCustomizePanel);
     const pendingPreviewCommand = useResumeStore((state) => state.pendingPreviewCommand);
@@ -3719,21 +3720,23 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
 
     const orderedStructuredItems = orderedRenderableItems;
     const profilePlacement: LayoutSectionPlacement = "full";
-    let structuredContentIndex = 0;
-    const structuredSectionPlacements = orderedFlowItems.reduce<Record<string, LayoutSectionPlacement>>((acc, item) => {
-        if (item.kind !== "section" || !item.section) {
-            return acc;
-        }
-
-        const section = item.section;
-        acc[section.key] = normalizeLayoutPlacement(
-            settings.layout.sectionPlacement?.[section.key] || settings.layout.sectionPlacement?.[section.base],
-            structuredContentIndex,
-            settings.layout.columns === "mix" ? "mix" : "two",
-        );
-        structuredContentIndex += 1;
-        return acc;
-    }, {});
+    // Sides come from the one shared rule, counted over the sections that actually
+    // render here (separators and page breaks are not sections), so the Customize
+    // section list can show exactly what this page drew.
+    const renderedLayoutSections = orderedFlowItems.flatMap((item) => (item.kind === "section" && item.section ? [item.section] : []));
+    const renderedSectionBases = new Map(renderedLayoutSections.map((section) => [section.key, section.base]));
+    const structuredSectionPlacements: Record<string, LayoutSectionPlacement> = resolveSectionPlacements(
+        renderedLayoutSections.map((section) => section.key),
+        settings.layout.sectionPlacement,
+        settings.layout.columns === "mix" ? "mix" : "two",
+        (key) => renderedSectionBases.get(key) ?? key,
+    );
+    const publishesPlacements = !thumbnailMode && !resumeOverride && settings.layout.columns !== "one";
+    const placementsSignature = publishesPlacements ? JSON.stringify(structuredSectionPlacements) : "";
+    useEffect(() => {
+        // Only the interactive main preview publishes: thumbnails and overrides draw other CVs.
+        setPreviewSectionPlacements(publishesPlacements ? (JSON.parse(placementsSignature) as Record<string, LayoutSectionPlacement>) : {});
+    }, [publishesPlacements, placementsSignature, setPreviewSectionPlacements]);
     const useStructuredPreview = isStructuredLayout && hasContent;
 
     // Rebuild a positioned item's node from current render data. State stores
