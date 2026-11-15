@@ -14,7 +14,7 @@ export async function blogIndexMetadata(locale: Locale): Promise<Metadata> {
     const languages = hasPublishedPosts ? blogIndexAlternates(indexLocales) : {};
     return {
         ...pageMetadata({
-            title: translateBlog(locale, "eyebrow"),
+            title: `${translateBlog(locale, "eyebrow")}: ${translateBlog(locale, "index.title")}`,
             description: translateBlog(locale, "index.description"),
             path: blogIndexPath(locale),
             ogLocale: OG_LOCALES[locale],

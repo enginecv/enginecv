@@ -3,8 +3,8 @@ import { LegalPage, LegalSection } from "@/components/legal/LegalPage";
 import { pageMetadata } from "@/lib/site";
 
 export const metadata: Metadata = pageMetadata({
-    title: "Terms of Service | EngineCV",
-    description: "Basic terms for using EngineCV as a local-first resume builder.",
+    title: "Terms of Service for the EngineCV Resume Builder | EngineCV",
+    description: "The terms for using EngineCV, a free local-first resume builder: what you may do with it, what we provide as is, and where your responsibility starts.",
     path: "/terms",
 });
 

@@ -39,7 +39,7 @@ const blogTranslations: Record<Locale, BlogTranslations> = {
         eyebrow: "EngineCV Blog",
         "index.title": "Practical resume advice, without the fluff",
         "index.description":
-            "Guides, templates, and ATS-focused writing advice to help you land more interviews.",
+            "Practical CV and resume guides, template advice and ATS-friendly writing tips from the team behind EngineCV, a free resume builder that keeps your data private.",
         breadcrumb: "Blog",
         author: "Author",
         readingTime: "{minutes} min read",

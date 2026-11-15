@@ -17,9 +17,9 @@ export interface AboutSection {
 }
 
 export const ABOUT_META = {
-    title: "About EngineCV | EngineCV",
+    title: "About EngineCV: A Free, Private Resume Builder",
     description:
-        "Who builds EngineCV, why a free resume builder that keeps your data in your browser exists, and how to reach the person behind it.",
+        "Who builds EngineCV, why a free resume builder that keeps your data in your browser exists, and how to reach the independent developer behind it. No accounts, no tracking.",
     eyebrow: "About",
     heading: "About EngineCV",
     intro:
