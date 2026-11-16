@@ -166,11 +166,130 @@ function tryParse(text: string): { ok: true; value: unknown } | { ok: false; err
 }
 
 /** Line and column (1-based) of a JSON.parse error inside `text`. */
+/**
+ * Offset of the first character that makes `text` invalid JSON, or null when
+ * the whole text is valid. Newer engines word some errors without a position
+ * ("Unexpected token '}', ..."), so the position is found here instead.
+ */
+export function locateJsonError(text: string): number | null {
+    let i = 0;
+    const fail = (): never => {
+        throw i;
+    };
+    const space = () => {
+        while (i < text.length && " \t\n\r".includes(text[i])) i += 1;
+    };
+    const literal = (word: string) => {
+        for (const char of word) {
+            if (text[i] !== char) fail();
+            i += 1;
+        }
+    };
+    const string = () => {
+        i += 1;
+        while (i < text.length) {
+            const char = text[i];
+            if (char === "\"") {
+                i += 1;
+                return;
+            }
+            if (char === "\\") {
+                const next = text[i + 1];
+                if (next === "u") {
+                    if (!/^[0-9a-fA-F]{4}$/.test(text.slice(i + 2, i + 6))) {
+                        i += 2;
+                        fail();
+                    }
+                    i += 6;
+                } else if (next !== undefined && "\"\\/bfnrt".includes(next)) {
+                    i += 2;
+                } else {
+                    i += 1;
+                    fail();
+                }
+                continue;
+            }
+            if (char < " ") fail();
+            i += 1;
+        }
+        fail();
+    };
+    const number = () => {
+        const match = /^-?(0|[1-9]\d*)(\.\d+)?([eE][+-]?\d+)?/.exec(text.slice(i));
+        if (!match) fail();
+        i += match![0].length;
+    };
+    const value = (): void => {
+        space();
+        const char = text[i];
+        if (char === "{") {
+            i += 1;
+            space();
+            if (text[i] === "}") {
+                i += 1;
+                return;
+            }
+            for (;;) {
+                space();
+                if (text[i] !== "\"") fail();
+                string();
+                space();
+                if (text[i] !== ":") fail();
+                i += 1;
+                value();
+                space();
+                if (text[i] === ",") {
+                    i += 1;
+                    continue;
+                }
+                if (text[i] === "}") {
+                    i += 1;
+                    return;
+                }
+                fail();
+            }
+        } else if (char === "[") {
+            i += 1;
+            space();
+            if (text[i] === "]") {
+                i += 1;
+                return;
+            }
+            for (;;) {
+                value();
+                space();
+                if (text[i] === ",") {
+                    i += 1;
+                    continue;
+                }
+                if (text[i] === "]") {
+                    i += 1;
+                    return;
+                }
+                fail();
+            }
+        } else if (char === "\"") string();
+        else if (char === "t") literal("true");
+        else if (char === "f") literal("false");
+        else if (char === "n") literal("null");
+        else number();
+    };
+    try {
+        value();
+        space();
+        if (i < text.length) fail();
+        return null;
+    } catch (offset) {
+        if (typeof offset === "number") return offset;
+        throw offset;
+    }
+}
+
 export function errorPosition(error: Error, text: string): { line: number; column: number } {
     const lineColumn = /line (\d+) column (\d+)/.exec(error.message);
     if (lineColumn) return { line: Number(lineColumn[1]), column: Number(lineColumn[2]) };
     const position = /position (\d+)/.exec(error.message);
-    const offset = position ? Number(position[1]) : text.length;
+    const offset = position ? Number(position[1]) : (locateJsonError(text) ?? text.length);
     const before = text.slice(0, offset);
     const line = before.split("\n").length;
     return { line, column: offset - before.lastIndexOf("\n") };

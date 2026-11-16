@@ -1,7 +1,10 @@
 import { Navbar } from "@/components/landing/Navbar";
 import { Hero } from "@/components/landing/Hero";
 import { ProductStory } from "@/components/landing/ProductStory";
+import { ExportFormatsSection } from "@/components/landing/ExportFormatsSection";
 import { FreeToolsSection } from "@/components/landing/FreeToolsSection";
+import { JsonResumeSection } from "@/components/landing/JsonResumeSection";
+import { LinkedFileSection } from "@/components/landing/LinkedFileSection";
 import { PrivacySection } from "@/components/landing/PrivacySection";
 import { OpenSourceSection } from "@/components/landing/OpenSourceSection";
 import { FAQ } from "@/components/landing/FAQ";
@@ -25,6 +28,9 @@ export function LandingPage({ locale }: { locale: Locale }) {
         <main className="flex-1">
           <Hero />
           <ProductStory />
+          <ExportFormatsSection />
+          <LinkedFileSection />
+          <JsonResumeSection />
           <FreeToolsSection />
           <PrivacySection />
           <OpenSourceSection />

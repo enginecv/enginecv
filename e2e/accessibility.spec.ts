@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { expectNoA11yViolations, expectTheme, setTheme } from "./helpers/a11y";
-import { showLandingDemo } from "./helpers/landing";
+import { revealLandingSections, showLandingDemo } from "./helpers/landing";
 import { openJsonFixture } from "./helpers/json-editor";
 
 for (const theme of ["light", "dark"] as const) test(`JSON editor and cleanup dialog are accessible in ${theme}`, async ({ page }) => {
@@ -34,6 +34,7 @@ for (const theme of ["dark", "light"] as const) {
             await page.goto("/");
             await expectTheme(page, theme);
             await showLandingDemo(page);
+            await revealLandingSections(page);
             await expectNoA11yViolations(page, { label: `${theme}-landing` });
         });
 

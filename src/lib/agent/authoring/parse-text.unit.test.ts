@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { createQaFullResume } from "@/lib/qa/sample-resumes";
 import { MAX_AUTHORING_TEXT_BYTES, parseAuthoringText } from "./parse-text";
-import { repairJsonText } from "./parse-text";
+import { locateJsonError, repairJsonText } from "./parse-text";
 
 const DOC = '{"format":"enginecv.authoring/v1","basics":{"name":"Amina"}}';
 const codes = (text: string) => parseAuthoringText(text).notices.map((notice) => notice.code);
@@ -148,5 +148,23 @@ describe("real AI answers", () => {
             const result = parseAuthoringText(readFileSync(join(dir, file), "utf8"));
             expect(result.status, file).toBe("ok");
         }
+    });
+});
+
+describe("locateJsonError", () => {
+    it("returns null for valid JSON", () => {
+        expect(locateJsonError('{"a":[1,2,{"b":null}],"c":"x\\n"}')).toBeNull();
+    });
+
+    it.each([
+        ['{"a": }', 6],
+        ['{"a": 1,}', 8],
+        ['{"a" 1}', 5],
+        ['[1, 2', 5],
+        ['{"a": "x\\q"}', 9],
+        ['{"a": tru}', 9],
+        ['{"a": 1} extra', 9],
+    ])("finds the first bad character in %s", (text, offset) => {
+        expect(locateJsonError(text)).toBe(offset);
     });
 });

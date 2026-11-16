@@ -38,14 +38,14 @@ describe("Your data page", () => {
         expect(within(summary).getByText("2 saved versions")).toBeTruthy();
 
         const table = screen.getByTestId("your-data-inventory");
-        expect(within(table).getByText("enginecv-preferences")).toBeTruthy();
-        expect(within(table).getByText("enginecv-locale")).toBeTruthy();
+        expect(within(table).getAllByText("enginecv-preferences").length).toBeGreaterThan(0);
+        expect(within(table).getAllByText("enginecv-locale").length).toBeGreaterThan(0);
     });
 
     it("marks items EngineCV does not know", async () => {
         render(<YourDataContent />);
         const table = await screen.findByTestId("your-data-inventory");
-        const fooRow = within(table).getByText("foo").closest("tr")!;
+        const fooRow = within(table).getAllByText("foo")[0].closest("tr")!;
         expect(within(fooRow).getByText("Unrecognised")).toBeTruthy();
     });
 
@@ -92,5 +92,65 @@ describe("cookie policy", () => {
         expect(within(storage).getByText("enginecv-locale-suggestion-dismissed")).toBeTruthy();
         expect(within(screen.getByTestId("cookie-policy-cookies")).getByText("enginecv-locale")).toBeTruthy();
         expect(screen.getByRole("link", { name: "Your data" }).getAttribute("href")).toBe("/your-data");
+    });
+});
+
+describe("Your data page: linked files", () => {
+    beforeEach(() => {
+        inventorySource.overrides = {
+            readEngineCvContent: async () => ({
+                resumes: [], resumeHistory: [], templates: [],
+                linkedFiles: [{ resumeId: "cv-1", fileName: "My CV.enginecv.json", linkedAt: 1 }],
+            }),
+        };
+        inventorySource.fail = false;
+        useI18nStore.setState({ locale: "en", _hydrated: true });
+    });
+    afterEach(cleanup);
+
+    it("lists the link and says the files stay on the computer", async () => {
+        render(<YourDataContent />);
+        const table = await screen.findByTestId("your-data-inventory");
+        expect(within(table).getAllByText("linkedFiles").length).toBeGreaterThan(0);
+        const note = screen.getByTestId("your-data-files");
+        expect(note.textContent).toMatch(/not in this browser/);
+        expect(note.textContent).toMatch(/does not delete them/);
+        expect(screen.getByRole("link", { name: "How linked files work" })).toHaveAttribute("href", "/linked-files");
+    });
+
+    it("says it in German too", async () => {
+        useI18nStore.setState({ locale: "de", _hydrated: true });
+        render(<YourDataContent />);
+        expect((await screen.findByTestId("your-data-files")).textContent).toMatch(/nicht in diesem Browser/);
+    });
+});
+
+describe("Your data page: developer tools", () => {
+    beforeEach(() => {
+        inventorySource.overrides = {};
+        inventorySource.fail = false;
+        useI18nStore.setState({ locale: "en", _hydrated: true });
+    });
+    afterEach(cleanup);
+
+    it("explains how to open developer tools and gives every row a path to find it", async () => {
+        render(<YourDataContent />);
+        const table = await screen.findByTestId("your-data-inventory");
+        expect(screen.getByTestId("your-data-devtools-steps").textContent).toMatch(/F12/);
+        const rows = within(table).getAllByTestId("your-data-row");
+        const paths = within(table).getAllByTestId("your-data-devtools-path");
+        expect(paths).toHaveLength(rows.length);
+        for (const path of paths) expect(path.textContent).toMatch(/^Find it in DevTools:Application›/);
+        const prefs = rows.find((row) => row.textContent?.includes("enginecv-preferences"))!;
+        const pathCell = (prefs.nextElementSibling as HTMLElement).querySelector('[data-testid="your-data-devtools-path"]')!;
+        expect(pathCell.textContent).toBe(`Find it in DevTools:Application›Local storage›${window.location.origin}›enginecv-preferences`);
+    });
+
+    it("is translated", async () => {
+        useI18nStore.setState({ locale: "de", _hydrated: true });
+        render(<YourDataContent />);
+        await screen.findByTestId("your-data-inventory");
+        expect(screen.getByTestId("your-data-devtools-steps").textContent).toMatch(/Entwicklertools/);
+        expect(screen.getAllByText(/In den DevTools finden/)).toBeTruthy();
     });
 });

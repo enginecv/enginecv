@@ -4,6 +4,7 @@ import { Check, ClipboardCopy, Loader2, Sparkles } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
 import { copyTextToClipboard } from "@/lib/export-clipboard";
 import { useTranslation } from "@/lib/i18n";
+import { AgentHelp } from "./AgentHelp";
 import type { Resume } from "@/lib/schema";
 
 type AuthoringModule = typeof import("@/lib/agent/authoring");
@@ -31,6 +32,8 @@ export function CopyForAiPanel({ resume }: { resume: Resume }) {
     const [personal, setPersonal] = useState(false);
     const [status, setStatus] = useState<"idle" | "copying" | "copied" | "denied">("idle");
     const [fallbackText, setFallbackText] = useState("");
+    const [helpOpen, setHelpOpen] = useState(false);
+    const helpId = useId();
     const moduleRef = useRef<AuthoringModule | null>(null);
     const fallbackRef = useRef<HTMLTextAreaElement>(null);
 
@@ -103,6 +106,24 @@ export function CopyForAiPanel({ resume }: { resume: Resume }) {
             </label>
 
             <p role="status" className="sr-only" data-testid="export-copy-for-ai-status">{status === "copied" ? t("authoring.copyForAi.copied") : ""}</p>
+
+            <div className="mt-2 pl-7">
+                <button
+                    type="button"
+                    onClick={() => setHelpOpen((open) => !open)}
+                    aria-expanded={helpOpen}
+                    aria-controls={helpId}
+                    data-testid="export-agent-help-toggle"
+                    className="text-xs text-accent underline-offset-2 hover:underline"
+                >
+                    {t("linkedFile.agentHelp")}
+                </button>
+                {helpOpen && (
+                    <div id={helpId} className="mt-2">
+                        <AgentHelp />
+                    </div>
+                )}
+            </div>
 
             {status === "denied" && (
                 <div className="mt-3" data-testid="export-copy-for-ai-fallback">

@@ -1,0 +1,7 @@
+# EngineCV agent skill
+
+> How an AI agent edits a resume file for EngineCV (https://enginecv.app).
+
+- [SKILL.md](https://enginecv.app/agent/enginecv/SKILL.md): the full skill: format, how to, rules.
+- [AGENTS snippet](https://enginecv.app/agent/enginecv/AGENTS-snippet.md): the short version for AGENTS.md, CLAUDE.md or rules files.
+- [JSON Schema](https://enginecv.app/schema/authoring/v1.json): the machine-readable schema of the `enginecv.authoring/v1` format.

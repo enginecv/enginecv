@@ -20,6 +20,10 @@ import { getExportFormat } from "@/lib/export-formats";
 import { copyResumeToClipboard } from "@/lib/export-clipboard";
 import { toDocumentModel } from "@/lib/document-model";
 import { HistoryPanel } from "@/components/editor/HistoryPanel";
+import { CvTitleInput } from "@/components/editor/CvTitleInput";
+import { LinkedFileControl } from "@/components/editor/LinkedFileControl";
+import { useLinkedFile } from "@/hooks/useLinkedFile";
+import { hideChecklist, showChecklistAgain } from "@/lib/preferences/onboarding";
 import { SaveAsTemplateDialog } from "@/components/editor/SaveAsTemplateDialog";
 const ShortcutsOverlay = dynamic(() => import("@/components/editor/ShortcutsOverlay").then(module => module.ShortcutsOverlay), { ssr: false });
 import { CommandPalette, type CommandAction } from "@/components/editor/CommandPalette";
@@ -68,7 +72,7 @@ import {
     toggleContentEntryHidden,
     toggleContentSectionHidden,
 } from "@/lib/content-operations";
-import { ArrowLeft, Loader2, Bug, Eye, EyeOff, FileText, FileJson, SlidersHorizontal, Menu, X, History, Copy, BookmarkPlus, Save, RefreshCw, Download, Upload, Languages, Pencil, Keyboard, Search, Sun, Moon, Monitor, Maximize2, Columns3, PanelLeftClose, PanelLeftOpen, Plus, FolderOpen, LayoutTemplate, Clock3, ListTree, FilePlus2, CopyPlus, Paintbrush, Trash2, BringToFront, SendToBack, Pin, Undo2, Redo2, RotateCcw, ZoomIn, ZoomOut, Type, ShieldCheck, Radiation } from "lucide-react";
+import { ArrowLeft, Loader2, Bug, Eye, EyeOff, FileText, FileJson, SlidersHorizontal, Menu, X, History, Copy, BookmarkPlus, Save, RefreshCw, Download, Upload, Languages, Keyboard, Search, Sun, Moon, Monitor, Maximize2, Columns3, PanelLeftClose, PanelLeftOpen, Plus, FolderOpen, LayoutTemplate, Clock3, ListTree, FilePlus2, CopyPlus, Paintbrush, Trash2, BringToFront, SendToBack, Pin, Undo2, Redo2, RotateCcw, ZoomIn, ZoomOut, Type, ShieldCheck, Radiation } from "lucide-react";
 import { Group, Panel, Separator, type GroupImperativeHandle } from "react-resizable-panels";
 import Link from "next/link";
 import { localeLabels, useTranslation, type Locale } from "@/lib/i18n";
@@ -153,7 +157,6 @@ export default function EditorPage({ params }: { params: Promise<{ id: string }>
     const removeDesignElement = useResumeStore((state) => state.removeDesignElement);
     const duplicateDesignElement = useResumeStore((state) => state.duplicateDesignElement);
     const moveDesignElementLayer = useResumeStore((state) => state.moveDesignElementLayer);
-    const updateMeta = useResumeStore((state) => state.updateMeta);
     const paperSize = useResumeStore((state) => state.paperSize);
     const updatePaperSize = useResumeStore((state) => state.updatePaperSize);
     const updateSettings = useResumeStore((state) => state.updateSettings);
@@ -175,6 +178,8 @@ export default function EditorPage({ params }: { params: Promise<{ id: string }>
     const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
     const [isPaletteOpen, setIsPaletteOpen] = useState(false);
     const [isLoaded, setIsLoaded] = useState(false);
+    const checklistHidden = useClientPreferencesStore((state) => state.preferences.onboarding.checklistHidden);
+    useLinkedFile(isLoaded ? activeResumeId : null, true);
     const [showHistoryPanel, setShowHistoryPanel] = useState(false);
     const [isMobileLayout, setIsMobileLayout] = useState(false);
     const [mobilePane, setMobilePane] = useState<"content" | "preview" | "history">("content");
@@ -1262,6 +1267,17 @@ export default function EditorPage({ params }: { params: Promise<{ id: string }>
                 run: () => setAutoSaveEnabled(!autoSaveEnabled),
             },
             {
+                id: "preferences-getting-started",
+                group: t("palette.group.preferenceEditor"),
+                label: t("palette.gettingStarted"),
+                icon: ListTree,
+                checked: !checklistHidden,
+                status: t(!checklistHidden ? "palette.optionOn" : "palette.optionOff"),
+                keywords: ["getting", "started", "checklist", "onboarding", "tips", "help", "guide"],
+                closeOnRun: false,
+                run: () => (checklistHidden ? showChecklistAgain() : hideChecklist()),
+            },
+            {
                 id: "preferences-right-panel-visible",
                 group: t("palette.group.preferenceEditor"),
                 label: t("palette.rightPanelVisible"),
@@ -1611,6 +1627,7 @@ export default function EditorPage({ params }: { params: Promise<{ id: string }>
         ];
     }, [
         autoSaveEnabled,
+        checklistHidden,
         goToPreviewFields,
         handleManualSave,
         isDirty,
@@ -1930,17 +1947,8 @@ export default function EditorPage({ params }: { params: Promise<{ id: string }>
 
                     <div className="h-5 w-px shrink-0 bg-edge" />
                     <div className="flex min-w-0 flex-1 items-center gap-2">
-                        <label className="group flex shrink-0 cursor-text items-center gap-1" title={t("dashboard.editMeta")}>
-                            <input
-                                type="text"
-                                value={resume.meta?.title || ""}
-                                placeholder={t("dashboard.cv")}
-                                onChange={(e) => updateMeta({ title: e.target.value })}
-                                className="min-w-0 max-w-[34vw] flex-none truncate border-none bg-transparent p-0 text-sm font-medium sm:max-w-[16rem] text-strong/90 outline-none transition-colors placeholder:text-strong/50 focus:ring-0 group-hover:text-strong"
-                                style={{ width: `${Math.max(3, Math.min(18, (resume.meta?.title || t("dashboard.cv")).length + 1))}ch` }}
-                            />
-                            <Pencil className="pointer-events-none h-3 w-3 shrink-0 text-faint opacity-0 transition-opacity group-hover:opacity-100" />
-                        </label>
+                        <CvTitleInput />
+                        {isLoaded && activeResumeId && <LinkedFileControl resumeId={activeResumeId} />}
                         {isSaving ? (
                             <span className="flex min-w-0 shrink items-center truncate text-[11px] text-info">
                                 <Loader2 className="w-3 h-3 mr-1 shrink-0 animate-spin" /> {t("dashboard.saving")}

@@ -63,3 +63,19 @@ export function getExportFormatLabels(t: (key: string) => string): string {
 export function getExportFormatClaimParams(t: (key: string) => string): { formatCount: number; formats: string } {
     return { formatCount: getExportFormatCount(), formats: getExportFormatLabels(t) };
 }
+
+/** Short names for badges and chips, in registry order. Landing copy reads this so it cannot list a format that no longer exists. */
+const EXPORT_FORMAT_BADGES: Record<ResumeExportFormat, string> = {
+    json: "JSON",
+    jsonresume: "JSON Resume",
+    pdf: "PDF",
+    html: "HTML",
+    docx: "DOCX",
+    md: "Markdown",
+    txt: "TXT",
+    tex: "LaTeX",
+};
+
+export function getExportFormatBadges(): string[] {
+    return EXPORT_FORMATS.map((format) => EXPORT_FORMAT_BADGES[format.id]);
+}
