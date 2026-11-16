@@ -6,7 +6,7 @@ import type { ReactNode } from "react";
 import { Footer } from "@/components/landing/Footer";
 import { Navbar } from "@/components/landing/Navbar";
 
-const LAST_UPDATED = new Date("2026-10-25T12:00:00Z");
+const LAST_UPDATED = new Date("2026-11-16T12:00:00Z");
 
 export function LegalPage({
     eyebrow,

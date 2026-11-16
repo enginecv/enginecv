@@ -13,7 +13,7 @@ describe("onboarding preferences", () => {
     afterEach(resetStore);
 
     it("defaults to an unseen print tip, also for preferences stored before the field existed", () => {
-        expect(clientPreferencesSchema.parse({}).onboarding).toEqual({ printTipSeen: false });
+        expect(clientPreferencesSchema.parse({}).onboarding).toEqual({ printTipSeen: false, checklistHidden: false, customizeSeen: false });
         expect(clientPreferencesSchema.parse({ support: { successfulExportCount: 3 } }).onboarding.printTipSeen).toBe(false);
     });
 

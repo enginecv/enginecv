@@ -19,6 +19,7 @@ export const PUBLIC_ROUTES = [
     "/terms",
     "/accessibility",
     "/about",
+    "/linked-files",
 ] as const;
 
 export type PublicRoute = (typeof PUBLIC_ROUTES)[number];

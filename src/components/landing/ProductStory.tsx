@@ -1,9 +1,10 @@
 "use client";
 
-import { ArrowDownToLine, Eye, FileJson2, HardDrive, PencilLine } from "lucide-react";
+import { ArrowDownToLine, Eye, FileJson2, FileText, HardDrive, PencilLine } from "lucide-react";
+import { EXPORT_FORMATS } from "@/lib/export-formats";
 import { useTranslation } from "@/lib/i18n";
 
-const EXPORT_FORMATS = ["PDF", "HTML", "PNG", "SVG", "JSON"];
+const SAMPLE_FILE_NAME = "john-doe.enginecv.json";
 const SAMPLE_PROFILE = {
     name: "John Doe",
     headline: "Senior Product Designer",
@@ -79,24 +80,33 @@ function LocalVisual() {
     const { t } = useTranslation();
 
     return (
-        <div className="relative overflow-hidden rounded-xl border border-edge bg-surface-0 p-5">
-            <div className="flex items-center justify-between border-b border-edge pb-4">
-                <span className="flex items-center gap-2 text-sm font-medium text-strong">
-                    <HardDrive className="h-4 w-4 text-accent" aria-hidden="true" />
-                    EngineCVDatabase
-                </span>
-                <span className="font-[family-name:var(--font-geist-mono)] text-[10px] uppercase tracking-wider text-success">
-                    {t("landing.workbench.localStatus")}
-                </span>
-            </div>
-            <div className="space-y-3 pt-4 font-[family-name:var(--font-geist-mono)] text-xs">
-                <div className="flex items-center justify-between text-mid">
-                    <span>resume.json</span>
-                    <span className="text-faint">24.8 KB</span>
+        <div className="relative overflow-hidden rounded-xl border border-edge bg-surface-0 p-5" data-testid="landing-story-local-visual">
+            <p className="border-b border-edge pb-3 font-[family-name:var(--font-geist-mono)] text-[10px] uppercase tracking-wider text-faint">
+                {t("landing.local.title")}
+            </p>
+            <div className="mt-4 grid gap-3">
+                <div className="rounded-lg border border-accent/40 bg-accent/5 p-4" data-testid="landing-story-local-file">
+                    <span className="flex items-center gap-2 text-sm font-semibold text-strong">
+                        <FileText className="h-4 w-4 text-accent" aria-hidden="true" />
+                        {t("landing.local.fileTitle")}
+                    </span>
+                    <code className="mt-3 block break-all font-[family-name:var(--font-geist-mono)] text-xs text-bright">{SAMPLE_FILE_NAME}</code>
+                    <span className="mt-1 block text-xs text-mid">{t("landing.local.fileDetail")}</span>
+                    <span className="mt-3 inline-flex items-center gap-1.5 font-[family-name:var(--font-geist-mono)] text-[10px] uppercase tracking-wider text-success">
+                        <span className="h-1.5 w-1.5 rounded-full bg-success" aria-hidden="true" />
+                        {t("landing.local.fileStatus")}
+                    </span>
                 </div>
-                <div className="flex items-center justify-between text-mid">
-                    <span>history/07</span>
-                    <span className="text-faint">{t("landing.workbench.localStatus")}</span>
+                <div className="rounded-lg border border-edge p-4">
+                    <span className="flex items-center gap-2 text-sm font-semibold text-strong">
+                        <HardDrive className="h-4 w-4 text-faint" aria-hidden="true" />
+                        {t("landing.local.browserTitle")}
+                    </span>
+                    <span className="mt-3 block text-xs text-mid">{t("landing.local.browserDetail")}</span>
+                    <span className="mt-3 inline-flex items-center gap-1.5 font-[family-name:var(--font-geist-mono)] text-[10px] uppercase tracking-wider text-success">
+                        <span className="h-1.5 w-1.5 rounded-full bg-success" aria-hidden="true" />
+                        {t("landing.workbench.localStatus")}
+                    </span>
                 </div>
             </div>
             <div className="pointer-events-none absolute -bottom-12 -right-8 h-28 w-28 rounded-full bg-accent/15 blur-2xl" />
@@ -210,10 +220,10 @@ function ExportVisual() {
             <div className="mt-5 flex flex-wrap gap-2">
                 {EXPORT_FORMATS.map((format) => (
                     <span
-                        key={format}
+                        key={format.id}
                         className="border border-edge bg-surface-2 px-3 py-2 font-[family-name:var(--font-geist-mono)] text-[11px] text-mid"
                     >
-                        .{format.toLowerCase()}
+                        .{format.extension}
                     </span>
                 ))}
             </div>

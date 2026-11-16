@@ -58,6 +58,12 @@ export default function CookiesPage() {
                     ))}.
                 </p>
                 <p>
+                    If you link a CV to a file on your computer, the browser also holds a permission to open that file. It is
+                    managed by the browser (in Chrome, under the site&apos;s settings), not by EngineCV, and it is not a cookie.
+                    The file itself is on your computer and is not browser storage; see{" "}
+                    <Link href="/linked-files" className="underline">how linked files work</Link>.
+                </p>
+                <p>
                     See everything stored in your browser right now, download a copy, or delete all of it on{" "}
                     <Link href="/your-data" className="underline">Your data</Link>.
                 </p>

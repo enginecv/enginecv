@@ -441,13 +441,16 @@ function getResumeExportFilename(resume: Resume) {
 function ResumeCard({
     resume,
     onSaveMeta,
+    linkedFileName,
     onOpen,
     onDelete,
     onDuplicate,
     onDownload,
 }: {
     resume: Resume;
-    onSaveMeta: (meta: Resume["meta"]) => Promise<void> | void;
+    /** Resolves to a message when the save was refused (a linked file could not be renamed). */
+    onSaveMeta: (meta: Resume["meta"]) => Promise<string | void> | string | void;
+    linkedFileName?: string;
     onOpen: () => void;
     onDelete: () => void;
     onDuplicate: () => void;
@@ -459,6 +462,7 @@ function ResumeCard({
     const [draftDescription, setDraftDescription] = useState(resume.meta.description || "");
     const [draftTags, setDraftTags] = useState<string[]>(resume.meta.tags ?? []);
     const [draftTagInput, setDraftTagInput] = useState("");
+    const [saveError, setSaveError] = useState<string | null>(null);
     const existingTags = resume.meta.tags ?? [];
     const fallbackCvLabel = resume.basics.name || t("dashboard.untitled");
     const bg = resume.settings?.colors?.background || "#ffffff";
@@ -524,7 +528,12 @@ function ResumeCard({
             return;
         }
 
-        await onSaveMeta(nextMeta);
+        const refused = await onSaveMeta(nextMeta);
+        if (typeof refused === "string") {
+            setSaveError(refused);
+            return;
+        }
+        setSaveError(null);
         setDraftTagInput("");
         setIsEditingMeta(false);
     };
@@ -553,6 +562,8 @@ function ResumeCard({
             infoContent={<LastUpdatedTooltipContent label={updatedAtLabel} timestamp={resume.updatedAt} />}
             openLabel={openLabel}
             onOpen={onOpen}
+            linkedFileName={linkedFileName}
+            errorMessage={saveError}
             actions={[
                 { label: t("dashboard.editMeta"), icon: Edit2, onClick: startEditingMeta },
                 { label: t("dashboard.duplicateResume"), icon: Copy, onClick: onDuplicate },
@@ -833,6 +844,11 @@ function Dashboard() {
         return rows.map((row) => normalizeDashboardResume(row));
     });
 
+    const linkedFileNames = useLiveQuery(async () => {
+        const links = await db.linkedFiles.toArray();
+        return Object.fromEntries(links.map((link) => [link.resumeId, link.fileName]));
+    });
+
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showExamplePicker, setShowExamplePicker] = useState(false);
     // The Import data window, with a file or source it should start from.
@@ -961,20 +977,32 @@ function Dashboard() {
         setImportWarning(tn("dashboard.importedDataExport", resumes.length));
     }, [setImportWarning, tn]);
 
-    const handleSaveMeta = useCallback(async (resumeId: string, meta: Resume["meta"]) => {
+    const handleSaveMeta = useCallback(async (resumeId: string, meta: Resume["meta"]): Promise<string | void> => {
         const currentResume = resumes?.find((entry) => entry.id === resumeId);
         if (!currentResume) {
             return;
         }
 
+        // A linked CV is named after its file, so a new name is refused (rename the file and relink).
+        let nextMeta = meta;
+        if (meta.title !== (currentResume.meta.title || "")) {
+            // Loaded on demand: the sync code is only needed once a rename touches a linked CV.
+            const { renameLinkedCv } = await import("@/lib/linked-file/rename");
+            const renamed = await renameLinkedCv(resumeId, meta.title);
+            if (!renamed.ok) {
+                return t("linkedFile.error.renameLinked");
+            }
+            nextMeta = { ...meta, title: renamed.title };
+        }
+
         const now = Date.now();
         await db.resumes.put({
             ...currentResume,
-            meta,
+            meta: nextMeta,
             createdAt: currentResume.createdAt || now,
             updatedAt: now,
         });
-    }, [resumes]);
+    }, [resumes, t]);
 
     const handleDuplicate = useCallback(async (sourceResume: Resume) => {
         const duplicateId = await duplicateResume(sourceResume, t("dashboard.copy"));
@@ -988,6 +1016,8 @@ function Dashboard() {
     const handleDelete = useCallback(async () => {
         if (!deleteTarget) return;
         await db.resumes.delete(deleteTarget.id);
+        // The file stays on disk; only the link goes with the CV.
+        await db.linkedFiles.delete(deleteTarget.id);
         setDeleteTarget(null);
     }, [deleteTarget, setDeleteTarget]);
 
@@ -1414,6 +1444,7 @@ function Dashboard() {
                                                     key={resume.id}
                                                     resume={resume}
                                                     onSaveMeta={(meta) => handleSaveMeta(resume.id!, meta)}
+                                                    linkedFileName={linkedFileNames?.[resume.id!]}
                                                     onOpen={() => router.push(`/editor/${resume.id}`)}
                                                     onDuplicate={() => handleDuplicate(resume)}
                                                     onDownload={() => handleDownloadResume(resume)}

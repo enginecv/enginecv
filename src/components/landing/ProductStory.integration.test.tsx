@@ -45,3 +45,28 @@ describe("ProductStory", () => {
         );
     });
 });
+
+describe("ProductStory: storage and exports", () => {
+    beforeEach(() => {
+        useI18nStore.setState({ locale: "en", _hydrated: true });
+    });
+    afterEach(cleanup);
+
+    it("shows the file on your computer first, next to the browser, without internal database names", () => {
+        render(<ProductStory />);
+        const visual = screen.getByTestId("landing-story-local-visual");
+        expect(visual).toHaveTextContent("A file on your computer");
+        expect(visual).toHaveTextContent("john-doe.enginecv.json");
+        expect(visual).toHaveTextContent("This browser");
+        expect(visual).not.toHaveTextContent("EngineCVDatabase");
+        expect(screen.getByTestId("landing-story-local-file").compareDocumentPosition(visual.querySelector(":scope > div > div:last-child")!)).toBeTruthy();
+    });
+
+    it("lists exactly the export formats that exist, by their real file extensions", async () => {
+        const { EXPORT_FORMATS } = await import("@/lib/export-formats");
+        render(<ProductStory />);
+        const text = document.body.textContent ?? "";
+        for (const format of EXPORT_FORMATS) expect(text, format.id).toContain(`.${format.extension}`);
+        expect(text).not.toMatch(/\.png|\.svg/);
+    });
+});

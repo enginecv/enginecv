@@ -1,6 +1,9 @@
 "use client";
 
 import { useResumeStore } from "@/lib/store";
+import { renameLinkedCv } from "@/lib/linked-file/rename";
+import { markCustomizeSeen } from "@/lib/preferences/onboarding";
+import { EditorChecklist } from "./EditorChecklist";
 import { resolveSkillsSection } from "@/lib/skills/levels";
 import { setJsonEditorSlot } from "./json-editor-slot";
 import { requestJsonEditorLeave } from "@/lib/editor-json-session";
@@ -164,6 +167,7 @@ function BasicsForm({ onBack }: { onBack: () => void }) {
     const [photoCropSource, setPhotoCropSource] = useState<string | null>(null);
     const [photoCropInitial, setPhotoCropInitial] = useState<typeof resume.basics.photoEdit>(null);
     const [isEditingMeta, setIsEditingMeta] = useState(false);
+    const [metaError, setMetaError] = useState<string | null>(null);
     const [draftMetaTitle, setDraftMetaTitle] = useState(resume.meta.title || "");
     const [draftMetaDescription, setDraftMetaDescription] = useState(resume.meta.description || "");
 
@@ -189,13 +193,14 @@ function BasicsForm({ onBack }: { onBack: () => void }) {
     };
 
     const cancelEditingMeta = () => {
+        setMetaError(null);
         setDraftMetaTitle(resume.meta.title || "");
         setDraftMetaDescription(resume.meta.description || "");
         setIsEditingMeta(false);
     };
 
-    const saveMetaEdits = () => {
-        const nextTitle = draftMetaTitle.trim();
+    const saveMetaEdits = async () => {
+        let nextTitle = draftMetaTitle.trim();
         const nextDescription = draftMetaDescription.trim();
 
         if (
@@ -206,10 +211,21 @@ function BasicsForm({ onBack }: { onBack: () => void }) {
             return;
         }
 
+        // A linked CV is named after its file, so a new name is refused (rename the file and relink).
+        const activeId = useResumeStore.getState().activeResumeId;
+        if (activeId && nextTitle !== (resume.meta.title || "")) {
+            const renamed = await renameLinkedCv(activeId, nextTitle);
+            if (!renamed.ok) {
+                setMetaError(t("linkedFile.error.renameLinked"));
+                return;
+            }
+            nextTitle = renamed.title;
+        }
         updateMeta({
             title: nextTitle,
             description: nextDescription,
         });
+        setMetaError(null);
         setIsEditingMeta(false);
     };
 
@@ -872,6 +888,7 @@ function BasicsForm({ onBack }: { onBack: () => void }) {
                                 placeholder={t("editor.metaTitlePlaceholder")}
                                 data-testid="meta-title-input"
                             />
+                            {metaError && <p role="alert" className="text-xs text-danger" data-testid="meta-title-error">{metaError}</p>}
 
                             <div className="space-y-2">
                                 <label className="text-[11px] font-medium text-faint uppercase tracking-wider">{t("editor.metaDescription")}</label>
@@ -3078,6 +3095,10 @@ export function EditorSidebar({ onMobilePreview }: EditorSidebarProps = {}) {
         updateFn(next);
     };
     const activeTab = useResumeStore((state) => state.sidebarTab);
+    // Opening Customize ticks the matching getting-started step.
+    useEffect(() => {
+        if (activeTab === "customize") markCustomizeSeen();
+    }, [activeTab]);
     const setSidebarTab = useResumeStore((state) => state.setSidebarTab);
     const [contentSearch, setContentSearch] = useState("");
     const [deleteTarget, setDeleteTarget] = useState<{ key: string; label: string } | null>(null);
@@ -3706,8 +3727,10 @@ export function EditorSidebar({ onMobilePreview }: EditorSidebarProps = {}) {
                         </div>
                     </div>
 
-                    <div className="mx-1 mt-2 flex min-h-11 items-center gap-2.5 rounded-md border border-edge bg-surface-1 px-2.5 py-2">
-                        <Globe className="h-4 w-4 shrink-0 text-accent" />
+                    <EditorChecklist />
+
+                    <div className="mx-1 mt-2 flex min-h-11 items-center gap-2.5 rounded-md px-2.5 py-2">
+                        <Globe className="h-4 w-4 shrink-0 text-faint" />
                         <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wider text-dim">
                             {t("editor.cvLanguage")}
                         </span>
@@ -3758,12 +3781,12 @@ export function EditorSidebar({ onMobilePreview }: EditorSidebarProps = {}) {
                         type="button"
                         data-testid="content-overlay-elements"
                         onClick={() => requestCustomizePanel("designOverlays")}
-                        className="mx-1 mt-2 flex min-h-11 shrink-0 items-center gap-2.5 rounded-md border border-edge bg-surface-1 px-2.5 py-2 text-left outline-none transition-colors hover:border-faint hover:bg-surface-4 focus-visible:ring-1 focus-visible:ring-accent"
+                        className="mx-1 mt-2 flex min-h-11 shrink-0 items-center gap-2.5 rounded-md px-2.5 py-2 text-left outline-none transition-colors hover:bg-surface-4 focus-visible:bg-surface-4 focus-visible:ring-1 focus-visible:ring-accent"
                     >
-                        <Palette className="h-4 w-4 shrink-0 text-accent" />
+                        <Palette className="h-4 w-4 shrink-0 text-faint" />
                         <span className="min-w-0 flex-1">
                             <span className="block truncate text-sm text-bright">{t("editor.overlayElements")}</span>
-                            <span className="block truncate text-[11px] text-faint">{t("editor.overlayElementsDescription")}</span>
+                            <span className="block truncate text-xs text-faint">{t("editor.overlayElementsDescription")}</span>
                         </span>
                         <span className="inline-flex h-5 min-w-5 items-center justify-center rounded bg-edge px-1.5 text-[11px] font-medium tabular-nums text-mid">
                             {resume.settings.design?.elements?.length ?? 0}

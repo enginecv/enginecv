@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { ArrowUpRight, Clock, Info, type LucideIcon } from "lucide-react";
+import { ArrowUpRight, Clock, Info, Link2, type LucideIcon } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useTranslation } from "@/lib/i18n";
 import { formatResumeTimestamp } from "@/lib/resume-utils";
@@ -30,6 +30,7 @@ export function DashboardCard({
     primaryLoading = false,
     actions,
     errorMessage,
+    linkedFileName,
     children,
 }: {
     testId: string;
@@ -46,6 +47,8 @@ export function DashboardCard({
     primaryLoading?: boolean;
     actions?: DashboardCardAction[];
     errorMessage?: string | null;
+    /** The file this CV is linked to (feature 089); shown wherever the CV name is. */
+    linkedFileName?: string;
     children?: ReactNode;
 }) {
     const { t } = useTranslation();
@@ -76,6 +79,12 @@ export function DashboardCard({
                                     <h2 className="truncate text-base font-semibold tracking-tight text-strong group-hover:text-accent transition-colors">
                                         {title}
                                     </h2>
+                                    {linkedFileName && (
+                                        <p className="mt-1 flex items-center gap-1 truncate text-[11px] text-faint" data-testid="dashboard-linked-file" title={linkedFileName}>
+                                            <Link2 className="h-3 w-3 shrink-0" aria-hidden="true" />
+                                            <span className="truncate">{linkedFileName}</span>
+                                        </p>
+                                    )}
                                     {description && (
                                         <p className="mt-1 line-clamp-2 text-[13px] leading-relaxed text-mid">
                                             {description}
