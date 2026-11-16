@@ -24,6 +24,8 @@ const editorPreferencesSchema = z.object({
     }).prefault({}),
     autoSave: z.boolean().default(true),
     rightPanelVisible: z.boolean().default(false),
+    // The one-time notice before a CV is linked to a file (an agent may send its contents to a model provider).
+    linkedFilePrivacyAcknowledged: z.boolean().default(false),
     // Accepted only to migrate preferences saved before AI chat was removed.
     rightPanelTab: z.enum(["ai", "history"]).default("history"),
 }).transform(({ rightPanelTab, ...preferences }) => ({
@@ -76,7 +78,11 @@ export const clientPreferencesSchema = z.object({
     onboarding: z.object({
         // The export dialog explains the print dialog until the first PDF export.
         printTipSeen: z.boolean().catch(false).default(false),
-    }).default({ printTipSeen: false }),
+        // The getting-started checklist in the editor: hidden by the person, and the one step
+        // that cannot be read from the CV itself (opening Customize).
+        checklistHidden: z.boolean().catch(false).default(false),
+        customizeSeen: z.boolean().catch(false).default(false),
+    }).default({ printTipSeen: false, checklistHidden: false, customizeSeen: false }),
 });
 
 export const clientPreferencesEnvelopeSchema = z.object({

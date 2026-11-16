@@ -8,3 +8,24 @@ export function markPrintTipSeen(): void {
     if (useClientPreferencesStore.getState().preferences.onboarding.printTipSeen) return;
     useClientPreferencesStore.getState().updateSection("onboarding", { printTipSeen: true });
 }
+
+function hydrated() {
+    const store = useClientPreferencesStore.getState();
+    if (!store.hydrated) store.hydrate();
+    return useClientPreferencesStore.getState();
+}
+
+/** Opening Customize is the checklist step the CV cannot show. */
+export function markCustomizeSeen(): void {
+    const { preferences, updateSection } = hydrated();
+    if (!preferences.onboarding.customizeSeen) updateSection("onboarding", { customizeSeen: true });
+}
+
+export function hideChecklist(): void {
+    hydrated().updateSection("onboarding", { checklistHidden: true });
+}
+
+/** Brings the checklist back with its steps open again, so it has something to show. */
+export function showChecklistAgain(): void {
+    hydrated().updateSection("onboarding", { checklistHidden: false, customizeSeen: false });
+}
