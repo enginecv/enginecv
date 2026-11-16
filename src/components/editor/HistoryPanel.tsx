@@ -19,6 +19,8 @@ function getTriggerLabelKey(trigger: ResumeHistoryEntry["trigger"]) {
     switch (trigger) {
         case "json-edit":
             return "history.triggerJsonEdit";
+        case "file-sync":
+            return "history.triggerFileSync";
         case "restore":
             return "history.triggerRestore";
         case "duplicate":
