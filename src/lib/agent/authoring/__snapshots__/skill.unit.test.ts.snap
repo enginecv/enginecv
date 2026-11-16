@@ -1,0 +1,319 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`buildSkillMarkdown > matches its snapshot 1`] = `
+"---
+name: enginecv
+description: Edit the user's EngineCV resume file (an enginecv.authoring/v1 JSON document) safely. Use when the user asks you to add, change, remove or reorder content in their CV or resume file.
+---
+
+# EngineCV resume file
+
+EngineCV (https://enginecv.app) is a resume builder that runs in the browser. The user's CV is linked to a JSON file on their computer. You edit that file with your normal file tools; the editor notices the change within a few seconds, checks it and updates the CV. If you do not know the file's path, ask the user for it.
+
+> The file holds the user's CV, including contact details. Treat it as private: never copy it to a place the user did not ask for, and tell the user that reading it may send its contents to your model provider.
+
+## The format
+
+The file is one JSON document with \`"format": "enginecv.authoring/v1"\`. Schema: https://enginecv.app/schema/authoring/v1.json
+
+Overview:
+
+- format: "enginecv.authoring/v1" (required)
+- design (optional hints): template, accent ("#rrggbb"), cvLanguage
+- basics: name, headline, email, phone, location, website, linkedin, github, links, drivingLicense, nationality, dateOfBirth, passport, nationalId, maritalStatus, militaryService, genderPronoun, disability, visa, height
+- summary: Markdown text
+- experience[]: position, company, location, start, end, description, highlights, skills, url
+- education[]: institution, studyType, area, location, start, end, score, description, courses, skills, url
+- courses[]: name, institution, location, start, end, description, skills, url
+- projects[]: name, subtitle, start, end, description, highlights, keywords, skills, url, repos, visibility
+- organisations[]: name, role, location, start, end, description, skills, url
+- certificates[]: name, issuer, date, description, skills, url, issuerUrl
+- awards[]: name, issuer, date, description, skills, url
+- publications[]: name, publisher, date, description, skills, url
+- references[]: name, position, organisation, email, phone, description, url
+- declaration: text, fullName, place, date
+- skills: ["name", ...] or { "Group": ["name", { "name", "level" }] }; level: beginner, amateur, competent, proficient, expert
+- languages: ["Language: level", ...]; level: A1–C2 or native
+- interests: ["name", ...] or [{ name, description }]
+- custom[]: { title, text } or { title, tags: [...] } or { title, entries: [{ title, subtitle, location, start, end, description, skills, url }] }
+
+### \`basics\`
+
+| Field | Meaning |
+| --- | --- |
+| \`name\` | Full name. |
+| \`headline\` | Short professional title under the name. |
+| \`email\` | Email address, or a list of them. |
+| \`phone\` | Phone number with country code. |
+| \`location\` | City and country. |
+| \`website\` | Personal website. |
+| \`linkedin\` | LinkedIn profile URL. |
+| \`github\` | GitHub profile URL. |
+| \`links\` | Other profiles: [{ "name", "url", "label" }]. |
+| \`drivingLicense\` | Driving licence categories, e.g. "B". |
+| \`nationality\` | Nationality as an ISO country code ("BA") or a name. |
+| \`dateOfBirth\` | Date of birth, only if the person wants it on the CV. |
+| \`passport\` | Passport number, only if the person wants it on the CV. |
+| \`nationalId\` | National ID number, only if the person wants it on the CV. |
+| \`maritalStatus\` | Marital status, only if the person wants it on the CV. |
+| \`militaryService\` | Military service status. |
+| \`genderPronoun\` | Gender or pronouns. |
+| \`disability\` | Disability status. |
+| \`visa\` | Work permit or visa. |
+| \`height\` | Height. |
+
+### \`experience\` (list of entries)
+
+| Field | Kind | Meaning |
+| --- | --- | --- |
+| \`id\` | id | Optional entry id. Keep ids you were given so entries can be matched later; never invent them. |
+| \`position\` | text | Job title. |
+| \`company\` | text | Employer. |
+| \`location\` | text | City and/or country. |
+| \`start\` | date | Start date. A date as "YYYY" or "YYYY-MM"; an end date still running is "present". Leave it out when unknown. |
+| \`end\` | date | End date. A date as "YYYY" or "YYYY-MM"; an end date still running is "present". Leave it out when unknown. |
+| \`description\` | markdown | Free text in Markdown (bold, italic, links, bullet lists). |
+| \`highlights\` | highlights | Achievements, one short sentence each. |
+| \`skills\` | list | Skills used here, as short names. |
+| \`url\` | link | A link for this entry. |
+
+### \`education\` (list of entries)
+
+| Field | Kind | Meaning |
+| --- | --- | --- |
+| \`id\` | id | Optional entry id. Keep ids you were given so entries can be matched later; never invent them. |
+| \`institution\` | text | School or university. |
+| \`studyType\` | text | Degree or qualification, e.g. "Bachelor", "MSc". |
+| \`area\` | text | Field of study. |
+| \`location\` | text | City and/or country. |
+| \`start\` | date | Start date. A date as "YYYY" or "YYYY-MM"; an end date still running is "present". Leave it out when unknown. |
+| \`end\` | date | End date. A date as "YYYY" or "YYYY-MM"; an end date still running is "present". Leave it out when unknown. |
+| \`score\` | text | Grade or GPA, as written on the diploma. |
+| \`description\` | markdown | Free text in Markdown (bold, italic, links, bullet lists). |
+| \`courses\` | list | Notable courses. |
+| \`skills\` | list | Skills used here, as short names. |
+| \`url\` | link | A link for this entry. |
+
+### \`courses\` (list of entries)
+
+| Field | Kind | Meaning |
+| --- | --- | --- |
+| \`id\` | id | Optional entry id. Keep ids you were given so entries can be matched later; never invent them. |
+| \`name\` | text | Course name. |
+| \`institution\` | text | Who ran the course. |
+| \`location\` | text | City and/or country. |
+| \`start\` | date | Start date. A date as "YYYY" or "YYYY-MM"; an end date still running is "present". Leave it out when unknown. |
+| \`end\` | date | End date. A date as "YYYY" or "YYYY-MM"; an end date still running is "present". Leave it out when unknown. |
+| \`description\` | markdown | Free text in Markdown (bold, italic, links, bullet lists). |
+| \`skills\` | list | Skills used here, as short names. |
+| \`url\` | link | A link for this entry. |
+
+### \`projects\` (list of entries)
+
+| Field | Kind | Meaning |
+| --- | --- | --- |
+| \`id\` | id | Optional entry id. Keep ids you were given so entries can be matched later; never invent them. |
+| \`name\` | text | Project name. |
+| \`subtitle\` | text | Short tagline or role. |
+| \`start\` | date | Start date. A date as "YYYY" or "YYYY-MM"; an end date still running is "present". Leave it out when unknown. |
+| \`end\` | date | End date. A date as "YYYY" or "YYYY-MM"; an end date still running is "present". Leave it out when unknown. |
+| \`description\` | markdown | Free text in Markdown (bold, italic, links, bullet lists). |
+| \`highlights\` | highlights | Achievements, one short sentence each. |
+| \`keywords\` | list | Search keywords. |
+| \`skills\` | list | Skills used here, as short names. |
+| \`url\` | link | A link for this entry. |
+| \`repos\` | repos | Source repositories: URLs, or { "url", "label" } objects. |
+| \`visibility\` | visibility | Repository visibility: "public" or "private". |
+
+### \`organisations\` (list of entries)
+
+| Field | Kind | Meaning |
+| --- | --- | --- |
+| \`id\` | id | Optional entry id. Keep ids you were given so entries can be matched later; never invent them. |
+| \`name\` | text | Organisation, club or volunteer group. |
+| \`role\` | text | Your role there. |
+| \`location\` | text | City and/or country. |
+| \`start\` | date | Start date. A date as "YYYY" or "YYYY-MM"; an end date still running is "present". Leave it out when unknown. |
+| \`end\` | date | End date. A date as "YYYY" or "YYYY-MM"; an end date still running is "present". Leave it out when unknown. |
+| \`description\` | markdown | Free text in Markdown (bold, italic, links, bullet lists). |
+| \`skills\` | list | Skills used here, as short names. |
+| \`url\` | link | A link for this entry. |
+
+### \`certificates\` (list of entries)
+
+| Field | Kind | Meaning |
+| --- | --- | --- |
+| \`id\` | id | Optional entry id. Keep ids you were given so entries can be matched later; never invent them. |
+| \`name\` | text | Certificate name. |
+| \`issuer\` | text | Issuing body. |
+| \`date\` | date | Date earned. A date as "YYYY" or "YYYY-MM"; an end date still running is "present". Leave it out when unknown. |
+| \`description\` | markdown | Free text in Markdown (bold, italic, links, bullet lists). |
+| \`skills\` | list | Skills used here, as short names. |
+| \`url\` | link | Verification link. |
+| \`issuerUrl\` | link | Issuer's website. |
+
+### \`awards\` (list of entries)
+
+| Field | Kind | Meaning |
+| --- | --- | --- |
+| \`id\` | id | Optional entry id. Keep ids you were given so entries can be matched later; never invent them. |
+| \`name\` | text | Award name. |
+| \`issuer\` | text | Who gave it. |
+| \`date\` | date | Date received. A date as "YYYY" or "YYYY-MM"; an end date still running is "present". Leave it out when unknown. |
+| \`description\` | markdown | Free text in Markdown (bold, italic, links, bullet lists). |
+| \`skills\` | list | Skills used here, as short names. |
+| \`url\` | link | A link for this entry. |
+
+### \`publications\` (list of entries)
+
+| Field | Kind | Meaning |
+| --- | --- | --- |
+| \`id\` | id | Optional entry id. Keep ids you were given so entries can be matched later; never invent them. |
+| \`name\` | text | Title. |
+| \`publisher\` | text | Journal, conference or publisher. |
+| \`date\` | date | Publication date. A date as "YYYY" or "YYYY-MM"; an end date still running is "present". Leave it out when unknown. |
+| \`description\` | markdown | Free text in Markdown (bold, italic, links, bullet lists). |
+| \`skills\` | list | Skills used here, as short names. |
+| \`url\` | link | A link for this entry. |
+
+### \`references\` (list of entries)
+
+| Field | Kind | Meaning |
+| --- | --- | --- |
+| \`id\` | id | Optional entry id. Keep ids you were given so entries can be matched later; never invent them. |
+| \`name\` | text | Referee's name. |
+| \`position\` | text | Their job title. |
+| \`organisation\` | text | Their employer. |
+| \`email\` | email | Their email address. |
+| \`phone\` | text | Their phone number. |
+| \`description\` | markdown | Free text in Markdown (bold, italic, links, bullet lists). |
+| \`url\` | link | A link for this entry. |
+
+### \`declaration\`
+
+| Field | Kind | Meaning |
+| --- | --- | --- |
+| \`id\` | id | Optional entry id. Keep ids you were given so entries can be matched later; never invent them. |
+| \`text\` | markdown | The declaration text. |
+| \`fullName\` | text | Name under the signature. |
+| \`place\` | text | Place of signing. |
+| \`date\` | text | Date of signing, as it should be printed. |
+
+### \`interests\` (entries)
+
+| Field | Kind | Meaning |
+| --- | --- | --- |
+| \`id\` | id | Optional entry id. Keep ids you were given so entries can be matched later; never invent them. |
+| \`name\` | text | The interest. |
+| \`description\` | markdown | Free text in Markdown (bold, italic, links, bullet lists). |
+
+### \`custom[].entries[]\`
+
+| Field | Kind | Meaning |
+| --- | --- | --- |
+| \`id\` | id | Optional entry id. Keep ids you were given so entries can be matched later; never invent them. |
+| \`title\` | text | Entry title. |
+| \`subtitle\` | text | Second line. |
+| \`location\` | text | City and/or country. |
+| \`start\` | date | Start date. A date as "YYYY" or "YYYY-MM"; an end date still running is "present". Leave it out when unknown. |
+| \`end\` | date | End date. A date as "YYYY" or "YYYY-MM"; an end date still running is "present". Leave it out when unknown. |
+| \`description\` | markdown | Free text in Markdown (bold, italic, links, bullet lists). |
+| \`skills\` | list | Skills used here, as short names. |
+| \`url\` | link | A link for this entry. |
+
+### Worked example
+
+\`\`\`json
+{
+  "format": "enginecv.authoring/v1",
+  "design": {
+    "template": "enginecv-modern",
+    "accent": "#1f3a5f",
+    "cvLanguage": "de"
+  },
+  "basics": {
+    "name": "Amina Hodžić",
+    "headline": "Pflegefachkraft",
+    "email": "amina@example.com",
+    "phone": "+387 61 000 000",
+    "location": "Sarajevo, Bosnia and Herzegovina",
+    "linkedin": "https://www.linkedin.com/in/amina"
+  },
+  "summary": "Registered nurse with **6 years** in intensive care.",
+  "experience": [
+    {
+      "position": "Medicinska sestra, ICU",
+      "company": "KCUS",
+      "location": "Sarajevo",
+      "start": "2019-03",
+      "end": "present",
+      "highlights": [
+        "Ventilated patients, 1:2 ratio",
+        "Trained 8 new nurses"
+      ]
+    }
+  ],
+  "education": [
+    {
+      "institution": "Univerzitet u Sarajevu",
+      "studyType": "Bachelor",
+      "area": "Nursing",
+      "end": "2018"
+    }
+  ],
+  "skills": {
+    "Clinical": [
+      "Intensive care",
+      {
+        "name": "Wound care",
+        "level": "expert"
+      }
+    ],
+    "Tools": [
+      "SAP IS-H"
+    ]
+  },
+  "languages": [
+    "Bosnian: native",
+    "German: B2",
+    "English: B1"
+  ]
+}
+\`\`\`
+
+## How to
+
+- **Add an entry**: append an object to the section's array, using the fields in the table for that section. Leave out \`id\`.
+- **Edit an entry**: find it by its \`id\` (or by matching text), change only the fields asked for, keep its \`id\`.
+- **Remove an entry**: delete its object from the array. An empty section may stay as \`[]\` or be removed.
+- **Add a section**: add the section key with its content. The order of keys in the file is the order of sections in the CV.
+- **Reorder sections**: reorder the keys at the top level of the document.
+- **Add a custom section**: add an object to \`custom\` with a \`title\` and either \`text\`, \`tags\` or \`entries\`.
+- **Hide an entry from the printed CV**: set \`"hidden": true\` on it.
+
+## Rules
+
+1. Edit only what the user asked for. Leave every other entry, field and section byte-for-byte as it is.
+2. Keep the user's wording, dates and language. Never invent facts, employers, dates, numbers or skills.
+3. Keep entry \`id\` values when you edit an entry. Leave \`id\` out for a new entry; the app assigns one.
+4. Keep the file valid JSON (double quotes, no comments, no trailing commas).
+5. Do not edit \`design\` or anything about looks. Design belongs to the app.
+6. Make small targeted edits with your patch or string-replace tool, changing only the part you were asked about. Do not re-output or rewrite the whole file: a CV file can be tens of kilobytes, and rewriting it wastes tokens and risks changing things you did not mean to. To find a part, search for its key (for example \`"projects"\`) or an entry \`id\` instead of reading the whole file.
+7. Keep the file's formatting (2-space indent, key order) so a change stays a small diff.
+8. Every edit must leave the file valid JSON; put related changes (such as adding an entry and its comma) in one edit. If the file is briefly invalid between two edits, the app keeps the CV as it was and picks the result up once the file is valid again.
+9. Do not rename or move the file. Its name is the name of the CV in the app.
+10. If a request is unclear or would need information you do not have, ask the user first.
+
+## Out of scope
+
+Tell the user to do these in the app instead:
+
+- Design, colours, fonts, templates and layout.
+- The photo and the signature (they are never stored in the file).
+- Exporting to PDF, Word or other formats.
+
+## Verify
+
+Check the part you changed (search for it; no need to read the whole file). The app shows "Updated from file" when it accepted the change. When something is wrong it keeps the previous CV and shows an error with a line and column; fix the file and write it again. The user can always restore the earlier version from the editor's history.
+"
+`;
