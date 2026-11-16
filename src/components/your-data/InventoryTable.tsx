@@ -1,8 +1,10 @@
 "use client";
 
+import { Fragment } from "react";
 import type { Locale } from "@/lib/i18n";
 import type { FoundItem } from "@/lib/storage-registry/inventory";
 import type { StorageTranslate } from "@/lib/storage-registry/messages";
+import { devtoolsPath } from "./devtools-path";
 import { formatBytes, formatDateTime } from "./format";
 
 function purposeKey(item: FoundItem): string {
@@ -12,6 +14,8 @@ function purposeKey(item: FoundItem): string {
 
 export function InventoryTable({ items, ts, locale }: { items: FoundItem[]; ts: StorageTranslate; locale: Locale }) {
     const unknown = ts("yourData.table.unknown");
+    // The page origin names the Local storage and Cookies folders in developer tools.
+    const origin = typeof window === "undefined" ? "" : window.location.origin;
     return (
         <div className="overflow-x-auto rounded-xl border border-edge bg-surface-1">
             <table className="w-full min-w-[40rem] text-left text-sm" data-testid="your-data-inventory">
@@ -29,7 +33,8 @@ export function InventoryTable({ items, ts, locale }: { items: FoundItem[]; ts: 
                 </thead>
                 <tbody className="divide-y divide-edge">
                     {items.map((item) => (
-                        <tr key={`${item.location}:${item.database ?? ""}:${item.name}`} data-testid="your-data-row">
+                        <Fragment key={`${item.location}:${item.database ?? ""}:${item.name}`}>
+                        <tr data-testid="your-data-row" className="border-b-0">
                             <th scope="row" className="px-4 py-3 align-top font-mono text-xs font-normal text-strong">
                                 <span className="break-all">{item.name}</span>
                                 {item.count !== undefined && (
@@ -55,6 +60,22 @@ export function InventoryTable({ items, ts, locale }: { items: FoundItem[]; ts: 
                             </td>
                             <td className="px-4 py-3 align-top text-mid">{item.updatedAt ? formatDateTime(item.updatedAt, locale) : unknown}</td>
                         </tr>
+                        <tr>
+                            <td colSpan={7} className="px-4 pb-3 pt-0" data-testid="your-data-devtools-path">
+                                <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1 text-[11px] text-faint">
+                                    <span className="font-medium">{ts("yourData.table.devtools")}:</span>
+                                    <ol className="flex flex-wrap items-center gap-x-1 gap-y-0.5 font-mono text-mid" aria-label={ts("yourData.table.devtools")}>
+                                        {devtoolsPath(item, origin).map((step, index) => (
+                                            <li key={index} className="flex items-center gap-1">
+                                                {index > 0 && <span aria-hidden="true" className="text-faint">›</span>}
+                                                <span className="break-all">{step}</span>
+                                            </li>
+                                        ))}
+                                    </ol>
+                                </div>
+                            </td>
+                        </tr>
+                        </Fragment>
                     ))}
                 </tbody>
             </table>

@@ -22,6 +22,7 @@ export function DownloadDataCard({ ts, focusOnMount = false }: { ts: StorageTran
             <div className="space-y-1">
                 <h2 id="your-data-download" className="text-lg font-semibold text-strong">{ts("yourData.download.title")}</h2>
                 <p className="text-sm leading-6 text-mid">{ts("yourData.download.body")}</p>
+                <p className="text-sm leading-6 text-mid">{ts("yourData.download.linkNote")}</p>
             </div>
 
             <label className="flex items-center gap-2 text-sm text-bright">

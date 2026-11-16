@@ -1,5 +1,7 @@
 "use client";
 
+import { DataMapDiagram } from "@/components/diagrams/DataMapDiagram";
+import { DeleteScopeDiagram } from "@/components/diagrams/DeleteScopeDiagram";
 import Link from "next/link";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { LegalPage, LegalSection } from "@/components/legal/LegalPage";
@@ -31,6 +33,8 @@ export function YourDataContent({ actions }: { actions?: (props: { inventory: In
 
     return (
         <LegalPage eyebrow="EngineCV" title={ts("yourData.title")} description={ts("yourData.intro")}>
+            <DataMapDiagram />
+
             {load.status === "reading" && (
                 <p role="status" className="text-mid" data-testid="your-data-reading">{ts("yourData.reading")}</p>
             )}
@@ -69,6 +73,17 @@ export function YourDataContent({ actions }: { actions?: (props: { inventory: In
                     {actions?.({ inventory: load.inventory, reload, ts })}
 
                     {load.inventory.items.length > 0 && (
+                        <LegalSection title={ts("yourData.devtools.title")}>
+                            <p>{ts("yourData.devtools.intro")}</p>
+                            <ol className="list-decimal space-y-1 pl-6" data-testid="your-data-devtools-steps">
+                                <li>{ts("yourData.devtools.step1")}</li>
+                                <li>{ts("yourData.devtools.step2")}</li>
+                                <li>{ts("yourData.devtools.step3")}</li>
+                            </ol>
+                        </LegalSection>
+                    )}
+
+                    {load.inventory.items.length > 0 && (
                         <LegalSection title={ts("yourData.table.title")}>
                             <InventoryTable items={load.inventory.items} ts={ts} locale={locale} />
                         </LegalSection>
@@ -87,6 +102,15 @@ export function YourDataContent({ actions }: { actions?: (props: { inventory: In
                     </LegalSection>
                 </>
             )}
+
+            <LegalSection title={ts("yourData.files.title")}>
+                <p data-testid="your-data-files">{ts("yourData.files.body")}</p>
+                <p>{ts("yourData.files.how")}</p>
+                <DeleteScopeDiagram />
+                <p>
+                    <Link href="/linked-files" className="underline">{ts("yourData.files.link")}</Link>
+                </p>
+            </LegalSection>
 
             <LegalSection title={ts("yourData.server.title")}>
                 <ul className="list-disc space-y-2 pl-6">
