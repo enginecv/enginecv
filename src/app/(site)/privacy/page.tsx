@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { DataMapDiagram } from "@/components/diagrams/DataMapDiagram";
 import { LegalPage, LegalSection } from "@/components/legal/LegalPage";
 import { pageMetadata } from "@/lib/site";
 
@@ -27,6 +28,11 @@ export default function PrivacyPage() {
                     If you clear browser storage, switch browsers, use private browsing, or reset the device profile, that
                     local data can be removed. Keep your own exports or encrypted JSON backups.
                 </p>
+                <p>
+                    A CV can also be kept in a file on your computer if you choose to link one (section 5). That file is outside
+                    the browser&apos;s storage.
+                </p>
+                <DataMapDiagram detailed />
             </LegalSection>
 
             <LegalSection title="2. Page analytics">
@@ -50,7 +56,7 @@ export default function PrivacyPage() {
 
             <LegalSection title="3. When data can leave your device">
                 <p>
-                    Apart from the hosting provider (section 7) and the page analytics it adds (section 2), these are all the
+                    Apart from the hosting provider (section 8) and the page analytics it adds (section 2), these are all the
                     cases in which your browser contacts a third party while you use EngineCV:
                 </p>
                 <ul className="list-disc space-y-2 pl-6">
@@ -70,7 +76,7 @@ export default function PrivacyPage() {
                         browser.
                     </li>
                     <li>
-                        <strong>Ads, only if you allow them.</strong> See section 5.
+                        <strong>Ads, only if you allow them.</strong> See section 6.
                     </li>
                     <li>
                         <strong>Feedback.</strong> Sending feedback opens a pre-filled GitHub issue or email in your own browser
@@ -96,7 +102,31 @@ export default function PrivacyPage() {
                 </p>
             </LegalSection>
 
-            <LegalSection title="5. Advertising and consent">
+            <LegalSection title="5. Linked files and AI agents">
+                <p>
+                    In Chromium browsers (Chrome, Edge and similar) you can link a CV to a file on your computer, so a local AI
+                    agent or any text editor can change it and the editor follows. You choose where the file lives. It holds the
+                    CV as plain JSON, including your contact details, and your browser writes it only after you picked it, only
+                    for that CV, and only while the link exists. EngineCV keeps the file&apos;s name and your browser&apos;s
+                    permission to open it in a local database table (<code>linkedFiles</code>) on this device. The file is never
+                    uploaded and linking sends nothing to EngineCV or any third party.
+                </p>
+                <p>
+                    What happens to the file outside the browser is up to you. An AI agent that reads it may send its contents,
+                    including your contact details, to its model provider, and other programs or people with access to your
+                    computer can read it too. Only use agents you trust with that information. EngineCV asks you to confirm this
+                    the first time you link a file.
+                </p>
+                <p>
+                    The file is a copy outside the browser&apos;s storage. Clearing browser data and &quot;Delete all my data&quot;
+                    do not delete it, and the data download on <Link href="/your-data" className="underline">Your data</Link>{" "}
+                    lists its name but does not include it. Unlink the CV in the editor to stop syncing, and delete the file
+                    yourself to remove it. <Link href="/linked-files" className="underline">How linked files work</Link> explains
+                    the details.
+                </p>
+            </LegalSection>
+
+            <LegalSection title="6. Advertising and consent">
                 <p>
                     EngineCV is built so that ads from Google AdSense can be shown to keep it free. Ads are currently{" "}
                     <strong>turned off</strong> on enginecv.app, and they stay off until a certified consent platform is in
@@ -110,7 +140,7 @@ export default function PrivacyPage() {
                 </p>
             </LegalSection>
 
-            <LegalSection title="6. Referral links">
+            <LegalSection title="7. Referral links">
                 <p>
                     Links of the form <code>/r/&lt;slug&gt;</code> redirect to the home page and add one to a counter for that
                     link. EngineCV does not set cookies for this and does not store or derive anything from your visit, such as
@@ -120,7 +150,7 @@ export default function PrivacyPage() {
                 </p>
             </LegalSection>
 
-            <LegalSection title="7. Hosting">
+            <LegalSection title="8. Hosting">
                 <p>
                     EngineCV is served by Cloudflare. Like any web host, Cloudflare processes your IP address and request details
                     to deliver the site and protect it from abuse, and may set short-lived security cookies (for example{" "}
@@ -129,7 +159,7 @@ export default function PrivacyPage() {
                 </p>
             </LegalSection>
 
-            <LegalSection title="8. Security boundaries">
+            <LegalSection title="9. Security boundaries">
                 <p>
                     Local-first does not mean risk-free. Anyone with access to your device profile or browser storage may be able
                     to read locally saved resumes, and exported files can be copied or shared outside the app. Use device security,
@@ -137,7 +167,7 @@ export default function PrivacyPage() {
                 </p>
             </LegalSection>
 
-            <LegalSection title="9. Your rights: see, download, delete">
+            <LegalSection title="10. Your rights: see, download, delete">
                 <p>
                     Because your data lives in your browser, you can use your rights directly, without asking anyone.{" "}
                     <Link href="/your-data" className="underline">Your data</Link> lists everything EngineCV stores in this
@@ -147,7 +177,7 @@ export default function PrivacyPage() {
                 </p>
             </LegalSection>
 
-            <LegalSection title="10. Policy changes">
+            <LegalSection title="11. Policy changes">
                 <p>
                     If EngineCV changes how data is stored, transmitted, or monetized, this policy is updated before the change
                     ships.

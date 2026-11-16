@@ -98,6 +98,10 @@ EngineCV does not currently ship an AI chat panel or hosted model. Planned autom
 
 Agents will use validated operations for creating resumes, importing profiles, editing sections, creating targeted resumes, applying templates, and exporting. Mutations must be revision-checked, atomic, auditable, and undoable.
 
+### Linked file and agent skill
+
+In Chromium browsers a CV can be linked to a local `enginecv.authoring/v1` JSON file: a local agent edits the file with its normal file tools and the editor follows, validating every change and keeping a history snapshot so it can be undone. A published agent skill (`public/agent/enginecv/SKILL.md`, generated with `npm run gen:agent-skill`) teaches any agent the format and the rules. See [docs/agent-linked-file.md](docs/agent-linked-file.md) for how it works, browser support and limits.
+
 ## Version History
 
 EngineCV now includes a first-pass editor history system:

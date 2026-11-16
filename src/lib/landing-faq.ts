@@ -7,4 +7,5 @@ export const LANDING_FAQ_KEYS = [
     { q: "landing.faq.q2", a: "landing.faq.a2" },
     { q: "landing.faq.q3", a: "landing.faq.a3" },
     { q: "landing.faq.q4", a: "landing.faq.a4" },
+    { q: "landing.faq.q5", a: "landing.faq.a5" },
 ] as const;

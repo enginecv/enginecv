@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { ArrowRight, Check, Download, HardDrive, Monitor, TriangleAlert, type LucideIcon } from "lucide-react";
+import { DataMapDiagram } from "@/components/diagrams/DataMapDiagram";
+import { getExportFormatBadges } from "@/lib/export-formats";
 import { useTranslation } from "@/lib/i18n";
 
 const ENGINECV_FEATURE_KEYS = [
@@ -38,6 +40,15 @@ export function PrivacySection() {
                   {t(key)}
                 </div>
               ))}
+              <div className="flex items-start gap-3 border-t border-edge py-3 text-sm text-bright" data-testid="landing-linked-file">
+                <Check className="mt-0.5 h-4 w-4 shrink-0 text-success" strokeWidth={2.5} aria-hidden="true" />
+                <span>
+                  {t("landing.safety.linkedFile")}{" "}
+                  <Link href="/linked-files" className="font-semibold underline decoration-edge-strong underline-offset-4 hover:text-accent">
+                    {t("landing.safety.linkedFileLink")}
+                  </Link>
+                </span>
+              </div>
             </div>
           </div>
 
@@ -60,9 +71,12 @@ export function PrivacySection() {
               <FlowNode icon={Download} label={t("landing.safety.exportNode")} detail={t("landing.safety.exportDetail")} accent />
             </div>
 
-            <div className="grid grid-cols-5 border border-edge bg-surface-1 font-[family-name:var(--font-geist-mono)] text-[10px] uppercase tracking-wider text-faint">
-              {["PDF", "HTML", "PNG", "SVG", "JSON"].map((format) => (
-                <span key={format} className="border-r border-edge px-2 py-3 text-center last:border-r-0">
+            <div
+              className="grid grid-cols-4 border-l border-t border-edge bg-surface-1 font-[family-name:var(--font-geist-mono)] text-[10px] uppercase tracking-wider text-faint"
+              data-testid="landing-export-formats"
+            >
+              {getExportFormatBadges().map((format) => (
+                <span key={format} className="border-b border-r border-edge px-2 py-3 text-center">
                   {format}
                 </span>
               ))}
@@ -84,6 +98,9 @@ export function PrivacySection() {
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </Link>
           </div>
+        </div>
+        <div className="mt-14" data-testid="landing-data-map">
+          <DataMapDiagram />
         </div>
       </div>
     </section>
