@@ -2,7 +2,16 @@ import Dexie, { type Table } from "dexie";
 import { type Resume } from "./schema";
 import { type TemplateDocument } from "./templates/template-schema";
 
-export type ResumeHistoryTrigger = "autosave" | "manual" | "import" | "restore" | "duplicate" | "json-edit";
+export type ResumeHistoryTrigger = "autosave" | "manual" | "import" | "restore" | "duplicate" | "json-edit" | "file-sync";
+
+/** A CV linked to a file on disk (feature 089). Never exported: a handle only means something in this browser. */
+export interface LinkedFileRecord {
+    resumeId: string;
+    handle: FileSystemFileHandle;
+    fileName: string;
+    linkedAt: number;
+    paused: boolean;
+}
 
 export interface ResumeHistoryEntry {
     id?: number;
@@ -16,6 +25,7 @@ class ResumeDatabase extends Dexie {
     resumes!: Table<Resume, string>; // string = id
     resumeHistory!: Table<ResumeHistoryEntry, number>;
     templates!: Table<TemplateDocument, string>; // string = id
+    linkedFiles!: Table<LinkedFileRecord, string>; // string = resume id
 
     constructor() {
         super("EngineCVDatabase");
@@ -34,6 +44,13 @@ class ResumeDatabase extends Dexie {
             resumes: "id, updatedAt",
             resumeHistory: "++id, resumeId, createdAt, trigger",
             templates: "id, updatedAt, createdAt",
+        });
+
+        this.version(4).stores({
+            resumes: "id, updatedAt",
+            resumeHistory: "++id, resumeId, createdAt, trigger",
+            templates: "id, updatedAt, createdAt",
+            linkedFiles: "resumeId",
         });
     }
 }

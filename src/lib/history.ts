@@ -3,6 +3,7 @@ import { resumeSchema, type Resume } from "./schema";
 
 const MAX_HISTORY_ENTRIES = 50;
 const AUTOSAVE_ROLLOVER_MS = 60 * 1000;
+const FILE_SYNC_ROLLOVER_MS = 60 * 1000;
 
 export async function loadResumeHistory(resumeId: string) {
     const entries = await db.resumeHistory.where("resumeId").equals(resumeId).toArray();
@@ -73,6 +74,16 @@ export async function recordResumeHistory(resume: Resume, trigger: ResumeHistory
     const now = Date.now();
 
     if (latestEntry?.resumeJson === snapshot) {
+        return latestEntry.id ?? null;
+    }
+
+    // A burst of file updates keeps the earliest pre-update state: typed content in
+    // between makes autosave entries, so this never hides anything the person typed.
+    if (
+        trigger === "file-sync" &&
+        latestEntry?.trigger === "file-sync" &&
+        now - latestEntry.createdAt < FILE_SYNC_ROLLOVER_MS
+    ) {
         return latestEntry.id ?? null;
     }
 
