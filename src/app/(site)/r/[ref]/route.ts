@@ -12,7 +12,10 @@ export async function GET(
     const slug = normalizeReferralSlug(ref);
 
     // No cookies and nothing derived from the visitor: the link only bumps a hit counter.
-    const response = NextResponse.redirect(new URL("/", request.url));
+    // The slug rides along as ?ref= so the page can tell, for this tab only, where an export came from.
+    const target = new URL("/", request.url);
+    if (slug) target.searchParams.set("ref", slug);
+    const response = NextResponse.redirect(target);
 
     if (slug) {
         try {

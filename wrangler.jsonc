@@ -21,6 +21,12 @@
       "id": "186988c2548048d28e6e896534461a52"
     }
   ],
+  "analytics_engine_datasets": [
+    {
+      "binding": "EVENTS",
+      "dataset": "enginecv_events"
+    }
+  ],
   "observability": {
     "enabled": true
   }

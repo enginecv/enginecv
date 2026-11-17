@@ -48,8 +48,16 @@ export default function PrivacyPage() {
                     saved resumes, or your browser storage.
                 </p>
                 <p>
-                    EngineCV uses no other analytics: no Google Analytics, no tracking pixels, and no event tracking of what you
-                    do in the app. Earlier versions could load Google Analytics; if a browser still has first-party analytics
+                    EngineCV also keeps one anonymous counter: when an export finishes, your browser tells EngineCV that one
+                    file of a given format (for example PDF) was exported, and which link or site brought you here (a
+                    referral name, a <code>utm_source</code> value, or the referring site&apos;s host name; kept only in this
+                    tab). It carries no cookie, identifier, IP address, resume content, file name or name. It is not sent at
+                    all if your browser sends Do Not Track or Global Privacy Control. It exists to show which channels lead to
+                    finished CVs, not to follow anyone.
+                </p>
+                <p>
+                    EngineCV uses no other analytics: no Google Analytics, no tracking pixels, and no tracking of what you
+                    do in the app beyond that counter. Earlier versions could load Google Analytics; if a browser still has first-party analytics
                     cookies from that time (<code>_ga</code>, <code>_gid</code>), EngineCV deletes them on your next visit.
                 </p>
             </LegalSection>
