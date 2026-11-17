@@ -1103,6 +1103,8 @@ export const en: Translations = {
   "importHub.done.undo": "Undo",
   "importHub.done.undone": "Undone. Your CV is as it was.",
   "importHub.done.open": "Open new CV",
+  "importHub.done.link": "Link to a file",
+  "importHub.done.openLink": "Open and link to a file",
   "importHub.done.failed": "The import could not be applied. Your CV is unchanged.",
   "importHub.field.name": "Name",
   "importHub.field.headline": "Headline",

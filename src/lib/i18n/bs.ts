@@ -1103,6 +1103,8 @@ export const bs: Translations = {
   "importHub.done.undo": "Poništi",
   "importHub.done.undone": "Poništeno. Tvoj CV je kao prije.",
   "importHub.done.open": "Otvori novi CV",
+  "importHub.done.link": "Poveži s datotekom",
+  "importHub.done.openLink": "Otvori i poveži s datotekom",
   "importHub.done.failed": "Uvoz se nije mogao primijeniti. Tvoj CV je nepromijenjen.",
   "importHub.field.name": "Ime",
   "importHub.field.headline": "Naslov",

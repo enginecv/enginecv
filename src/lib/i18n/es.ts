@@ -1103,6 +1103,8 @@ export const es: Translations = {
   "importHub.done.undo": "Deshacer",
   "importHub.done.undone": "Deshecho. Tu CV está como antes.",
   "importHub.done.open": "Abrir el CV nuevo",
+  "importHub.done.link": "Vincular a un archivo",
+  "importHub.done.openLink": "Abrir y vincular a un archivo",
   "importHub.done.failed": "No se pudo aplicar la importación. Tu CV no ha cambiado.",
   "importHub.field.name": "Nombre",
   "importHub.field.headline": "Titular",
