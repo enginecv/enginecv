@@ -56,6 +56,13 @@ export default function PrivacyPage() {
                     finished CVs, not to follow anyone.
                 </p>
                 <p>
+                    The same counter notes a click on a marked &quot;Partner link&quot; on the Resources page: which link it
+                    was and the same source, nothing about you. Partner links are affiliate links: if you sign up or buy
+                    after following one, the partner may pay EngineCV a commission at no extra cost to you, and the partner
+                    then sets its own cookies on its own site under its own policy. Links without the label are unpaid and
+                    carry no tracking.
+                </p>
+                <p>
                     EngineCV uses no other analytics: no Google Analytics, no tracking pixels, and no tracking of what you
                     do in the app beyond that counter. Earlier versions could load Google Analytics; if a browser still has first-party analytics
                     cookies from that time (<code>_ga</code>, <code>_gid</code>), EngineCV deletes them on your next visit.

@@ -3,6 +3,7 @@ import {
     SOURCE_STORAGE_KEY,
     captureSource,
     normalizeSource,
+    parseAffiliateClick,
     parseExportEvent,
     reportExportCompleted,
 } from "./export-event";
@@ -20,6 +21,18 @@ describe("parseExportEvent", () => {
         expect(parseExportEvent({ format: "json", source: "a b<script>" })?.source).toBe("other");
         expect(parseExportEvent({ format: "json" })?.source).toBe("direct");
         expect(parseExportEvent({ format: "json", source: "direct" })?.source).toBe("direct");
+    });
+});
+
+describe("parseAffiliateClick", () => {
+    it("accepts a link id with a source", () => {
+        expect(parseAffiliateClick({ event: "affiliate_click", id: "preply", source: "reddit.com" })).toEqual({ id: "preply", source: "reddit.com" });
+        expect(parseAffiliateClick({ event: "affiliate_click", id: "preply" })?.source).toBe("direct");
+    });
+    it("drops other events and odd ids", () => {
+        expect(parseAffiliateClick({ id: "preply" })).toBeNull();
+        expect(parseAffiliateClick({ event: "affiliate_click", id: "Bad Id!" })).toBeNull();
+        expect(parseAffiliateClick({ event: "affiliate_click", id: 5 })).toBeNull();
     });
 });
 

@@ -3,11 +3,13 @@ import { ArrowRight, ArrowUpRight, Info } from "lucide-react";
 import { GalleryPage } from "@/components/templates/gallery/GalleryPage";
 import { localizedPath, type Locale } from "@/lib/i18n/locales";
 import { translate } from "@/lib/i18n/translate";
-import { RESOURCE_SECTIONS, hasSponsoredResources, internalResourcesFor, resourceLinkRel } from "@/lib/resources";
+import { RESOURCE_SECTIONS, hasSponsoredResources, internalResourcesFor } from "@/lib/resources";
+import { ResourceAnchor } from "./ResourceAnchor";
 
 /**
  * Hand-picked official and free resources for the Balkans → DACH job seeker.
- * Server-rendered; outbound links carry no tracking parameters.
+ * Server-rendered. Free links carry no tracking parameters; a partner link keeps
+ * its partner's own tracking code, which is what pays EngineCV, and says so.
  */
 export function ResourcesPage({ locale }: { locale: Locale }) {
     const t = (key: string) => translate(locale, key);
@@ -31,10 +33,8 @@ export function ResourcesPage({ locale }: { locale: Locale }) {
                     <ul className="mt-5 grid gap-4 sm:grid-cols-2">
                         {section.links.map((link) => (
                             <li key={link.id}>
-                                <a
-                                    href={link.url}
-                                    target="_blank"
-                                    rel={resourceLinkRel(link)}
+                                <ResourceAnchor
+                                    link={link}
                                     className="group flex h-full flex-col rounded-2xl border border-edge bg-surface-3 p-5 transition-colors hover:border-accent/60"
                                 >
                                     <span className="flex items-start justify-between gap-3">
@@ -48,7 +48,7 @@ export function ResourcesPage({ locale }: { locale: Locale }) {
                                             <span className="rounded-full border border-accent/50 px-2 py-0.5 text-accent">{t("resources.partnerLink")}</span>
                                         )}
                                     </span>
-                                </a>
+                                </ResourceAnchor>
                             </li>
                         ))}
                     </ul>

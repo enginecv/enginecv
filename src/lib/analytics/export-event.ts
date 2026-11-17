@@ -36,6 +36,21 @@ export function parseExportEvent(body: unknown): ExportEvent | null {
     };
 }
 
+/** A click on a sponsored (partner) link: which link only, never who clicked. */
+export interface AffiliateClick {
+    id: string;
+    source: string;
+}
+
+const LINK_ID_PATTERN = /^[a-z0-9][a-z0-9-]{0,39}$/;
+
+export function parseAffiliateClick(body: unknown): AffiliateClick | null {
+    if (typeof body !== "object" || body === null) return null;
+    const { event, id, source } = body as Record<string, unknown>;
+    if (event !== "affiliate_click" || typeof id !== "string" || !LINK_ID_PATTERN.test(id)) return null;
+    return { id, source: normalizeSource(source) ?? (source === undefined || source === UNKNOWN_SOURCE ? UNKNOWN_SOURCE : OTHER_SOURCE) };
+}
+
 /** What the visitor's browser asks for: no measurement at all. */
 function optedOut(): boolean {
     const nav = navigator as Navigator & { globalPrivacyControl?: boolean };
@@ -64,6 +79,15 @@ export function captureSource(): void {
 
 /** Fire and forget; never throws and never delays an export. */
 export function reportExportCompleted(format: ExportEvent["format"]): void {
+    send({ format });
+}
+
+/** Fire and forget; counts one click on a partner link, so earnings can be matched to traffic. */
+export function reportAffiliateClick(id: string): void {
+    send({ event: "affiliate_click", id });
+}
+
+function send(fields: Record<string, string>): void {
     try {
         if (typeof navigator === "undefined" || optedOut()) return;
         let source = UNKNOWN_SOURCE;
@@ -72,7 +96,7 @@ export function reportExportCompleted(format: ExportEvent["format"]): void {
         } catch {
             // keep "direct"
         }
-        const payload = JSON.stringify({ format, source });
+        const payload = JSON.stringify({ ...fields, source });
         if (!navigator.sendBeacon?.(EXPORT_EVENT_ENDPOINT, new Blob([payload], { type: "text/plain" }))) {
             void fetch(EXPORT_EVENT_ENDPOINT, { method: "POST", body: payload, keepalive: true, credentials: "omit" }).catch(() => undefined);
         }
