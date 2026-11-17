@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ClientPreferencesBootstrap } from "@/components/ClientPreferencesBootstrap";
 import { AdConsentPrompt } from "@/components/integrations/AdConsentPrompt";
+import { AcquisitionSource } from "@/components/integrations/AcquisitionSource";
 import { LegacyTrackingPurge } from "@/components/integrations/LegacyTrackingPurge";
 import { WipeListener } from "@/components/your-data/WipeListener";
 import { SiteScripts } from "@/components/integrations/SiteScripts";
@@ -84,6 +85,7 @@ export async function RootDocument({
       <ClientPreferencesBootstrap />
       {routeLocale && routeLocale !== "en" ? <RememberRouteLocale locale={routeLocale} /> : null}
       <LegacyTrackingPurge />
+      <AcquisitionSource />
       <WipeListener />
       <TooltipProvider delayDuration={300}>
         {children}

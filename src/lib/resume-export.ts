@@ -1,3 +1,4 @@
+import { reportExportCompleted } from "@/lib/analytics/export-event";
 import { toDocumentModel } from "./document-model";
 import {
     exportToEncryptedJson,
@@ -162,5 +163,6 @@ export async function runResumeExport({
         }
     }
 
+    reportExportCompleted(format);
     return { notices, ...(fallbackFonts ? { fallbackFonts } : {}), ...(report ? { report } : {}) };
 }

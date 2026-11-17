@@ -8,6 +8,7 @@ export const es: Record<string, string> = {
     "storage.purpose.ls.consent": "Tu respuesta a la pregunta sobre anuncios y cuándo la diste.",
     "storage.purpose.ls.readmeCredit": "Si la exportación README de GitHub añade una pequeña línea «made with EngineCV».",
     "storage.purpose.ls.localeSuggestionDismissed": "Que cerraste el aviso «esta página está disponible en tu idioma».",
+    "storage.purpose.ss.source": "Qué enlace o sitio te trajo aquí, guardado solo en esta pestaña. Se envía con el contador anónimo de exportaciones.",
     "storage.purpose.cookie.locale": "El idioma de la interfaz, para que las páginas se abran en él.",
     "storage.purpose.cookie.cloudflare": "Lo pone Cloudflare, el alojamiento de EngineCV, para proteger el sitio de bots.",
     "storage.purpose.cookie.google": "Lo pone Google en sus propios dominios, solo si permitiste los anuncios.",

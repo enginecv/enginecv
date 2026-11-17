@@ -1103,6 +1103,8 @@ export const de: Translations = {
   "importHub.done.undo": "Rückgängig",
   "importHub.done.undone": "Rückgängig gemacht. Dein Lebenslauf ist wie vorher.",
   "importHub.done.open": "Neuen Lebenslauf öffnen",
+  "importHub.done.link": "Mit Datei verknüpfen",
+  "importHub.done.openLink": "Öffnen und mit Datei verknüpfen",
   "importHub.done.failed": "Der Import konnte nicht übernommen werden. Dein Lebenslauf ist unverändert.",
   "importHub.field.name": "Name",
   "importHub.field.headline": "Titelzeile",

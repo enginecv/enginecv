@@ -23,6 +23,7 @@ import { HistoryPanel } from "@/components/editor/HistoryPanel";
 import { CvTitleInput } from "@/components/editor/CvTitleInput";
 import { LinkedFileControl } from "@/components/editor/LinkedFileControl";
 import { useLinkedFile } from "@/hooks/useLinkedFile";
+import { OPEN_LINKED_FILE_PANEL_EVENT } from "@/lib/linked-file/types";
 import { hideChecklist, showChecklistAgain } from "@/lib/preferences/onboarding";
 import { SaveAsTemplateDialog } from "@/components/editor/SaveAsTemplateDialog";
 const ShortcutsOverlay = dynamic(() => import("@/components/editor/ShortcutsOverlay").then(module => module.ShortcutsOverlay), { ssr: false });
@@ -1769,8 +1770,19 @@ export default function EditorPage({ params }: { params: Promise<{ id: string }>
         window.history.replaceState(window.history.state, "", url.href);
     }, [isLoaded, isMobileLayout, setSidebarTab]);
 
+    // Arrived from the import dialog's "Open and link to a file": show the link panel once.
     useEffect(() => {
-        const handleSaveShortcut = (event: KeyboardEvent) => {
+        if (!isLoaded) return;
+        const url = new URL(window.location.href);
+        if (url.searchParams.get("link") !== "1") return;
+        url.searchParams.delete("link");
+        window.history.replaceState(window.history.state, "", url.href);
+        const timer = setTimeout(() => window.dispatchEvent(new Event(OPEN_LINKED_FILE_PANEL_EVENT)), 300);
+        return () => clearTimeout(timer);
+    }, [isLoaded]);
+
+    useEffect(() => {
+        const handleSaveShortcut =(event: KeyboardEvent) => {
             if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== "s") {
                 return;
             }

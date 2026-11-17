@@ -8,6 +8,7 @@ export const bs: Record<string, string> = {
     "storage.purpose.ls.consent": "Vaš odgovor na pitanje o reklamama i kada ste ga dali.",
     "storage.purpose.ls.readmeCredit": "Da li izvoz GitHub README-a dodaje mali red „made with EngineCV“.",
     "storage.purpose.ls.localeSuggestionDismissed": "Da ste zatvorili napomenu „ova stranica postoji na vašem jeziku“.",
+    "storage.purpose.ss.source": "Koji te je link ili stranica doveo ovdje, sačuvano samo u ovom tabu. Šalje se s anonimnim brojačem izvoza.",
     "storage.purpose.cookie.locale": "Jezik sučelja, da se stranice otvaraju na njemu.",
     "storage.purpose.cookie.cloudflare": "Postavlja ga Cloudflare, hosting EngineCV-a, da zaštiti stranicu od botova.",
     "storage.purpose.cookie.google": "Postavlja ga Google na svojim domenama, samo ako ste dozvolili reklame.",
