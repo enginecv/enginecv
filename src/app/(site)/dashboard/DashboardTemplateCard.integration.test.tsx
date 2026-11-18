@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { db } from "@/lib/db";
@@ -86,5 +86,52 @@ describe("DashboardTemplateCard", () => {
         await user.click(screen.getByRole("button", { name: "Edit design" }));
         expect(onEdit).toHaveBeenCalledTimes(1);
         expect(await db.resumes.count()).toBe(0);
+    });
+
+    it("shows a built-in template as its pre-rendered image", () => {
+        render(
+            <TooltipProvider>
+                <DashboardTemplateCard template={getBuiltinTemplates()[0]} onDuplicate={vi.fn()} />
+            </TooltipProvider>,
+        );
+
+        const preview = screen.getByTestId("dashboard-template-preview");
+        expect(preview.querySelector("img")).not.toBeNull();
+        expect(screen.queryByTestId("template-live-preview")).not.toBeInTheDocument();
+    });
+
+    it("draws a template the person made with the real renderer, not a placeholder image", () => {
+        const builtin = getBuiltinTemplates()[0];
+        const template = templateDocumentSchema.parse({
+            ...builtin,
+            id: "dashboard-user-template",
+            meta: { ...builtin.meta, source: "user" },
+        });
+
+        render(
+            <TooltipProvider>
+                <DashboardTemplateCard template={template} onDuplicate={vi.fn()} onEdit={vi.fn()} />
+            </TooltipProvider>,
+        );
+
+        const preview = screen.getByTestId("dashboard-template-preview");
+        expect(within(preview).getByTestId("template-live-preview")).toBeInTheDocument();
+        expect(preview.querySelector("img")).toBeNull();
+    });
+
+    it("previews a saved template that predates newer settings", () => {
+        const builtin = getBuiltinTemplates()[0];
+        const settings: Record<string, unknown> = { ...builtin.settings };
+        delete settings.interestsSection;
+        delete settings.skillsSection;
+        const legacy = { ...builtin, id: "legacy-user-template", meta: { ...builtin.meta, source: "user" }, settings } as unknown as typeof builtin;
+
+        render(
+            <TooltipProvider>
+                <DashboardTemplateCard template={legacy} onDuplicate={vi.fn()} onEdit={vi.fn()} />
+            </TooltipProvider>,
+        );
+
+        expect(screen.getByTestId("template-live-preview")).toBeInTheDocument();
     });
 });
