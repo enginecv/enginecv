@@ -25,6 +25,7 @@ import { applyTemplateToResume } from "./templates/template-apply";
 import { getSampleResumeForTemplatePreview } from "./templates/template-preview";
 import { INITIAL_LINKED_FILE_STATE, type LinkedFileState } from "./linked-file/types";
 import { mergeCustomizationValue, withoutSectionStyleOverride } from "./customization";
+import { rememberTemplate } from "./analytics/export-event";
 
 interface AIProposal {
     id: string;
@@ -1098,6 +1099,7 @@ export const useResumeStore = create<ResumeStore>((set, get) => ({
             }
         }
         if (!template) return false;
+        if (builtin) rememberTemplate(templateId);
 
         const state = get();
         const result = applyTemplateToResume(state.resume, template, options);

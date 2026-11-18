@@ -16,6 +16,8 @@ export const en: Record<string, string> = {
     "storage.purpose.ls.readmeCredit": "Whether the GitHub README export adds a small \"made with EngineCV\" line.",
     "storage.purpose.ls.localeSuggestionDismissed": "That you closed the \"this page is available in your language\" hint.",
     "storage.purpose.ss.source": "Which link or site brought you here, kept only in this tab. It is sent with the anonymous export counter.",
+    "storage.purpose.ss.landing": "The first page you opened in this tab (the address only, never a document id), kept only in this tab. It is sent with the anonymous export counter.",
+    "storage.purpose.ss.template": "The last built-in template you picked, kept only in this tab. It is sent with the anonymous export counter.",
     "storage.purpose.cookie.locale": "Your interface language, so pages open in it.",
     "storage.purpose.cookie.cloudflare": "Set by Cloudflare, EngineCV's host, to protect the site from bots.",
     "storage.purpose.cookie.google": "Set by Google on its own domains, only if you allowed ads.",

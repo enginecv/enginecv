@@ -2,8 +2,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
     SOURCE_STORAGE_KEY,
     captureSource,
+    normalizeCountry,
+    normalizeLandingPath,
     normalizeSource,
     parseAffiliateClick,
+    parseExportContext,
     parseExportEvent,
     reportExportCompleted,
 } from "./export-event";
@@ -41,6 +44,53 @@ describe("normalizeSource", () => {
         expect(normalizeSource("www.news.ycombinator.com")).toBe("news.ycombinator.com");
         expect(normalizeSource("x".repeat(41))).toBeNull();
         expect(normalizeSource("")).toBeNull();
+    });
+});
+
+describe("normalizeLandingPath", () => {
+    it("drops the locale prefix, query and hash", () => {
+        expect(normalizeLandingPath("/de/cv-examples/nurse?utm=x#top")).toBe("/cv-examples/nurse");
+        expect(normalizeLandingPath("/")).toBe("/");
+        expect(normalizeLandingPath("/de")).toBe("/");
+    });
+    it("never keeps a private id", () => {
+        expect(normalizeLandingPath("/editor/3f9a-secret-id")).toBe("/editor");
+        expect(normalizeLandingPath("/dashboard/abc")).toBe("/dashboard");
+    });
+    it("rejects deep or odd paths", () => {
+        expect(normalizeLandingPath("/a/b/c")).toBeNull();
+        expect(normalizeLandingPath("/blog/a b<script>")).toBeNull();
+        expect(normalizeLandingPath(5)).toBeNull();
+    });
+});
+
+describe("parseExportContext", () => {
+    it("keeps clean tokens and derives the role from the landing page", () => {
+        expect(parseExportContext({ locale: "de", template: "modern", landing: "/cv-examples/nurse", device: "mobile" })).toEqual({
+            locale: "de",
+            template: "modern",
+            landing: "/cv-examples/nurse",
+            role: "nurse",
+            device: "mobile",
+        });
+    });
+    it("buckets anything else", () => {
+        expect(parseExportContext({ locale: "xx", template: "My Name!", landing: "/a/b/c", device: "tv" })).toEqual({
+            locale: "other",
+            template: "other",
+            landing: "other",
+            role: "none",
+            device: "unknown",
+        });
+        expect(parseExportContext({})).toEqual({ locale: "other", template: "default", landing: "unknown", role: "none", device: "unknown" });
+    });
+});
+
+describe("normalizeCountry", () => {
+    it("accepts two capitals and lowercases them", () => {
+        expect(normalizeCountry("DE")).toBe("de");
+        expect(normalizeCountry("Germany")).toBe("xx");
+        expect(normalizeCountry(undefined)).toBe("xx");
     });
 });
 

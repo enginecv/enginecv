@@ -67,6 +67,8 @@ export const STORAGE_REGISTRY = [
     { ...active, id: "ls.readmeCredit", location: "local-storage", name: "enginecv-readme-credit", legalBasis: "functional", owner: "enginecv", retention: "until-deleted", jsReadable: true, removable: "yes" },
     { ...active, id: "ls.localeSuggestionDismissed", location: "local-storage", name: "enginecv-locale-suggestion-dismissed", legalBasis: "functional", owner: "enginecv", retention: "until-deleted", jsReadable: true, removable: "yes" },
     { ...active, id: "ss.source", location: "session-storage", name: "enginecv:source", legalBasis: "functional", owner: "enginecv", retention: "session", jsReadable: true, removable: "yes" },
+    { ...active, id: "ss.landing", location: "session-storage", name: "enginecv:landing", legalBasis: "functional", owner: "enginecv", retention: "session", jsReadable: true, removable: "yes" },
+    { ...active, id: "ss.template", location: "session-storage", name: "enginecv:template", legalBasis: "functional", owner: "enginecv", retention: "session", jsReadable: true, removable: "yes" },
     { ...active, id: "cookie.locale", location: "cookie", name: "enginecv-locale", legalBasis: "functional", owner: "enginecv", retention: "one-year", jsReadable: true, removable: "yes" },
 
     // Third parties: EngineCV cannot read these.

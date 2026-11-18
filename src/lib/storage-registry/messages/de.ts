@@ -9,6 +9,8 @@ export const de: Record<string, string> = {
     "storage.purpose.ls.readmeCredit": "Ob der GitHub-README-Export eine kleine Zeile „made with EngineCV“ hinzufügt.",
     "storage.purpose.ls.localeSuggestionDismissed": "Dass Sie den Hinweis „diese Seite gibt es in Ihrer Sprache“ geschlossen haben.",
     "storage.purpose.ss.source": "Welcher Link oder welche Seite Sie hergeführt hat, nur in diesem Tab gespeichert. Wird mit dem anonymen Export-Zähler gesendet.",
+    "storage.purpose.ss.landing": "Die erste Seite, die Sie in diesem Tab geöffnet haben (nur die Adresse, nie eine Dokument-ID), nur in diesem Tab gespeichert. Wird mit dem anonymen Export-Zähler gesendet.",
+    "storage.purpose.ss.template": "Die zuletzt gewählte integrierte Vorlage, nur in diesem Tab gespeichert. Wird mit dem anonymen Export-Zähler gesendet.",
     "storage.purpose.cookie.locale": "Ihre Oberflächensprache, damit Seiten darin öffnen.",
     "storage.purpose.cookie.cloudflare": "Von Cloudflare, dem Hoster von EngineCV, gesetzt, um die Seite vor Bots zu schützen.",
     "storage.purpose.cookie.google": "Von Google auf eigenen Domains gesetzt, nur wenn Sie Werbung erlaubt haben.",

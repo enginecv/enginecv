@@ -51,7 +51,10 @@ export default function PrivacyPage() {
                     EngineCV also keeps one anonymous counter: when an export finishes, your browser tells EngineCV that one
                     file of a given format (for example PDF) was exported, and which link or site brought you here (a
                     referral name, a <code>utm_source</code> value, or the referring site&apos;s host name; kept only in this
-                    tab). It carries no cookie, identifier, IP address, resume content, file name or name. It is not sent at
+                    tab). It also notes a few coarse facts: your country (from the network edge, never your IP address), the
+                    site language, the built-in template you used, the first page of your visit (the address only, never a
+                    document id), a role example page if you came from one, and whether you are on a phone or a computer. It
+                    carries no cookie, identifier, IP address, resume content, file name or name. It is not sent at
                     all if your browser sends Do Not Track or Global Privacy Control. It exists to show which channels lead to
                     finished CVs, not to follow anyone.
                 </p>
