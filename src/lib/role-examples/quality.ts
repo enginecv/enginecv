@@ -52,7 +52,9 @@ export function checkRole(resolved: RoleExampleResolved, context: QualityContext
     const fail = (message: string) => problems.push(`${role.id}: ${message}`);
 
     if (!context.templateSlugs.has(role.template)) fail(`template "${role.template}" is not a gallery template`);
-    if (!context.publishedArticleIds.has(role.relatedArticle)) fail(`related article "${role.relatedArticle}" has no published version`);
+    for (const article of [role.relatedArticle, ...(role.moreArticles ?? [])]) {
+        if (!context.publishedArticleIds.has(article)) fail(`related article "${article}" has no published version`);
+    }
     if (Object.keys(role.versions).length === 0) fail("has no language version");
 
     for (const locale of ROLE_EXAMPLE_LOCALES) {
