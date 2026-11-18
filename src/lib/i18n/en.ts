@@ -147,6 +147,10 @@ export const en: Translations = {
   "landing.freeTools.examplesTitle": "CV examples by role",
   "landing.freeTools.examplesDesc": "Realistic examples with role-specific tips and common mistakes.",
   "landing.freeTools.allTools": "See all free tools",
+  "landing.popularGuides.kicker": "Guides",
+  "landing.popularGuides.title": "Read before you send your CV",
+  "landing.popularGuides.description": "Short, practical guides on the questions people ask most: which document to send, what to write with no experience, and which mistakes to fix first.",
+  "landing.popularGuides.allGuides": "Read all articles",
 
   "landing.footer.tagline": "Free Resume Builder · Privacy-first · Local-first and portable",
 

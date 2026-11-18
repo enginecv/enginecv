@@ -147,6 +147,10 @@ export const de: Translations = {
   "landing.freeTools.examplesTitle": "Lebenslauf-Beispiele nach Beruf",
   "landing.freeTools.examplesDesc": "Realistische Beispiele mit berufsspezifischen Tipps und typischen Fehlern.",
   "landing.freeTools.allTools": "Alle kostenlosen Tools ansehen",
+  "landing.popularGuides.kicker": "Ratgeber",
+  "landing.popularGuides.title": "Lies das, bevor du deinen Lebenslauf abschickst",
+  "landing.popularGuides.description": "Kurze, praktische Ratgeber zu den häufigsten Fragen: welches Dokument du schicken sollst, was du ohne Berufserfahrung schreibst und welche Fehler du zuerst behebst.",
+  "landing.popularGuides.allGuides": "Alle Artikel lesen",
 
   "landing.footer.tagline": "Kostenloser Lebenslauf-Builder · Privatsphäre zuerst · Local-first und portabel",
 

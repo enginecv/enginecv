@@ -147,6 +147,10 @@ export const bs: Translations = {
   "landing.freeTools.examplesTitle": "Primjeri CV-a po zanimanju",
   "landing.freeTools.examplesDesc": "Realistični primjeri sa savjetima za zanimanje i čestim greškama.",
   "landing.freeTools.allTools": "Pogledaj sve besplatne alate",
+  "landing.popularGuides.kicker": "Vodiči",
+  "landing.popularGuides.title": "Pročitajte prije slanja CV-a",
+  "landing.popularGuides.description": "Kratki, praktični vodiči o pitanjima koja se najčešće postavljaju: koji dokument poslati, šta napisati bez iskustva i koje greške prvo ispraviti.",
+  "landing.popularGuides.allGuides": "Pročitaj sve članke",
 
   "landing.footer.tagline": "Besplatan uređivač CV-a · Privatnost na prvom mjestu · Lokalno i prenosivo",
 

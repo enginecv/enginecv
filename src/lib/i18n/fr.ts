@@ -147,6 +147,10 @@ export const fr: Translations = {
   "landing.freeTools.examplesTitle": "Exemples de CV par métier",
   "landing.freeTools.examplesDesc": "Des exemples réalistes avec des conseils spécifiques et les erreurs courantes.",
   "landing.freeTools.allTools": "Voir tous les outils gratuits",
+  "landing.popularGuides.kicker": "Guides",
+  "landing.popularGuides.title": "À lire avant d'envoyer votre CV",
+  "landing.popularGuides.description": "Des guides courts et pratiques sur les questions les plus fréquentes : quel document envoyer, que mettre sans expérience et quelles erreurs corriger en premier.",
+  "landing.popularGuides.allGuides": "Lire tous les articles",
 
   "landing.footer.tagline": "Builder de CV gratuit · Vie privée d'abord · Local-first et portable",
 
