@@ -606,6 +606,8 @@ export const de: Translations = {
   "dashboard.updatedAtLabel": "Zuletzt aktualisiert",
   "dashboard.builtinTemplates": "Integrierte Vorlagen",
   "dashboard.yourTemplates": "Deine Vorlagen",
+  "dashboard.allTemplates": "Alle Vorlagen",
+  "dashboard.seeAllTemplates": "Alle {count} ansehen",
   "dashboard.filterTemplates": "Vorlagen filtern",
   "dashboard.templateFilterShow": "Anzeigen",
   "dashboard.clearSearch": "Suche löschen",

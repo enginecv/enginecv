@@ -606,6 +606,8 @@ export const en: Translations = {
   "dashboard.updatedAtLabel": "Last updated",
   "dashboard.builtinTemplates": "Builtin Templates",
   "dashboard.yourTemplates": "Your Templates",
+  "dashboard.allTemplates": "All templates",
+  "dashboard.seeAllTemplates": "See all {count}",
   "dashboard.filterTemplates": "Filter templates",
   "dashboard.templateFilterShow": "Show",
   "dashboard.clearSearch": "Clear search",

@@ -606,6 +606,8 @@ export const bs: Translations = {
   "dashboard.updatedAtLabel": "Zadnje ažuriranje",
   "dashboard.builtinTemplates": "Ugrađeni šabloni",
   "dashboard.yourTemplates": "Vaši šabloni",
+  "dashboard.allTemplates": "Svi šabloni",
+  "dashboard.seeAllTemplates": "Prikaži svih {count}",
   "dashboard.filterTemplates": "Filtriraj šablone",
   "dashboard.templateFilterShow": "Prikaži",
   "dashboard.clearSearch": "Obriši pretragu",

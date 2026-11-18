@@ -9,7 +9,7 @@ import { db } from "@/lib/db";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useResumeStore } from "@/lib/store";
 import {
-    FileText, Plus, Trash2, X, AlertTriangle, Search, Edit2, Check, Copy, Download, LayoutTemplate, Upload, Mail, ListFilter, Grid2X2, Grid3X3, LayoutGrid, Radiation, ShieldCheck, type LucideIcon,
+    ArrowLeft, FileText, Plus, Trash2, X, AlertTriangle, Search, Edit2, Check, Copy, Download, LayoutTemplate, Upload, Mail, ListFilter, Grid2X2, Grid3X3, LayoutGrid, Radiation, ShieldCheck, type LucideIcon,
 } from "lucide-react";
 import { exportTemplateToJson, importTemplateFromJsonText } from "@/lib/templates/template-io";
 import { templateDocumentSchema, type TemplateDocument } from "@/lib/templates/template-schema";
@@ -70,7 +70,10 @@ const GRID_DENSITY_CLASS: Record<GridDensity, string> = {
     normal: "grid-cols-1 md:grid-cols-2 xl:grid-cols-3",
     compact: "grid-cols-1 md:grid-cols-3 xl:grid-cols-4",
 };
-type TemplateDashboardTab = "builtin" | "user";
+type TemplateDashboardTab = "all" | "builtin" | "user";
+
+/** How many templates each section of the templates overview shows, by grid density. */
+const TEMPLATE_OVERVIEW_COUNT: Record<GridDensity, number> = { large: 2, normal: 3, compact: 4 };
 type DashboardNavItem = {
     id: DashboardTab;
     label: string;
@@ -81,6 +84,59 @@ type DashboardNavItem = {
 const EMPTY_TEMPLATES: TemplateDocument[] = [];
 const DASHBOARD_CONTENT_CLASS = "mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8";
 const DASHBOARD_NAV_CLASS = "sticky top-0 z-30 border-b border-edge bg-surface-2 md:h-[68px] md:max-h-[68px]";
+
+/** One block of the templates overview: a title, a few cards, and a button to see the rest. */
+function TemplateOverviewSection({
+    title,
+    total,
+    onSeeAll,
+    testId,
+    children,
+}: {
+    title: string;
+    total: number;
+    onSeeAll: () => void;
+    testId: string;
+    children: ReactNode;
+}) {
+    const { t } = useTranslation();
+    return (
+        <section data-testid={testId} aria-label={title}>
+            <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-strong">
+                {title}
+                <span className="rounded-md bg-surface-1 px-1.5 py-0.5 text-[11px] font-semibold text-mid">{total}</span>
+            </h2>
+            {children}
+            {total > 0 && (
+                <div className="mt-5 flex justify-center">
+                    <button
+                        type="button"
+                        onClick={onSeeAll}
+                        data-testid={`${testId}-see-all`}
+                        className="rounded-xl border border-edge px-4 py-2 text-sm font-medium text-bright transition-colors hover:border-faint hover:text-strong"
+                    >
+                        {t("dashboard.seeAllTemplates", { count: total })}
+                    </button>
+                </div>
+            )}
+        </section>
+    );
+}
+
+function BackToAllTemplates({ onClick }: { onClick: () => void }) {
+    const { t } = useTranslation();
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            data-testid="dashboard-template-back"
+            className="mb-4 flex items-center gap-1.5 text-sm font-medium text-mid transition-colors hover:text-strong"
+        >
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+            {t("dashboard.allTemplates")}
+        </button>
+    );
+}
 
 // ---------------------------------------------
 // Template Filter Menu
@@ -103,6 +159,7 @@ function TemplateFilterMenu({
     const { t } = useTranslation();
     const [open, setOpen] = useState(false);
     const options: { id: TemplateDashboardTab; label: string; count: number }[] = [
+        { id: "all", label: t("dashboard.allTemplates"), count: builtinCount + userCount },
         { id: "builtin", label: t("dashboard.builtinTemplates"), count: builtinCount },
         { id: "user", label: t("dashboard.yourTemplates"), count: userCount },
     ];
@@ -1065,7 +1122,7 @@ function Dashboard() {
     const [templateDeleteTarget, setTemplateDeleteTarget] = useState<{ id: string; name: string } | null>(null);
     const [templateImportError, setTemplateImportError] = useState<string | null>(null);
     const [templateSearch, setTemplateSearch] = useState("");
-    const [activeTemplateDashboardTab, setActiveTemplateDashboardTab] = useState<TemplateDashboardTab>("builtin");
+    const [activeTemplateDashboardTab, setActiveTemplateDashboardTab] = useState<TemplateDashboardTab>("all");
 
     const templateSort = dashboardPreferences.templateSort;
     const setTemplateSort = useCallback((next: DashboardSort) => {
@@ -1652,7 +1709,75 @@ function Dashboard() {
                                         </div>
                                     )}
 
+                                    <TabsContent value="all">
+                                        <div className="space-y-12" data-testid="dashboard-template-overview">
+                                            <TemplateOverviewSection
+                                                testId="dashboard-overview-user"
+                                                title={t("dashboard.yourTemplates")}
+                                                total={filteredUserTemplates.length}
+                                                onSeeAll={() => setActiveTemplateDashboardTab("user")}
+                                            >
+                                                {filteredUserTemplates.length === 0 ? (
+                                                    <div className="flex flex-col items-center gap-2 rounded-[1.25rem] border border-dashed border-edge p-8 text-center text-faint">
+                                                        <LayoutTemplate className="h-7 w-7" />
+                                                        {templateSearch.trim() ? (
+                                                            <p className="text-sm">{t("dashboard.noSavedTemplatesMatch", { query: templateSearch })}</p>
+                                                        ) : (
+                                                            <>
+                                                                <p className="text-sm">{t("dashboard.noSavedTemplates")}</p>
+                                                                <p className="text-xs">{t("dashboard.noSavedTemplatesHint")}</p>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                ) : (
+                                                    <div className={`grid ${GRID_DENSITY_CLASS[gridDensity]} gap-5`}>
+                                                        {filteredUserTemplates.slice(0, TEMPLATE_OVERVIEW_COUNT[gridDensity]).map((template) => (
+                                                            <DashboardTemplateCard
+                                                                key={template.id}
+                                                                template={template}
+                                                                onDuplicate={() => handleDuplicateTemplate(template)}
+                                                                onDownload={() => handleDownloadTemplate(template)}
+                                                                onEdit={() => router.push(`/templates/${template.id}`)}
+                                                                onDelete={() =>
+                                                                    setTemplateDeleteTarget({
+                                                                        id: template.id,
+                                                                        name: template.meta.name || t("dashboard.untitledTemplate"),
+                                                                    })
+                                                                }
+                                                            />
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </TemplateOverviewSection>
+
+                                            <TemplateOverviewSection
+                                                testId="dashboard-overview-builtin"
+                                                title={t("dashboard.builtinTemplates")}
+                                                total={filteredBuiltinTemplates.length}
+                                                onSeeAll={() => setActiveTemplateDashboardTab("builtin")}
+                                            >
+                                                {filteredBuiltinTemplates.length === 0 ? (
+                                                    <div className="rounded-[1.25rem] border border-dashed border-edge p-8 text-center text-sm text-faint">
+                                                        {t("dashboard.noBuiltinTemplatesMatch", { query: templateSearch })}
+                                                    </div>
+                                                ) : (
+                                                    <div className={`grid ${GRID_DENSITY_CLASS[gridDensity]} gap-5`}>
+                                                        {filteredBuiltinTemplates.slice(0, TEMPLATE_OVERVIEW_COUNT[gridDensity]).map((template) => (
+                                                            <DashboardTemplateCard
+                                                                key={template.id}
+                                                                template={template}
+                                                                onDuplicate={() => handleDuplicateTemplate(template)}
+                                                                onDownload={() => handleDownloadTemplate(template)}
+                                                            />
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </TemplateOverviewSection>
+                                        </div>
+                                    </TabsContent>
+
                                     <TabsContent value="builtin">
+                                        <BackToAllTemplates onClick={() => setActiveTemplateDashboardTab("all")} />
                                         {filteredBuiltinTemplates.length === 0 ? (
                                             <div className="rounded-[1.25rem] border border-dashed border-edge p-10 text-center text-sm text-faint">
                                                 {t("dashboard.noBuiltinTemplatesMatch", { query: templateSearch })}
@@ -1681,6 +1806,7 @@ function Dashboard() {
                                     </TabsContent>
 
                                     <TabsContent value="user">
+                                        <BackToAllTemplates onClick={() => setActiveTemplateDashboardTab("all")} />
                                         {filteredUserTemplates.length === 0 ? (
                                             <div className="flex flex-col items-center gap-2 rounded-[1.25rem] border border-dashed border-edge p-10 text-center text-faint">
                                                 <LayoutTemplate className="h-8 w-8" />
