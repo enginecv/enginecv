@@ -178,6 +178,26 @@ describe("LinkedFileControl", () => {
         expect(useResumeStore.getState().resume.meta.title).toBe("Moved");
     }, 20_000);
 
+    it("says so when a manual check finds the file and the CV already match", async () => {
+        const disk = new FakeDisk();
+        await linkNew(disk);
+        await ensurePanel();
+
+        expect(screen.queryByTestId("linked-file-check-result")).toBeNull();
+        fireEvent.click(screen.getByTestId("linked-file-check"));
+        expect(await screen.findByTestId("linked-file-check-result")).toHaveTextContent(/the file and your CV match/i);
+    });
+
+    it("is a dialog that closes with its close button", async () => {
+        const disk = new FakeDisk();
+        await linkNew(disk);
+        await ensurePanel();
+
+        expect(screen.getByRole("dialog", { name: "Linked file" })).toBeInTheDocument();
+        fireEvent.click(screen.getByTestId("linked-file-close"));
+        expect(screen.queryByTestId("linked-file-panel")).toBeNull();
+    });
+
     it("unlinking keeps the file and the content", async () => {
         const disk = new FakeDisk();
         const handle = await linkNew(disk);
