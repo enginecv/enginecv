@@ -22,6 +22,7 @@ import { toDocumentModel } from "@/lib/document-model";
 import { HistoryPanel } from "@/components/editor/HistoryPanel";
 import { CvTitleInput } from "@/components/editor/CvTitleInput";
 import { LinkedFileControl } from "@/components/editor/LinkedFileControl";
+import { LinkedFileNotice } from "@/components/editor/LinkedFileNotice";
 import { useLinkedFile } from "@/hooks/useLinkedFile";
 import { OPEN_LINKED_FILE_PANEL_EVENT } from "@/lib/linked-file/types";
 import { hideChecklist, showChecklistAgain } from "@/lib/preferences/onboarding";
@@ -2107,6 +2108,8 @@ export default function EditorPage({ params }: { params: Promise<{ id: string }>
                     </div>
                 )}
             </header>
+
+            {isLoaded && activeResumeId && !isFocusMode && <LinkedFileNotice resumeId={activeResumeId} />}
 
             <ExportDialog
                 open={isExportDialogOpen}
