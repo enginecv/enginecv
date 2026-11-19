@@ -55,7 +55,7 @@ export function CvChoiceGrid({ choices, value, onChange, name, testIdPrefix }: {
                                 </div>
                                 <span className="min-w-0 px-0.5">
                                     <span className="line-clamp-2 break-words text-sm font-semibold text-strong" title={cv.label}>{cv.label}</span>
-                                    {cv.detail && <span className="block truncate text-xs text-mid">{cv.detail}</span>}
+                                    {cv.detail && <span className="line-clamp-2 break-words text-xs text-mid">{cv.detail}</span>}
                                 </span>
                             </label>
                         );
