@@ -68,6 +68,25 @@ export const letterDesignSchema = z.object({
 });
 export type LetterDesign = z.infer<typeof letterDesignSchema>;
 
+export const DESIGN_KEYS = ["fontFamily", "fontSize", "lineHeight", "textColor", "accentColor", "headerFontFamily", "headerFontWeight", "headerTextTransform", "marginHmm", "marginVmm"] as const;
+export type DesignKey = (typeof DESIGN_KEYS)[number];
+
+/** Only the design values the person changed for this letter; the rest come from the CV, or the default design when there is none. */
+// Written out field by field for the same reason as the sender overrides: a partial schema would keep every default.
+export const designOverridesSchema = z.object({
+    fontFamily: z.string().optional(),
+    fontSize: z.number().optional(),
+    lineHeight: z.number().optional(),
+    textColor: z.string().optional(),
+    accentColor: z.string().optional(),
+    headerFontFamily: z.string().optional(),
+    headerFontWeight: z.string().optional(),
+    headerTextTransform: z.string().optional(),
+    marginHmm: z.number().optional(),
+    marginVmm: z.number().optional(),
+});
+export type DesignOverrides = z.infer<typeof designOverridesSchema>;
+
 export const lastResolvedSchema = z.object({
     sender: senderSchema,
     design: letterDesignSchema,
@@ -109,6 +128,8 @@ export const letterDocumentSchema = z
     .object({
         id: z.string().default(() => createId()),
         cvId: z.string().nullable().default(null),
+        /** Written without a CV on purpose: the sender and design live on the letter itself. A linked letter is never standalone. */
+        standalone: z.boolean().default(false),
         title: z.string().default(""),
         status: z.enum(LETTER_STATUSES).default("draft"),
         language: z.string().default("en"),
@@ -128,6 +149,7 @@ export const letterDocumentSchema = z
         paragraphs: z.array(letterParagraphSchema).default([]),
         closing: z.string().default(""),
         senderOverrides: senderOverridesSchema.default({}),
+        designOverrides: designOverridesSchema.default({}),
         lastResolved: lastResolvedSchema.nullable().default(null),
         frozen: snapshotSchema.nullable().default(null),
         createdAt: z.number().default(() => Date.now()),
@@ -135,11 +157,12 @@ export const letterDocumentSchema = z
     })
     .superRefine((letter, ctx) => {
         if (letter.status === "draft") {
-            if (!letter.cvId) ctx.addIssue({ code: "custom", path: ["cvId"], message: "A draft letter needs a linked CV." });
+            if (!letter.cvId && !letter.standalone) ctx.addIssue({ code: "custom", path: ["cvId"], message: "A draft letter needs a linked CV, or to be standalone." });
             if (letter.frozen) ctx.addIssue({ code: "custom", path: ["frozen"], message: "A draft letter cannot be frozen." });
         } else if (!letter.frozen) {
             ctx.addIssue({ code: "custom", path: ["frozen"], message: "A sent or snapshot letter needs its frozen copy." });
         }
+        if (letter.standalone && letter.cvId) ctx.addIssue({ code: "custom", path: ["standalone"], message: "A standalone letter has no linked CV." });
         const ids = new Set<string>();
         for (const paragraph of letter.paragraphs) {
             if (ids.has(paragraph.id)) ctx.addIssue({ code: "custom", path: ["paragraphs"], message: "Paragraph ids must be unique." });
@@ -197,3 +220,27 @@ export function createLetter(cv: Pick<Resume, "id" | "settings">, options: Creat
     });
 }
 
+
+export interface CreateStandaloneLetterOptions {
+    language: string;
+    now?: number;
+    starter?: CreateLetterOptions["starter"];
+}
+
+/** A new draft with no CV: the person types the sender block and picks the design. */
+export function createStandaloneLetter(options: CreateStandaloneLetterOptions): LetterDocument {
+    const now = options.now ?? Date.now();
+    const layout: LetterLayout = options.language.toLowerCase().startsWith("de") ? "din5008" : "standard";
+    return letterDocumentSchema.parse({
+        cvId: null,
+        standalone: true,
+        language: options.language,
+        layout,
+        paperSize: layout === "din5008" ? "a4" : defaultPaperSize(options.language),
+        paperSizeBeforeGerman: layout === "din5008" ? defaultPaperSize(options.language) : null,
+        date: todayIso(now),
+        createdAt: now,
+        updatedAt: now,
+        ...(options.starter ?? {}),
+    });
+}

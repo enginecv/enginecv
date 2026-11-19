@@ -19,13 +19,41 @@ describe("LettersTab", () => {
     });
     afterEach(cleanup);
 
-    it("tells the person a letter needs a CV and offers to create one", async () => {
+    it("with no CV, offers to create one and still lets the person write a standalone letter", async () => {
         const onCreateCv = vi.fn();
         render(<LettersTab onCreateCv={onCreateCv} />);
-        expect(await screen.findByTestId("letters-no-cvs")).toBeInTheDocument();
+        expect(await screen.findByTestId("letters-empty")).toBeInTheDocument();
         fireEvent.click(screen.getByTestId("letters-create-cv"));
         expect(onCreateCv).toHaveBeenCalledTimes(1);
-        expect(screen.queryByTestId("letter-new")).toBeNull();
+
+        fireEvent.click(screen.getByTestId("letter-new"));
+        await waitFor(() => expect(push).toHaveBeenCalledTimes(1));
+        const [letter] = await db.coverLetters.toArray();
+        expect(letter).toMatchObject({ cvId: null, standalone: true, status: "draft" });
+        expect(push).toHaveBeenCalledWith(`/letters/${letter.id}`);
+    });
+
+    it("offers to start without a CV in the picker", async () => {
+        await db.resumes.put(makeCv({ id: "cv-a", title: "Design CV" }));
+        render(<LettersTab onCreateCv={vi.fn()} />);
+        fireEvent.click(await screen.findByTestId("letter-new"));
+        const dialog = await screen.findByTestId("letters-cv-picker");
+        fireEvent.click(within(dialog).getByText("Start without a CV"));
+        fireEvent.click(within(dialog).getByTestId("letters-cv-create"));
+        await waitFor(() => expect(push).toHaveBeenCalledTimes(1));
+        expect((await db.coverLetters.toArray())[0]).toMatchObject({ cvId: null, standalone: true });
+    });
+
+    it("groups standalone letters apart from letters whose CV was deleted", async () => {
+        await db.coverLetters.bulkPut([
+            makeLetter({ id: "s1", cvId: null, standalone: true, company: "Solo Co" }),
+            makeLetter({ id: "o1", cvId: "gone", company: "Orphan Co" }),
+        ]);
+        render(<LettersTab onCreateCv={vi.fn()} />);
+        const standalone = await screen.findByTestId("letters-group-standalone");
+        expect(within(standalone).getAllByText(/Solo Co/).length).toBeGreaterThan(0);
+        expect(within(standalone).queryByTestId("letter-needs-cv")).toBeNull();
+        expect(within(screen.getByTestId("letters-group-none")).getAllByText(/Orphan Co/).length).toBeGreaterThan(0);
     });
 
     it("shows an empty state when there are CVs but no letters", async () => {
@@ -40,6 +68,7 @@ describe("LettersTab", () => {
         await db.resumes.put(cv);
         render(<LettersTab onCreateCv={vi.fn()} />);
         fireEvent.click(await screen.findByTestId("letter-new"));
+        fireEvent.click(within(await screen.findByTestId("letters-cv-picker")).getByTestId("letters-cv-create")); // the first CV is preselected
 
         await waitFor(() => expect(push).toHaveBeenCalledTimes(1));
         const [letter] = await db.coverLetters.toArray();
@@ -105,6 +134,7 @@ describe("LettersTab", () => {
         await db.resumes.put(cv);
         render(<LettersTab onCreateCv={vi.fn()} />);
         fireEvent.click(await screen.findByTestId("letter-new"));
+        fireEvent.click(within(await screen.findByTestId("letters-cv-picker")).getByTestId("letters-cv-create"));
         await waitFor(() => expect(push).toHaveBeenCalledTimes(1));
         expect((await db.coverLetters.toArray())[0]).toMatchObject({ cvId: "odd", status: "draft" });
     });

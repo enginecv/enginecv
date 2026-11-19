@@ -99,7 +99,7 @@ export function LetterTextPane({ letter, tokenValues, onChange, readOnly = false
                 <TextField label={t("letters.salutation")} value={letter.salutation} disabled={readOnly} testId="letter-salutation"
                     onChange={(salutation) => onChange((current) => ({ ...current, salutation }))} />
 
-                {!readOnly && <TokenTray values={tokenValues} onInsert={insertToken} />}
+                {!readOnly && <TokenTray values={tokenValues} onInsert={insertToken} standalone={letter.standalone} />}
 
                 <div className="space-y-3" data-testid="letter-paragraph-list">
                     <SortableList
