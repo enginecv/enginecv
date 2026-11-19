@@ -94,7 +94,7 @@ export function LetterTextPane({ letter, tokenValues, onChange, readOnly = false
     };
 
     return (
-        <PaneSection title={t("letters.section.text")} testId="letter-text-pane">
+        <PaneSection title={t("letters.section.text")} testId="letter-text-pane" tips="text">
             <div ref={rootRef} className="space-y-4" onPasteCapture={reducePaste}>
                 <TextField label={t("letters.salutation")} value={letter.salutation} disabled={readOnly} testId="letter-salutation"
                     onChange={(salutation) => onChange((current) => ({ ...current, salutation }))} />
