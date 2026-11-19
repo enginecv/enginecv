@@ -80,7 +80,12 @@ async function readJson(file: File, sourceId: SourceId, helpers: ReadSourceHelpe
     // null: the person cancelled the key prompt.
     if (!result) return [];
     if (result.kind === "data-export") {
-        return result.resumes.map((resume, index) => ({ ...batch(sourceId, `${file.name} (${index + 1})`, resume), fromDataExport: true }));
+        return result.resumes.map((resume, index) => ({
+            ...batch(sourceId, `${file.name} (${index + 1})`, resume),
+            fromDataExport: true,
+            // The letters go once, with the first CV, so a file of several CVs does not repeat them.
+            ...(index === 0 ? { dataExportExtras: result.extras } : {}),
+        }));
     }
     if (result.kind === "json-resume") return [batch("jsonresume", file.name, result.resume, result.report)];
     return [batch(sourceId, file.name, result.resume)];

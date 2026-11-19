@@ -53,27 +53,27 @@ export interface DocxExportResult {
     photoSkipped: boolean;
 }
 
-const FALLBACK_FONT = "Calibri";
+export const FALLBACK_FONT = "Calibri";
 const BODY_SIZE = 21; // half-points → 10.5 pt
 const MARGIN = 1134; // twips → 2 cm
-const PAGE = {
+export const PAGE = {
     a4: { width: 11906, height: 16838 },
     letter: { width: 12240, height: 15840 },
 } as const;
-const BULLETS = "enginecv-bullets";
-const NUMBERS = "enginecv-numbers";
+export const BULLETS = "enginecv-bullets";
+export const NUMBERS = "enginecv-numbers";
 const PHOTO_MAX_PX = 120;
 
 type RunFormat = { bold?: boolean; italics?: boolean; code?: boolean };
 
-interface BuildContext {
+export interface BuildContext {
     accent: string;
     contentWidth: number;
     /** Each ordered list restarts at 1, which needs its own numbering instance. */
     nextListInstance: number;
 }
 
-function hex(value: string): string {
+export function hex(value: string): string {
     return value.replace(/^#/, "");
 }
 
@@ -121,18 +121,25 @@ function tokenText(tokens: InlineToken[]): string {
         .join("");
 }
 
-function markdownParagraphs(markdown: string, context: BuildContext): Paragraph[] {
-    return parseMarkdownBlocks(markdown).flatMap((block) => {
+/**
+ * Markdown as Word paragraphs. `keepWithNext` keeps the final paragraph on the same page as
+ * whatever follows (a letter uses it so the last paragraph stays with the closing).
+ */
+export function markdownParagraphs(markdown: string, context: BuildContext, options: { keepWithNext?: boolean } = {}): Paragraph[] {
+    const blocks = parseMarkdownBlocks(markdown);
+    return blocks.flatMap((block, blockIndex) => {
+        const isLastBlock = blockIndex === blocks.length - 1;
         if (block.type === "paragraph") {
-            return [new Paragraph({ children: inlineChildren(block.content), spacing: { after: 80 } })];
+            return [new Paragraph({ children: inlineChildren(block.content), spacing: { after: 80 }, keepNext: options.keepWithNext && isLastBlock })];
         }
         const instance = block.ordered ? context.nextListInstance++ : undefined;
-        return block.items.map((item) => new Paragraph({
+        return block.items.map((item, itemIndex) => new Paragraph({
             children: inlineChildren(item),
             numbering: block.ordered
                 ? { reference: NUMBERS, level: 0, instance }
                 : { reference: BULLETS, level: 0 },
             spacing: { after: 40 },
+            keepNext: options.keepWithNext && isLastBlock && itemIndex === block.items.length - 1,
         }));
     });
 }
@@ -260,7 +267,7 @@ async function rasterizeToPng(dataUrl: string): Promise<Uint8Array> {
     return decodeBase64DataUrl(canvas.toDataURL("image/png"));
 }
 
-async function photoParagraph(photo: DocumentImage): Promise<Paragraph> {
+export async function photoParagraph(photo: DocumentImage): Promise<Paragraph> {
     const directType = DIRECT_IMAGE_TYPES[photo.mimeType.toLowerCase()];
     const data = directType ? decodeBase64DataUrl(photo.dataUrl) : await rasterizeToPng(photo.dataUrl);
     if (data.length === 0) throw new Error("Empty image");

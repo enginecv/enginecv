@@ -103,3 +103,15 @@ describe("large data (SC-005)", () => {
         expect(total).toBeLessThan(10_000);
     });
 });
+
+describe("cover letters in the summary", () => {
+    it("names the letters once there are some, and leaves the line as it was when there are none", async () => {
+        const none = buildDataExport(await collectInventory(seededAdapters()), context);
+        expect(none.summary.join(" ")).not.toMatch(/cover letter/);
+
+        const content = (await import("./__fixtures__/adapters")).fixtureContent();
+        const withLetters = seededAdapters({ readEngineCvContent: async () => ({ ...content, coverLetters: [{ id: "a" }, { id: "b" }] as never }) });
+        const file = buildDataExport(await collectInventory(withLetters), context);
+        expect(file.summary.join(" ")).toContain("2 cover letters");
+    });
+});

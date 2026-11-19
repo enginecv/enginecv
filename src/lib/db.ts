@@ -1,5 +1,6 @@
 import Dexie, { type Table } from "dexie";
 import { type Resume } from "./schema";
+import type { LetterDocument, ParagraphEntry } from "./letters/schema";
 import { type TemplateDocument } from "./templates/template-schema";
 
 export type ResumeHistoryTrigger = "autosave" | "manual" | "import" | "restore" | "duplicate" | "json-edit" | "file-sync";
@@ -26,6 +27,8 @@ class ResumeDatabase extends Dexie {
     resumeHistory!: Table<ResumeHistoryEntry, number>;
     templates!: Table<TemplateDocument, string>; // string = id
     linkedFiles!: Table<LinkedFileRecord, string>; // string = resume id
+    coverLetters!: Table<LetterDocument, string>; // string = id
+    letterParagraphs!: Table<ParagraphEntry, string>; // string = id
 
     constructor() {
         super("EngineCVDatabase");
@@ -51,6 +54,17 @@ class ResumeDatabase extends Dexie {
             resumeHistory: "++id, resumeId, createdAt, trigger",
             templates: "id, updatedAt, createdAt",
             linkedFiles: "resumeId",
+        });
+
+        // Cover letters (feature 090). Version 4 is the linked-files table; this one adds the
+        // letters and the saved-paragraph library on top and keeps every earlier table.
+        this.version(5).stores({
+            resumes: "id, updatedAt",
+            resumeHistory: "++id, resumeId, createdAt, trigger",
+            templates: "id, updatedAt, createdAt",
+            linkedFiles: "resumeId",
+            coverLetters: "id, cvId, updatedAt, status",
+            letterParagraphs: "id, updatedAt",
         });
     }
 }

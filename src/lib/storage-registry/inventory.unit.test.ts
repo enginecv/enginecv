@@ -34,7 +34,7 @@ describe("collectInventory", () => {
 
     it("counts CVs, versions, templates and other items", async () => {
         const inventory = await collectInventory(seededAdapters());
-        expect(inventory.counts).toEqual({ resumes: 3, versions: 2, templates: 0, other: 4 });
+        expect(inventory.counts).toEqual({ resumes: 3, versions: 2, templates: 0, letters: 0, other: 4 });
         expect(inventory.totalBytes).toBeGreaterThan(0);
     });
 
