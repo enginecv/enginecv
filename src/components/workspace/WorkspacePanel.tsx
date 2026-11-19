@@ -1,15 +1,20 @@
 "use client";
 
 import { FolderSync, Loader2, Pause, Play, Unlink } from "lucide-react";
+import { useLiveQuery } from "dexie-react-hooks";
 import { useEffect, useState } from "react";
+import { db } from "@/lib/db";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { useDialogFocus } from "@/hooks/useDialogFocus";
 import { useTranslation } from "@/lib/i18n";
-import { analyzeFolderHandle, connectFolder, disconnectWorkspace, resumePermission, setPaused, useWorkspaceStore } from "@/lib/workspace/controller";
+import { analyzeFolderHandle, applyHeldChange, chooseDuplicate, connectFolder, disconnectWorkspace, ignoreFile, keepAppVersion, recreateDocumentFile, relinkDocumentTo, resumePermission, setPaused, useWorkspaceStore } from "@/lib/workspace/controller";
 import { pickWorkspaceFolder } from "@/lib/workspace/directory-adapter";
 import type { PlanItem } from "@/lib/workspace/first-sync";
 import type { SetupAnalysis } from "@/lib/workspace/setup";
+import { ConflictsDialog } from "./ConflictsDialog";
+import { DocStateChip } from "./DocStateChip";
 import { FirstSyncDialog } from "./FirstSyncDialog";
+import { ReviewDialog } from "./ReviewDialog";
 import { SetupWarning } from "./SetupWarning";
 
 type Step = { kind: "idle" } | { kind: "warning" } | { kind: "review"; handle: FileSystemDirectoryHandle; analysis: SetupAnalysis };
@@ -27,6 +32,20 @@ export function WorkspacePanel({ onClose }: { onClose: () => void }) {
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [confirmDisconnect, setConfirmDisconnect] = useState(false);
+    const [reviewing, setReviewing] = useState<string | null>(null);
+    const [showConflicts, setShowConflicts] = useState(false);
+    const rows = useLiveQuery(() => db.workspaceDocs.toArray(), [], []);
+    const titles = useLiveQuery(async () => {
+        const map = new Map<string, string>();
+        for (const cv of await db.resumes.toArray()) map.set(cv.id ?? "", cv.meta?.title || cv.basics?.name || "CV");
+        for (const letter of await db.coverLetters.toArray()) map.set(letter.id, letter.title || [letter.company, letter.role].filter(Boolean).join(" - ") || letter.id);
+        return map;
+    }, [], new Map<string, string>());
+    const titleOf = (docId: string) => titles.get(docId) ?? docId;
+    const detached = rows.filter((row) => row.state === "detached" && row.included).map((row) => ({ row, title: titleOf(row.docId) }));
+    const attentionCount = detached.length + state.attention.duplicates.length + state.attention.unmatched.length + state.attention.conflictCopies.length;
+    const attention = rows.filter((row) => row.included && row.state !== "in-sync" && row.state !== "paused");
+    const reviewRow = rows.find((row) => row.docId === reviewing);
 
     useEffect(() => {
         setError(state.error);
@@ -115,6 +134,20 @@ export function WorkspacePanel({ onClose }: { onClose: () => void }) {
                                 {state.paused && <p className="text-xs text-accent" data-testid="workspace-paused">{t("workspace.panel.paused")}</p>}
                                 {!state.isLeader && <p className="text-xs text-faint" data-testid="workspace-other-tab">{t("workspace.panel.otherTab")}</p>}
                             </div>
+                            {attention.length > 0 && (
+                                <ul className="space-y-1" data-testid="workspace-doc-list">
+                                    {attention.map((row) => (
+                                        <li key={row.docId} className="flex items-center justify-between gap-2 rounded-lg border border-edge bg-surface-1 px-3 py-2 text-sm">
+                                            <span className="min-w-0 truncate text-strong">{titleOf(row.docId)}</span>
+                                            <span className="flex items-center gap-2">
+                                                <DocStateChip state={row.state} reason={row.reason} />
+                                                {row.state === "review" && row.pendingReview && <button type="button" data-testid={`workspace-review-open-${row.docId}`} onClick={() => setReviewing(row.docId)} className="text-xs font-bold text-accent hover:underline">{t("workspace.state.review")}</button>}
+                                            </span>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                            {attentionCount > 0 && <button type="button" onClick={() => setShowConflicts(true)} data-testid="workspace-open-conflicts" className={button}>{t("workspace.panel.attention", { count: attentionCount })}</button>}
                             <div className="flex flex-wrap gap-2">
                                 <button type="button" onClick={() => void setPaused(!state.paused)} data-testid="workspace-pause" className={button}>
                                     {state.paused ? <Play className="h-4 w-4" aria-hidden="true" /> : <Pause className="h-4 w-4" aria-hidden="true" />}
@@ -143,6 +176,27 @@ export function WorkspacePanel({ onClose }: { onClose: () => void }) {
                 />
             )}
             {step.kind === "review" && <FirstSyncDialog plan={step.analysis.plan} leftOut={step.analysis.skipped.length} busy={busy} onApply={(plan) => void apply(plan)} onCancel={() => setStep({ kind: "idle" })} />}
+
+            {reviewRow?.pendingReview && (
+                <ReviewDialog
+                    docTitle={titleOf(reviewRow.docId)}
+                    review={reviewRow.pendingReview}
+                    onClose={() => setReviewing(null)}
+                    onApply={() => { setReviewing(null); void applyHeldChange(reviewRow.docId); }}
+                    onKeepMine={() => { setReviewing(null); void keepAppVersion(reviewRow.docId); }}
+                />
+            )}
+            {showConflicts && (
+                <ConflictsDialog
+                    attention={state.attention}
+                    detached={detached}
+                    onClose={() => setShowConflicts(false)}
+                    onKeepFile={(docId, keep, others) => void chooseDuplicate(docId, keep, others)}
+                    onRelink={(docId, file) => void relinkDocumentTo(docId, file)}
+                    onRecreate={(docId) => void recreateDocumentFile(docId)}
+                    onIgnore={(file) => void ignoreFile(file)}
+                />
+            )}
 
             <ConfirmModal
                 open={confirmDisconnect}

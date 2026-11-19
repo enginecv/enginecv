@@ -49,6 +49,8 @@ export interface WorkspaceRuntime {
     applyHeld(docId: string): Promise<void>;
     /** The person confirmed keeping the app's version: it is written over the file. */
     keepMine(docId: string): Promise<void>;
+    /** Rebuilds one document's engine from its row (after a relink or a resolved conflict). */
+    reload(docId: string): Promise<void>;
     /** The engines by document id, for tests and the controller. */
     engineFor(docId: string): DocumentSyncEngine | undefined;
 }
@@ -238,6 +240,11 @@ export function createWorkspaceRuntime(options: RuntimeOptions): WorkspaceRuntim
         },
         get changeSource() {
             return source;
+        },
+        reload: async (docId) => {
+            detach(docId);
+            const fresh = (await listDocRows()).find((candidate) => candidate.docId === docId);
+            if (fresh) await attach(fresh);
         },
         applyHeld: async (docId) => engines.get(docId)?.engine.applyHeld(),
         keepMine: async (docId) => engines.get(docId)?.engine.keepMine(),
