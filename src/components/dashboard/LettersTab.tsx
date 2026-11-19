@@ -258,41 +258,41 @@ export function LettersTab({ onCreateCv, gridClass = "grid-cols-1 md:grid-cols-2
             ) : (
                 groups.map((group) => (
                     <section key={group.cvId ?? "none"} data-testid={`letters-group-${group.cvId ?? "none"}`} aria-label={group.title} className="space-y-3">
-                        <div className="flex items-center gap-3">
+                        <h3 className="flex items-center gap-2 text-sm font-semibold text-strong">
+                            {group.title}
+                            <span className="rounded-md bg-surface-1 px-1.5 py-0.5 text-[11px] font-semibold text-mid" data-testid="letters-group-count">{group.letters.length}</span>
+                        </h3>
+                        <div className="flex items-start gap-5">
                             {group.resume && group.cvId && (
-                                <button type="button" onClick={() => router.push(`/editor/${group.cvId}`)} title={t("dashboard.letters.openNamed", { name: group.title })} aria-label={t("dashboard.letters.openNamed", { name: group.title })} data-testid="letter-group-thumb" className="h-24 w-[68px] shrink-0 overflow-hidden rounded-md border border-edge bg-white shadow-md transition-all hover:-translate-y-0.5 hover:border-accent/50 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+                                <button type="button" onClick={() => router.push(`/editor/${group.cvId}`)} title={t("dashboard.letters.openNamed", { name: group.title })} aria-label={t("dashboard.letters.openNamed", { name: group.title })} data-testid="letter-group-thumb" className="hidden aspect-[210/297] w-32 shrink-0 self-start sm:sticky sm:top-20 sm:block overflow-hidden rounded-md border border-edge bg-white shadow-md transition-all hover:-translate-y-0.5 hover:border-accent/50 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
                                     <span className="pointer-events-none block h-full w-full" aria-hidden="true">
                                         <LiveResumeThumbnail resume={group.resume} />
                                     </span>
                                 </button>
                             )}
-                            <h3 className="flex items-center gap-2 text-sm font-semibold text-strong">
-                                {group.title}
-                                <span className="rounded-md bg-surface-1 px-1.5 py-0.5 text-[11px] font-semibold text-mid" data-testid="letters-group-count">{group.letters.length}</span>
-                            </h3>
-                        </div>
-                        <div className={`grid ${gridClass} gap-5`}>
-                            {group.letters.map((letter) => (
-                                <LetterCard
-                                    key={letter.id}
-                                    letter={letter}
-                                    needsCv={letter.status === "draft" && group.cvId === null}
-                                    onOpen={() => router.push(`/letters/${letter.id}`)}
-                                    actions={{
-                                        onDuplicate: () => void run(async () => {
-                                            // A letter whose CV is gone needs a CV to copy onto: ask which.
-                                            if (!letter.cvId || !cvs.some((cv) => cv.id === letter.cvId)) {
-                                                setDialog({ mode: "duplicate", letter });
-                                                return;
-                                            }
-                                            await duplicateLetter(letter.id, { copyLabel: t("dashboard.copy") });
-                                        }),
-                                        onDuplicateInto: () => setDialog({ mode: "duplicate", letter }),
-                                        onRepoint: () => setDialog({ mode: "repoint", letter }),
-                                        onDelete: () => setDeleteTarget(letter),
-                                    }}
-                                />
-                            ))}
+                            <div className={`grid ${gridClass} min-w-0 flex-1 gap-5`}>
+                                {group.letters.map((letter) => (
+                                    <LetterCard
+                                        key={letter.id}
+                                        letter={letter}
+                                        needsCv={letter.status === "draft" && group.cvId === null}
+                                        onOpen={() => router.push(`/letters/${letter.id}`)}
+                                        actions={{
+                                            onDuplicate: () => void run(async () => {
+                                                // A letter whose CV is gone needs a CV to copy onto: ask which.
+                                                if (!letter.cvId || !cvs.some((cv) => cv.id === letter.cvId)) {
+                                                    setDialog({ mode: "duplicate", letter });
+                                                    return;
+                                                }
+                                                await duplicateLetter(letter.id, { copyLabel: t("dashboard.copy") });
+                                            }),
+                                            onDuplicateInto: () => setDialog({ mode: "duplicate", letter }),
+                                            onRepoint: () => setDialog({ mode: "repoint", letter }),
+                                            onDelete: () => setDeleteTarget(letter),
+                                        }}
+                                    />
+                                ))}
+                            </div>
                         </div>
                     </section>
                 ))
