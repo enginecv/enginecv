@@ -37,6 +37,10 @@ export interface DatePickerProps {
     className?: string;
     precision?: DatePrecision;
     allowPresent?: boolean;
+    /** Adds a "Today" button that sets the current date (day precision). */
+    showToday?: boolean;
+    disabled?: boolean;
+    testId?: string;
     language?: string;
 }
 
@@ -125,19 +129,24 @@ function DatePickerBase({
     className,
     precision = "day",
     allowPresent = false,
+    showToday = false,
+    testId,
     language,
     captionLayout,
     startMonth,
     endMonth,
     defaultMonth,
     disabled,
-}: DatePickerProps & {
+}: Omit<DatePickerProps, "disabled"> & {
     captionLayout?: React.ComponentProps<typeof Calendar>["captionLayout"];
     startMonth?: Date;
     endMonth?: Date;
     defaultMonth?: Date;
-    disabled?: React.ComponentProps<typeof Calendar>["disabled"];
+    /** Locks the field, or (as a matcher) disables days in the calendar. */
+    disabled?: boolean | React.ComponentProps<typeof Calendar>["disabled"];
 }) {
+    const locked = disabled === true;
+    const dayMatcher = typeof disabled === "boolean" ? undefined : disabled;
     const { t, locale } = useTranslation();
     language ??= locale;
     const presentLabel = getCvLanguageLabels(language).present;
@@ -211,6 +220,8 @@ function DatePickerBase({
                         }
                     }}
                     className="pr-10"
+                    disabled={locked}
+                    data-testid={testId}
                     inputMode={allowPresent ? "text" : "numeric"}
                     aria-label={label ? `${label} (${hint})` : hint}
                 />
@@ -221,6 +232,7 @@ function DatePickerBase({
                             variant="ghost"
                             size="icon"
                             aria-label={t("datePicker.openCalendar")}
+                            disabled={locked}
                             className="absolute right-1.5 top-1/2 z-[1] -translate-y-1/2 h-7 w-7 rounded-md"
                         >
                             <Icon className="w-4 h-4" />
@@ -236,7 +248,7 @@ function DatePickerBase({
                                 captionLayout={captionLayout}
                                 startMonth={startMonth}
                                 endMonth={endMonth}
-                                disabled={disabled}
+                                disabled={dayMatcher}
                                 onSelect={(date) => {
                                     if (!date) {
                                         onChange("");
@@ -265,6 +277,17 @@ function DatePickerBase({
             <p className="text-[10px] text-faint leading-none">
                 {t("datePicker.typeHint", { format: resolvedPlaceholder })}
             </p>
+            {showToday && precision === "day" ? (
+                <button
+                    type="button"
+                    disabled={locked}
+                    data-testid={testId ? `${testId}-today` : undefined}
+                    onClick={() => handlePickerSelect(new Date())}
+                    className="rounded-md border border-edge px-2 py-1 text-[11px] text-faint transition-colors hover:border-faint hover:text-strong disabled:opacity-50"
+                >
+                    {t("datePicker.today")}
+                </button>
+            ) : null}
             {allowPresent ? (
                 <button
                     type="button"

@@ -1985,6 +1985,7 @@ export const es: Translations = {
   "form.height": "Estatura",
   "datePicker.formatOrPresent": "{format} o {present}",
   "datePicker.openCalendar": "Abrir calendario",
+  "datePicker.today": "Hoy",
   "datePicker.typeHint": "Escribe {format} o elige en el calendario.",
   "country.showInPreview": "Mostrar en la vista previa",
   "country.flag": "Bandera",

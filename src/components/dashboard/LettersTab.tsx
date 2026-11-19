@@ -1,7 +1,7 @@
 "use client";
 
 import { useLiveQuery } from "dexie-react-hooks";
-import { Grid2X2, Grid3X3, LayoutGrid, Loader2, Mail, Plus } from "lucide-react";
+import { Grid2X2, Grid3X3, LayoutGrid, Link2, Loader2, Mail, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { CvChoiceGrid, type CvChoice } from "@/components/letters/CvChoiceGrid";
@@ -13,17 +13,23 @@ import { db } from "@/lib/db";
 import { useTranslation } from "@/lib/i18n";
 import type { LetterDocument } from "@/lib/letters/schema";
 import type { Resume } from "@/lib/schema";
+import { pageOf } from "@/lib/letters/paging";
 import { createLetterRecord, createStandaloneLetterRecord, deleteLetter, duplicateLetter, listLetters, repointLetter, restoreLetter } from "@/lib/letters/store";
 import { LetterCard, letterDisplayTitle } from "./LetterCard";
 import { LiveResumeThumbnail } from "./LiveResumeThumbnail";
+import { Pager } from "./ListControls";
 import { NavSearch } from "./NavSearch";
 import { DASHBOARD_CONTENT_CLASS, DASHBOARD_NAV_CLASS } from "./layout";
 
 const UNDO_WINDOW_MS = 8000;
 type Density = "large" | "normal" | "compact";
 
-/** Two rows of cards at the widest layout; a group longer than this folds behind "Show all". */
+/** Two rows of cards at the widest layout; a longer group opens on its own page behind "Show all". */
 const COLLAPSED_LETTERS: Record<Density, number> = { large: 4, normal: 6, compact: 8 };
+/** Letters per page once one group is open, so even hundreds of letters render a bounded number of cards. */
+const FOCUSED_LETTERS: Record<Density, number> = { large: 12, normal: 18, compact: 24 };
+/** CV groups (each with a CV preview) per page of the overview. */
+const GROUPS_PER_PAGE = 5;
 
 type CvOption = CvChoice;
 
@@ -99,7 +105,10 @@ export function LettersTab({ onCreateCv, gridClass = "grid-cols-1 md:grid-cols-2
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [query, setQuery] = useState("");
-    const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
+    const [groupPage, setGroupPage] = useState(1);
+    const [focusPage, setFocusPage] = useState(1);
+    /** The one group opened with "Show all" (its group key), or null for the overview. */
+    const [focus, setFocus] = useState<string | null>(null);
     const [dialog, setDialog] = useState<{ mode: "repoint" | "duplicate"; letter: LetterDocument } | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<LetterDocument | null>(null);
     const [undoRow, setUndoRow] = useState<LetterDocument | null>(null);
@@ -134,17 +143,22 @@ export function LettersTab({ onCreateCv, gridClass = "grid-cols-1 md:grid-cols-2
         return result;
     }, [letters, cvs, query, cvFilter, t]);
 
-    /** A group folds to two rows unless the person is searching, filtered to one CV, or expanded it. */
-    const folded = (group: LetterGroup) => !query.trim() && !cvFilter && !expanded.has(groupKey(group)) && group.letters.length > COLLAPSED_LETTERS[density];
-    const visibleLetters = (group: LetterGroup) => (folded(group) ? group.letters.slice(0, COLLAPSED_LETTERS[density]) : group.letters);
-    const canFold = (group: LetterGroup) => !query.trim() && !cvFilter && group.letters.length > COLLAPSED_LETTERS[density];
-    const toggleExpanded = (group: LetterGroup) => setExpanded((current) => {
-        const next = new Set(current);
-        const key = groupKey(group);
-        if (next.has(key)) next.delete(key);
-        else next.add(key);
-        return next;
-    });
+    /** A CV chosen from its card wins over a group opened here. */
+    const activeFocus = cvFilter ?? focus;
+    const clearFocus = () => {
+        setFocus(null);
+        setFocusPage(1);
+        onClearCvFilter?.();
+    };
+    const openGroup = (group: LetterGroup) => {
+        setFocus(groupKey(group));
+        setFocusPage(1);
+    };
+    const changeQuery = (value: string) => {
+        setQuery(value);
+        setGroupPage(1);
+        setFocusPage(1);
+    };
 
     const run = async (action: () => Promise<void>) => {
         setBusy(true);
@@ -229,12 +243,19 @@ export function LettersTab({ onCreateCv, gridClass = "grid-cols-1 md:grid-cols-2
         );
     }
 
+    const focusedGroup = activeFocus ? groups.find((group) => groupKey(group) === activeFocus) : undefined;
+    const groupsPageData = pageOf(groups, groupPage, GROUPS_PER_PAGE);
+    const focusData = focusedGroup ? pageOf(focusedGroup.letters, focusPage, FOCUSED_LETTERS[density]) : null;
+    const shownGroups = activeFocus ? (focusedGroup ? [focusedGroup] : []) : groupsPageData.items;
+    /** Cards drawn for a group: a page of them when it is open, else the first two rows. */
+    const lettersShown = (group: LetterGroup) => (focusData && group === focusedGroup ? focusData.items : group.letters.slice(0, COLLAPSED_LETTERS[density]));
+
     const dialogName = deleteTarget ? letterDisplayTitle(deleteTarget, t("letters.editor.untitled")) : "";
 
     const controls = (
         <>
             {letters.length > 0 && (
-                <NavSearch value={query} onChange={setQuery} placeholder={t("dashboard.letters.search")} testId="letters-search" />
+                <NavSearch value={query} onChange={changeQuery} placeholder={t("dashboard.letters.search")} testId="letters-search" />
             )}
             {onDensityChange && letters.length > 0 && (
                 <div className="hidden items-center gap-1 rounded-xl border border-edge bg-surface-4 p-1 sm:flex" data-testid="letters-density">
@@ -253,10 +274,10 @@ export function LettersTab({ onCreateCv, gridClass = "grid-cols-1 md:grid-cols-2
 
     return frame(
         <div className="space-y-6" data-testid="letters-tab">
-            {cvFilter && (
+            {activeFocus && (
                 <div className="flex items-center gap-2 text-sm text-mid" data-testid="letters-filter">
-                    <span>{t("dashboard.letters.filteredBy", { cv: cvs.find((cv) => cv.id === cvFilter)?.label ?? "" })}</span>
-                    <button type="button" onClick={onClearCvFilter} data-testid="letters-filter-clear" className="rounded-lg border border-edge bg-surface-4 px-2 py-1 text-xs font-medium text-strong transition-colors hover:border-faint">{t("dashboard.letters.clearFilter")}</button>
+                    <span>{t("dashboard.letters.filteredBy", { cv: focusedGroup?.title ?? cvs.find((cv) => cv.id === activeFocus)?.label ?? "" })}</span>
+                    <button type="button" onClick={clearFocus} data-testid="letters-filter-clear" className="rounded-lg border border-edge bg-surface-4 px-2 py-1 text-xs font-medium text-strong transition-colors hover:border-faint">{t("dashboard.letters.clearFilter")}</button>
                 </div>
             )}
 
@@ -271,12 +292,12 @@ export function LettersTab({ onCreateCv, gridClass = "grid-cols-1 md:grid-cols-2
                         <button type="button" onClick={onCreateCv} data-testid="letters-create-cv" className="mt-2 rounded-xl border border-edge bg-surface-4 px-4 py-2 text-sm font-bold text-strong hover:border-faint">{t("dashboard.letters.createCv")}</button>
                     )}
                 </div>
-            ) : groups.length === 0 ? (
+            ) : shownGroups.length === 0 ? (
                 <div className="rounded-[1.25rem] border border-dashed border-edge p-10 text-center text-sm text-faint" data-testid="letters-no-match">
                     {t("dashboard.letters.noMatch", { query })}
                 </div>
             ) : (
-                groups.map((group) => (
+                shownGroups.map((group) => (
                     <section key={groupKey(group)} data-testid={`letters-group-${groupKey(group)}`} aria-label={group.title} className="space-y-3">
                         <h3 className="flex items-center gap-2 text-sm font-semibold text-strong">
                             {group.title}
@@ -284,15 +305,23 @@ export function LettersTab({ onCreateCv, gridClass = "grid-cols-1 md:grid-cols-2
                         </h3>
                         <div className="flex items-start gap-5">
                             {group.resume && group.cvId && (
-                                <button type="button" onClick={() => router.push(`/editor/${group.cvId}`)} title={t("dashboard.letters.openNamed", { name: group.title })} aria-label={t("dashboard.letters.openNamed", { name: group.title })} data-testid="letter-group-thumb" className="hidden aspect-[210/297] w-48 shrink-0 self-start md:sticky md:top-20 md:block xl:w-64 overflow-hidden rounded-md border border-edge bg-white shadow-md transition-all hover:-translate-y-0.5 hover:border-accent/50 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
-                                    <span className="pointer-events-none block h-full w-full" aria-hidden="true">
-                                        <LiveResumeThumbnail resume={group.resume} />
-                                    </span>
-                                </button>
+                                <div className="hidden items-stretch self-start md:sticky md:top-20 md:flex">
+                                    <button type="button" onClick={() => router.push(`/editor/${group.cvId}`)} title={t("dashboard.letters.openNamed", { name: group.title })} aria-label={t("dashboard.letters.openNamed", { name: group.title })} data-testid="letter-group-thumb" className="block aspect-[210/297] w-48 shrink-0 xl:w-64 overflow-hidden rounded-md border border-edge bg-white shadow-md transition-all hover:-translate-y-0.5 hover:border-accent/50 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+                                        <span className="pointer-events-none block h-full w-full" aria-hidden="true">
+                                            <LiveResumeThumbnail resume={group.resume} />
+                                        </span>
+                                    </button>
+                                    <div className="relative flex w-10 shrink-0 items-center justify-center" aria-hidden="true" data-testid="letter-group-link">
+                                        <span className="absolute inset-x-0 top-1/2 border-t border-dashed border-edge-strong" />
+                                        <span className="relative flex h-7 w-7 items-center justify-center rounded-full border border-edge bg-surface-4 text-accent shadow-sm">
+                                            <Link2 className="h-3.5 w-3.5" />
+                                        </span>
+                                    </div>
+                                </div>
                             )}
                             <div className="min-w-0 flex-1 space-y-4">
                                 <div className={`grid ${gridClass} gap-5`}>
-                                    {visibleLetters(group).map((letter) => (
+                                    {lettersShown(group).map((letter) => (
                                         <LetterCard
                                             key={letter.id}
                                             letter={letter}
@@ -314,15 +343,22 @@ export function LettersTab({ onCreateCv, gridClass = "grid-cols-1 md:grid-cols-2
                                         />
                                     ))}
                                 </div>
-                                {canFold(group) && (
-                                    <button type="button" onClick={() => toggleExpanded(group)} aria-expanded={!folded(group)} data-testid="letters-group-toggle" className="rounded-xl border border-edge bg-surface-4 px-3 py-2 text-sm font-medium text-strong transition-colors hover:border-faint">
-                                        {folded(group) ? t("dashboard.letters.showAll", { count: group.letters.length }) : t("dashboard.letters.showFewer")}
+                                {!activeFocus && group.letters.length > COLLAPSED_LETTERS[density] && (
+                                    <button type="button" onClick={() => openGroup(group)} data-testid="letters-group-toggle" className="rounded-xl border border-edge bg-surface-4 px-3 py-2 text-sm font-medium text-strong transition-colors hover:border-faint">
+                                        {t("dashboard.letters.showAll", { count: group.letters.length })}
                                     </button>
+                                )}
+                                {focusData && group === focusedGroup && (
+                                    <Pager page={focusData.page} pageCount={focusData.pageCount} onChange={setFocusPage} testId="letters-focus-pager" />
                                 )}
                             </div>
                         </div>
                     </section>
                 ))
+            )}
+
+            {!activeFocus && (
+                <Pager page={groupsPageData.page} pageCount={groupsPageData.pageCount} onChange={setGroupPage} testId="letters-groups-pager" />
             )}
 
             {undoRow && (

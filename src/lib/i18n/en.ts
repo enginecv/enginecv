@@ -1975,6 +1975,7 @@ export const en: Translations = {
   "form.height": "Height",
   "datePicker.formatOrPresent": "{format} or {present}",
   "datePicker.openCalendar": "Open calendar",
+  "datePicker.today": "Today",
   "datePicker.typeHint": "Type as {format} or pick from the calendar.",
   "country.showInPreview": "Show in preview",
   "country.flag": "Flag",
