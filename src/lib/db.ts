@@ -2,6 +2,9 @@ import Dexie, { type Table } from "dexie";
 import { type Resume } from "./schema";
 import type { LetterDocument, ParagraphEntry } from "./letters/schema";
 import { type TemplateDocument } from "./templates/template-schema";
+import type { LetterHistoryEntry, WorkspaceActivityRecord, WorkspaceDocRecord, WorkspaceRecord } from "./workspace/types";
+
+export type { LetterHistoryEntry, WorkspaceActivityRecord, WorkspaceDocRecord, WorkspaceRecord };
 
 export type ResumeHistoryTrigger = "autosave" | "manual" | "import" | "restore" | "duplicate" | "json-edit" | "file-sync";
 
@@ -29,6 +32,10 @@ class ResumeDatabase extends Dexie {
     linkedFiles!: Table<LinkedFileRecord, string>; // string = resume id
     coverLetters!: Table<LetterDocument, string>; // string = id
     letterParagraphs!: Table<ParagraphEntry, string>; // string = id
+    workspace!: Table<WorkspaceRecord, string>; // always one row, id "current"
+    workspaceDocs!: Table<WorkspaceDocRecord, string>; // string = CV or letter id
+    workspaceActivity!: Table<WorkspaceActivityRecord, number>;
+    letterHistory!: Table<LetterHistoryEntry, number>;
 
     constructor() {
         super("EngineCVDatabase");
@@ -65,6 +72,21 @@ class ResumeDatabase extends Dexie {
             linkedFiles: "resumeId",
             coverLetters: "id, cvId, updatedAt, status",
             letterParagraphs: "id, updatedAt",
+        });
+
+        // Workspace folder (feature 091): the folder handle, per-document sync state, a capped
+        // activity log and restore points for letters. Every earlier table is kept.
+        this.version(6).stores({
+            resumes: "id, updatedAt",
+            resumeHistory: "++id, resumeId, createdAt, trigger",
+            templates: "id, updatedAt, createdAt",
+            linkedFiles: "resumeId",
+            coverLetters: "id, cvId, updatedAt, status",
+            letterParagraphs: "id, updatedAt",
+            workspace: "id",
+            workspaceDocs: "docId, kind, state",
+            workspaceActivity: "++id, at, docId",
+            letterHistory: "++id, letterId, createdAt",
         });
     }
 }

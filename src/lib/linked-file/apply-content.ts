@@ -91,3 +91,8 @@ export function describeContentChange(before: Resume, after: Resume): ContentCha
     if (s1 !== s2) changed += 1;
     return { added, removed, changed };
 }
+
+/** Entries the shrink guard counts: every entry of every section, every skill and every custom entry. */
+export function countEntries(resume: Resume): number {
+    return entriesOf(resume).size;
+}

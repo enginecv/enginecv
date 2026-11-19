@@ -45,6 +45,11 @@ export interface EngineCvContent {
     /** Cover letters and the paragraph library; absent in older callers and tests. */
     coverLetters?: LetterDocument[];
     letterParagraphs?: ParagraphEntry[];
+    /** Workspace folder rows (feature 091); only counted, never exported (a folder handle means nothing elsewhere). */
+    workspace?: object[];
+    workspaceDocs?: object[];
+    workspaceActivity?: object[];
+    letterHistory?: object[];
 }
 
 export interface Inventory {
@@ -93,16 +98,20 @@ export function browserAdapters(): BrowserAdapters {
         readEngineCvContent: async () => {
             // Imported here so the inventory never opens (and so creates) the database unless it exists.
             const { db } = await import("@/lib/db");
-            const [resumes, resumeHistory, templates, links, coverLetters, letterParagraphs] = await Promise.all([
+            const [resumes, resumeHistory, templates, links, coverLetters, letterParagraphs, workspace, workspaceDocs, workspaceActivity, letterHistory] = await Promise.all([
                 db.resumes.toArray(),
                 db.resumeHistory.toArray(),
                 db.templates.toArray(),
                 db.linkedFiles.toArray(),
                 db.coverLetters.toArray(),
                 db.letterParagraphs.toArray(),
+                db.workspace.toArray(),
+                db.workspaceDocs.toArray(),
+                db.workspaceActivity.toArray(),
+                db.letterHistory.toArray(),
             ]);
             const linkedFiles = links.map(({ resumeId, fileName, linkedAt }) => ({ resumeId, fileName, linkedAt }));
-            return { resumes, resumeHistory, templates, linkedFiles, coverLetters, letterParagraphs };
+            return { resumes, resumeHistory, templates, linkedFiles, coverLetters, letterParagraphs, workspace, workspaceDocs, workspaceActivity, letterHistory };
         },
     };
 }
@@ -161,7 +170,7 @@ function storageItems(location: "local-storage" | "session-storage", values: Rec
     });
 }
 
-const TABLES = ["resumes", "resumeHistory", "templates", "linkedFiles", "coverLetters", "letterParagraphs"] as const;
+const TABLES = ["resumes", "resumeHistory", "templates", "linkedFiles", "coverLetters", "letterParagraphs", "workspace", "workspaceDocs", "workspaceActivity", "letterHistory"] as const;
 
 export async function collectInventory(overrides: Partial<BrowserAdapters> = {}): Promise<Inventory> {
     const adapters = { ...browserAdapters(), ...overrides };

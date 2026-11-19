@@ -780,7 +780,7 @@ export function authoringToResume(document: unknown, options: { now?: number } =
 
     for (const [key, value] of Object.entries(document)) {
         const path = [key];
-        if (key === "format" || key === "design" || key === "$schema") continue;
+        if (key === "format" || key === "design" || key === "$schema" || key === "id") continue;
         if (key === "basics") {
             const mapped = convert.basics(value, path);
             resume.basics = mapped.basics;

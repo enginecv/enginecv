@@ -106,6 +106,9 @@ export function DeleteAllDataDialog({ open, onClose }: { open: boolean; onClose:
                             {ts("yourData.delete.warning")}
                         </p>
                         <p className="text-sm leading-6 text-mid" data-testid="delete-files-stay">{ts("yourData.delete.filesStay")}</p>
+                        {inventory?.items.some((item) => item.name === "workspace" && (item.count ?? 0) > 0) && (
+                            <p className="text-sm leading-6 text-mid" data-testid="delete-workspace-stays">{ts("yourData.delete.workspaceNote")}</p>
+                        )}
 
                         <div className="space-y-2">
                             <label htmlFor={inputId} className="block text-sm font-medium text-strong">
