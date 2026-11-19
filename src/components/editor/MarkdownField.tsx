@@ -136,6 +136,7 @@ export function MarkdownField({
     labelledBy,
     height = 180,
     textareaProps,
+    toolbar = "full",
 }: {
     value: string;
     onChange: (value: string) => void;
@@ -143,6 +144,8 @@ export function MarkdownField({
     labelledBy: string;
     height?: number;
     textareaProps?: { placeholder?: string; "data-testid"?: string };
+    /** "letter" keeps only what a cover letter supports: bold, italic, bulleted list, link. */
+    toolbar?: "full" | "letter";
 }) {
     const { t } = useTranslation();
 
@@ -153,7 +156,9 @@ export function MarkdownField({
         return { ...decorated, buttonProps: { ...command.buttonProps, title: label, "aria-label": label } };
     };
 
-    const editorCommands = [
+    const letterCommands = [commands.bold, commands.italic, commands.divider, TOGGLE_UNORDERED_LIST, commands.divider, commands.link].map(localizeCommand);
+
+    const editorCommands = toolbar === "letter" ? letterCommands : [
         commands.bold,
         commands.italic,
         commands.strikethrough,
@@ -166,7 +171,7 @@ export function MarkdownField({
         commands.code,
     ].map(localizeCommand);
 
-    const editorExtraCommands = [
+    const editorExtraCommands = toolbar === "letter" ? [] : [
         commands.codeEdit,
         commands.codeLive,
         commands.codePreview,

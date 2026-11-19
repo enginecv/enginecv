@@ -28,6 +28,13 @@ import { createEmptyResume, resumeSchema, type Resume } from "@/lib/schema";
 import { LiveResumeThumbnail } from "@/components/dashboard/LiveResumeThumbnail";
 import { DashboardCard, LastUpdatedTooltipContent } from "@/components/dashboard/DashboardCard";
 import { DashboardTemplateCard } from "@/components/dashboard/DashboardTemplateCard";
+import { LettersTab } from "@/components/dashboard/LettersTab";
+import { CopyLettersDialog } from "@/components/letters/CopyLettersDialog";
+import { DeleteCvDialog } from "@/components/letters/DeleteCvDialog";
+import type { DeletionDecision } from "@/lib/letters/deletion";
+import type { LetterDocument } from "@/lib/letters/schema";
+import { copyLettersToCv, deleteCvWithLetters, importDataExport, listLettersForCv } from "@/lib/letters/store";
+import type { DataExportExtras } from "@/lib/import/staging/types";
 import { CreateModal } from "@/components/dashboard/CreateModal";
 import { StartPanel } from "@/components/dashboard/StartPanel";
 import { PageSizeSelect, Pager, SortSelect } from "@/components/dashboard/ListControls";
@@ -916,6 +923,14 @@ function Dashboard() {
     const [startError, setStartError] = useState<string | null>(null);
     const [startFocusId, setStartFocusId] = useState<StartPathId | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+    // The letters linked to the CV being deleted; when there are any, a dialog decides what happens to them.
+    const [deleteLetters, setDeleteLetters] = useState<LetterDocument[]>([]);
+    const [deleteBusy, setDeleteBusy] = useState(false);
+    const [deleteFailed, setDeleteFailed] = useState(false);
+    // A CV that was just duplicated and has letters: the person may copy them onto the new one.
+    const [copyOffer, setCopyOffer] = useState<{ fromId: string; toId: string; count: number } | null>(null);
+    const [copyBusy, setCopyBusy] = useState(false);
+    const [copyFailed, setCopyFailed] = useState(false);
     const [importError, setImportError] = useState<string | null>(null);
     const [importErrorDetails, setImportErrorDetails] = useState<string | null>(null);
     const [importWarning, setImportWarning] = useState<string | null>(null);
@@ -1027,11 +1042,14 @@ function Dashboard() {
     }, []);
 
     // A "Download my data" file: every CV in it becomes a new CV. Saved versions and templates stay in the file.
-    const saveDataExportResumes = useCallback(async (resumes: Resume[]) => {
-        const now = Date.now();
-        await db.resumes.bulkAdd(resumes.map((resume) => ({ ...resume, id: createId(), createdAt: now, updatedAt: now })));
+    const saveDataExportResumes = useCallback(async (resumes: Resume[], extras?: DataExportExtras) => {
+        // CVs, letters and saved paragraphs go in together, so a failure leaves nothing half imported.
+        const result = await importDataExport(resumes, extras);
         setImportWarningIsClamp(false);
-        setImportWarning(tn("dashboard.importedDataExport", resumes.length));
+        const cvText = tn("dashboard.importedDataExport", resumes.length);
+        const letterText = result.lettersAdded > 0 ? " " + tn("dashboard.importedLetters", result.lettersAdded) : "";
+        const orphanText = result.orphanedDrafts > 0 ? " " + tn("dashboard.importedLettersNoCv", result.orphanedDrafts) : "";
+        setImportWarning(cvText + letterText + orphanText);
     }, [setImportWarning, tn]);
 
     const handleSaveMeta = useCallback(async (resumeId: string, meta: Resume["meta"]): Promise<string | void> => {
@@ -1063,8 +1081,62 @@ function Dashboard() {
 
     const handleDuplicate = useCallback(async (sourceResume: Resume) => {
         const duplicateId = await duplicateResume(sourceResume, t("dashboard.copy"));
+        // The letters stay with the original. Offer to copy them when there are any.
+        const letters = sourceResume.id ? await listLettersForCv(sourceResume.id) : [];
+        if (letters.length > 0 && sourceResume.id) {
+            setCopyFailed(false);
+            setCopyOffer({ fromId: sourceResume.id, toId: duplicateId, count: letters.length });
+            return;
+        }
         router.push(`/editor/${duplicateId}`);
     }, [router, t]);
+
+    const finishCopyOffer = useCallback(async (copy: boolean) => {
+        if (!copyOffer) return;
+        if (copy) {
+            setCopyBusy(true);
+            setCopyFailed(false);
+            try {
+                await copyLettersToCv(copyOffer.fromId, copyOffer.toId);
+            } catch {
+                setCopyFailed(true);
+                setCopyBusy(false);
+                return;
+            }
+            setCopyBusy(false);
+        }
+        const target = copyOffer.toId;
+        setCopyOffer(null);
+        router.push(`/editor/${target}`);
+    }, [copyOffer, router]);
+
+    /** Asks about the CV's letters first (if it has any), then opens the right confirmation. */
+    const requestDeleteResume = useCallback(async (target: { id: string; name: string }) => {
+        setDeleteFailed(false);
+        setDeleteLetters(await listLettersForCv(target.id));
+        setDeleteTarget(target);
+    }, []);
+
+    const cancelDelete = useCallback(() => {
+        setDeleteTarget(null);
+        setDeleteLetters([]);
+        setDeleteFailed(false);
+    }, []);
+
+    const confirmDeleteWithLetters = useCallback(async (decisions: DeletionDecision[]) => {
+        if (!deleteTarget) return;
+        setDeleteBusy(true);
+        setDeleteFailed(false);
+        try {
+            await deleteCvWithLetters(deleteTarget.id, decisions);
+            cancelDelete();
+        } catch {
+            // Nothing was changed: the CV and every letter are as they were.
+            setDeleteFailed(true);
+        } finally {
+            setDeleteBusy(false);
+        }
+    }, [deleteTarget, cancelDelete]);
 
     const handleDownloadResume = useCallback((resume: Resume) => {
         exportToJson(resume, getResumeExportFilename(resume));
@@ -1072,11 +1144,14 @@ function Dashboard() {
 
     const handleDelete = useCallback(async () => {
         if (!deleteTarget) return;
-        await db.resumes.delete(deleteTarget.id);
-        // The file stays on disk; only the link goes with the CV.
-        await db.linkedFiles.delete(deleteTarget.id);
-        setDeleteTarget(null);
-    }, [deleteTarget, setDeleteTarget]);
+        try {
+            await deleteCvWithLetters(deleteTarget.id, []);
+            cancelDelete();
+        } catch {
+            // A draft appeared since the question was asked: show the letters dialog instead.
+            setDeleteLetters(await listLettersForCv(deleteTarget.id));
+        }
+    }, [deleteTarget, cancelDelete]);
 
     const resumeCount = resumes?.length ?? 0;
     const hasResumes = resumeCount > 0;
@@ -1114,6 +1189,7 @@ function Dashboard() {
         void db.resumes.count().then((count) => runStartLink(start, count > 0));
     }, [runStartLink]);
 
+    const letterCount = useLiveQuery(() => db.coverLetters.count(), []);
     const userTemplates = useLiveQuery(async () => {
         const all = await db.templates.toArray();
         return all.sort((a, b) => b.updatedAt - a.updatedAt);
@@ -1236,7 +1312,7 @@ function Dashboard() {
 
     const dashboardTabs: DashboardNavItem[] = [
         { id: "resumes", label: t("dashboard.tabResumes"), icon: FileText, count: resumeCount },
-        { id: "letters", label: t("dashboard.tabCoverLetters"), icon: Mail, count: 0 },
+        { id: "letters", label: t("dashboard.tabCoverLetters"), icon: Mail, count: letterCount ?? 0 },
         { id: "templates", label: t("dashboard.tabTemplates"), icon: LayoutTemplate, count: userTemplates.length },
     ];
 
@@ -1506,7 +1582,7 @@ function Dashboard() {
                                                     onDuplicate={() => handleDuplicate(resume)}
                                                     onDownload={() => handleDownloadResume(resume)}
                                                     onDelete={() =>
-                                                        setDeleteTarget({
+                                                        void requestDeleteResume({
                                                             id: resume.id!,
                                                             name: resume.meta.title || resume.basics.name || t("dashboard.untitled"),
                                                         })
@@ -1539,13 +1615,7 @@ function Dashboard() {
                         {activeDashboardTab === "letters" && (
                             <>
                                 <div className={`${DASHBOARD_CONTENT_CLASS} pt-8`}>
-                                <div className="rounded-[1.25rem] border border-dashed border-edge p-12 flex flex-col items-center text-center gap-3 text-faint">
-                                    <Mail className="w-10 h-10" />
-                                    <p className="text-sm font-medium text-strong">{t("dashboard.comingSoon")}</p>
-                                    <p className="text-xs max-w-md">
-                                        {t("dashboard.coverLettersComingSoon")}
-                                    </p>
-                                </div>
+                                    <LettersTab onCreateCv={() => setShowCreateModal(true)} gridClass={GRID_DENSITY_CLASS[gridDensity]} density={gridDensity} onDensityChange={setGridDensity} />
                                 </div>
                             </>
                         )}
@@ -1900,14 +1970,31 @@ function Dashboard() {
 
             {/* Delete confirmation */}
             <ConfirmModal
-                open={!!deleteTarget}
+                open={!!deleteTarget && deleteLetters.length === 0}
                 title={t("dashboard.deleteTitle")}
                 description={t("dashboard.deleteConfirm", { name: deleteTarget?.name ?? "" })}
                 confirmLabel={t("dashboard.deletePermanently")}
                 destructive
                 onConfirm={handleDelete}
-                onCancel={() => setDeleteTarget(null)}
+                onCancel={cancelDelete}
             />
+
+            {/* The CV has letters: nothing is deleted with it; each draft is moved or frozen first. */}
+            {deleteTarget && deleteLetters.length > 0 && (
+                <DeleteCvDialog
+                    cvName={deleteTarget.name}
+                    letters={deleteLetters}
+                    otherCvs={(resumes ?? []).filter((resume) => resume.id !== deleteTarget.id).map((resume) => ({ id: resume.id!, label: resume.meta.title || resume.basics.name || t("dashboard.untitled") }))}
+                    busy={deleteBusy}
+                    error={deleteFailed}
+                    onConfirm={(decisions) => void confirmDeleteWithLetters(decisions)}
+                    onCancel={cancelDelete}
+                />
+            )}
+
+            {copyOffer && (
+                <CopyLettersDialog count={copyOffer.count} busy={copyBusy} error={copyFailed} onCopy={() => void finishCopyOffer(true)} onSkip={() => void finishCopyOffer(false)} />
+            )}
 
             {/* Template delete confirmation */}
             <ConfirmModal

@@ -19,10 +19,11 @@ export default function PrivacyPage() {
         >
             <LegalSection title="1. Your resumes stay on your device">
                 <p>
-                    Resumes, version history, templates, and preferences are stored in your browser on this device
-                    (IndexedDB and localStorage). EngineCV has no account system and keeps no server copy of your resumes.
-                    Editing, preview, version history, and exports to PDF, DOCX, Markdown, plain text, HTML, LaTeX, and JSON happen
-                    in your browser without sending your resume anywhere.
+                    Resumes, cover letters (and the paragraphs you save for them), version history, templates, and preferences
+                    are stored in your browser on this device (IndexedDB and localStorage). EngineCV has no account system and
+                    keeps no server copy of your resumes or letters. Editing, preview, version history, and exports to PDF, DOCX,
+                    Markdown, plain text, HTML, LaTeX, and JSON happen in your browser without sending your resume or letter
+                    anywhere.
                 </p>
                 <p>
                     If you clear browser storage, switch browsers, use private browsing, or reset the device profile, that

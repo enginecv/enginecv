@@ -14,7 +14,7 @@ import { isLinkingSupported } from "@/lib/linked-file/fs-access";
 import { OPEN_LINKED_FILE_PANEL_EVENT } from "@/lib/linked-file/types";
 import { useResumeStore } from "@/lib/store";
 import { applyMergePlan } from "@/lib/import/staging/apply";
-import type { StagedBatch } from "@/lib/import/staging/types";
+import type { DataExportExtras, StagedBatch } from "@/lib/import/staging/types";
 import type { Resume } from "@/lib/schema";
 import { ApplyBar } from "./ApplyBar";
 import { ReviewStep } from "./ReviewStep";
@@ -46,7 +46,7 @@ export interface ImportDataDialogProps {
      * A "Download my data" file holds several CVs. When given, they go here
      * (each becomes its own CV) instead of being combined into one.
      */
-    onImportDataExport?: (resumes: Resume[]) => Promise<void>;
+    onImportDataExport?: (resumes: Resume[], extras?: DataExportExtras) => Promise<void>;
 }
 
 type Outcome =
@@ -119,7 +119,7 @@ export function ImportDataDialog({
         // Several CVs from one file: each is saved as its own CV, nothing is combined.
         hub.addBatches(added.filter((batch) => !batch.fromDataExport));
         setBusy(true);
-        onImportDataExport(exported.map((batch) => batch.resume))
+        onImportDataExport(exported.map((batch) => batch.resume), exported.find((batch) => batch.dataExportExtras)?.dataExportExtras)
             .then(onClose)
             .catch((error: unknown) => {
                 console.error("[EngineCV] Importing a data export failed.", error);

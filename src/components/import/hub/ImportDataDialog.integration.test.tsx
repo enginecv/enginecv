@@ -247,4 +247,20 @@ describe("ImportDataDialog", () => {
         await waitFor(() => expect(props.onClose).toHaveBeenCalled());
         expect(screen.queryByTestId("import-hub-batch")).not.toBeInTheDocument();
     });
+
+    it("passes the cover letters and saved paragraphs of the file along with its CVs, once", async () => {
+        const onImportDataExport = vi.fn().mockResolvedValue(undefined);
+        setup({ target: "new", onImportDataExport });
+        const letter = { id: "l1", cvId: "cv-1", status: "draft", company: "Acme", paragraphs: [] };
+        const file = new File(
+            [JSON.stringify({ format: DATA_EXPORT_FORMAT, data: { indexedDB: { EngineCVDatabase: { resumes: [createQaFullResume(), createQaFullResume()], coverLetters: [letter], letterParagraphs: [{ name: "Closing", markdown: "Thanks." }] } } } })],
+            "my-data.json",
+        );
+        fireEvent.change(screen.getByTestId("import-hub-file-input"), { target: { files: [file] } });
+        await waitFor(() => expect(onImportDataExport).toHaveBeenCalledTimes(1));
+        const extras = onImportDataExport.mock.calls[0][1];
+        expect(extras.letters).toHaveLength(1);
+        expect(extras.letters[0].company).toBe("Acme");
+        expect(extras.paragraphs).toEqual([expect.objectContaining({ name: "Closing", markdown: "Thanks." })]);
+    });
 });
