@@ -8,7 +8,7 @@ import type { Resume } from "@/lib/schema";
 
 type Obj = Record<string, unknown>;
 
-const ENTRY_SECTIONS = [
+export const ENTRY_SECTIONS = [
     "experience",
     "education",
     "courses",
@@ -95,4 +95,18 @@ export function describeContentChange(before: Resume, after: Resume): ContentCha
 /** Entries the shrink guard counts: every entry of every section, every skill and every custom entry. */
 export function countEntries(resume: Resume): number {
     return entriesOf(resume).size;
+}
+
+/** Entries per section that has any, for the workspace index. Skills and custom entries are counted too. */
+export function sectionCounts(resume: Resume): Record<string, number> {
+    const counts: Record<string, number> = {};
+    for (const key of ENTRY_SECTIONS) {
+        const length = (resume[key] as unknown[]).length;
+        if (length > 0) counts[key] = length;
+    }
+    const skills = resume.skillGroups.reduce((sum, group) => sum + group.skills.length, 0);
+    if (skills > 0) counts.skills = skills;
+    const custom = resume.customSections.reduce((sum, section) => sum + ((section as { entries?: unknown[] }).entries?.length ?? 0), 0);
+    if (custom > 0) counts.custom = custom;
+    return counts;
 }
