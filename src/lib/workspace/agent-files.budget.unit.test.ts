@@ -2,7 +2,6 @@ import { encode } from "gpt-tokenizer/encoding/o200k_base";
 import { describe, expect, it } from "vitest";
 import { createQaFullResume } from "@/lib/qa/sample-resumes";
 import { sectionCounts } from "@/lib/linked-file/apply-content";
-import { createId } from "@/lib/id";
 import { LETTER_SCHEMA_URL, letterFileSchema } from "@/lib/letters/file-format";
 import { AUTHORING_FORMAT } from "@/lib/agent/authoring/schema";
 import { makeLetter } from "../../../test/setup/letter-fixtures";
@@ -11,6 +10,10 @@ import { createCvCodec } from "./codecs/cv";
 import { buildIndex, indexText } from "./index-file";
 
 const tokens = (text: string) => encode(text).length;
+
+/** Fixed UUID-shaped ids, so the measured sizes do not wobble with random ids. */
+let counter = 0;
+const createId = () => `${(0x3a7f1c00 + 0x1b3d5f * ++counter).toString(16).padStart(8, "0")}-9c4e-4b2a-a6d1-${(0x5e8b2d4a7c10 + 0x3b9d * counter).toString(16)}`;
 const now = Date.UTC(2026, 10, 19, 12, 0, 0);
 
 /** Real-looking ids: they are UUIDs in the app and cost most of an index. */
