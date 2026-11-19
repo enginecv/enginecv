@@ -31,14 +31,14 @@ describe("agent file budgets (o200k_base)", () => {
         expect(Object.keys(sizes).sort()).toEqual(["cv-format.md", "exports.md", "letter-format.md", "recipes.md"]);
     });
 
-    it("keeps the index at 250 tokens for one CV and one letter, then about 170 per extra CV with every section filled and 70 per extra letter", () => {
+    it("keeps the index at 250 tokens for one CV and one letter, then about 170 per extra CV with every section filled and 80 per extra letter (a letter carries its file, the CV id it follows, company and role)", () => {
         const first = createId();
         const one = tokens(indexText(buildIndex({ cvs: [{ ...cv(1), id: first }], letters: [letter(1, first)], states: new Map(), now })));
         expect(one).toBeLessThanOrEqual(250);
         const extraCvs = tokens(indexText(buildIndex({ cvs: [{ ...cv(1), id: first }, cv(2), cv(3), cv(4)], letters: [letter(1, first)], states: new Map(), now }))) - one;
         expect(extraCvs / 3).toBeLessThanOrEqual(170); // the QA CV fills all 14 sections: a worst case
         const extraLetters = tokens(indexText(buildIndex({ cvs: [{ ...cv(1), id: first }], letters: [letter(1, first), letter(2, first), letter(3, first)], states: new Map(), now }))) - one;
-        expect(extraLetters / 2).toBeLessThanOrEqual(70);
+        expect(extraLetters / 2).toBeLessThanOrEqual(80);
     });
 
     it("lets an agent add two projects for under 1,000 tokens: instructions, index, the last project for style, and the edit", () => {
