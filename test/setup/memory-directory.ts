@@ -104,9 +104,11 @@ export class MemoryFileHandle {
         let done = false;
         this.parent._swapOpen(this.name, +1);
         return {
-            write: async (chunk: string | { text?: () => Promise<string> }) => {
+            write: async (chunk: string | Uint8Array | { text?: () => Promise<string> }) => {
                 if (done) throw domError("InvalidStateError");
-                staged += typeof chunk === "string" ? chunk : await (chunk as { text: () => Promise<string> }).text();
+                // Binary content is kept as a latin-1 string, one character per byte, so tests can read it back.
+                if (chunk instanceof Uint8Array) staged += Array.from(chunk, (byte) => String.fromCharCode(byte)).join("");
+                else staged += typeof chunk === "string" ? chunk : await (chunk as { text: () => Promise<string> }).text();
             },
             close: async () => {
                 if (done) throw domError("InvalidStateError");

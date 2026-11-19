@@ -103,7 +103,7 @@ describe("letter file format", () => {
             role: "Designer",
             subject: "Application for Designer",
             recipient: { name: "Jane Doe", address: "Acme GmbH\nMusterstr. 1\n10115 Berlin" },
-            paragraphs: Array.from({ length: 6 }, (_, index) => ({ id: `p${index}`, markdown: `Paragraph ${index} with **bold** and a {{company}} token and some more words to make it long.` })),
+            paragraphs: Array.from({ length: 6 }, (_, index) => ({ id: `p${index}`, markdown: `Paragraph ${index} with **bold** and a {{company}} token and some more words to make it long.`, prompt: "" })),
             senderOverrides: { email: "work@example.com", phone: "+49 30 1234567" },
             designOverrides: { accentColor: "#123456" },
         });

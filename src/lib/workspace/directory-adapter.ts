@@ -17,6 +17,8 @@ export interface DirectoryAdapter {
     readText(folder: string, name: string): Promise<string | null>;
     /** Writes the whole file (creating folders and the file as needed) through a writable stream. */
     writeText(folder: string, name: string, text: string): Promise<void>;
+    /** Writes binary content (a Word file) the same way: whole file, through a writable stream, replacing on close. */
+    writeBytes(folder: string, name: string, bytes: Uint8Array): Promise<void>;
     remove(folder: string, name: string): Promise<void>;
     exists(folder: string, name: string): Promise<boolean>;
     /** A file adapter for one document, creating the file when `create` is set. */
@@ -108,6 +110,18 @@ export function createDirectoryAdapter(root: FileSystemDirectoryHandle): Directo
             const handle = await fileHandle(folder, name, true);
             if (!handle) throw new FileAccessError("not-found");
             await createHandleAdapter(handle).writeText(text);
+        },
+
+        async writeBytes(folder, name, bytes) {
+            const handle = await fileHandle(folder, name, true);
+            if (!handle) throw new FileAccessError("not-found");
+            try {
+                const writable = await handle.createWritable();
+                await writable.write(bytes as unknown as FileSystemWriteChunkType);
+                await writable.close();
+            } catch (error) {
+                throw mapFileError(error);
+            }
         },
 
         async remove(folder, name) {

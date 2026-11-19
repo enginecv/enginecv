@@ -43,6 +43,10 @@ export const REASON_CODES = [
     "conflict-copy",
     "request-invalid",
     "request-expired",
+    "unknown-document",
+    "format-unavailable",
+    "export-failed",
+    "exported",
 ] as const;
 export type ReasonCode = (typeof REASON_CODES)[number];
 

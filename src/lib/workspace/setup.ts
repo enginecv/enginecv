@@ -155,7 +155,7 @@ export async function runSetup(input: {
     const rows = new Map<string, WorkspaceDocRecord>();
 
     await saveWorkspace({ handle: input.handle, folderName: adapter.name, createdAt: now, formatVersion: 1, hideContact: options.hideContact, paused: false, changeSource: "poll" });
-    for (const folder of [CV_DIR, LETTER_DIR, "exports"]) await adapter.writeText(folder, ".keep", "");
+    for (const folder of [CV_DIR, LETTER_DIR, "exports", `${MACHINE_DIR}/requests`, `${MACHINE_DIR}/results`]) await adapter.writeText(folder, ".keep", "");
 
     const record = (docId: string, kind: DocKind, fileName: string | null, text: string | null, included: boolean) => {
         rows.set(docId, newDocRow({ docId, kind, fileName, included, lastHash: text === null ? null : hashText(text) }, now));

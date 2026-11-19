@@ -16,6 +16,8 @@ import { appendLog, clearRefusal, recordActivity as recordActivityRaw, writeRefu
 import { createDocumentSyncEngine, type DocumentSyncEngine, type EngineState } from "./engine";
 import { checkShrink, pendingReviewFor, removedEntryTitles } from "./shrink-guard";
 import { importUnclaimed } from "./discover";
+import { processRequests } from "./request-processor";
+import { REQUESTS_DIR } from "./requests";
 import type { DocKind, DocReason, DocState, PendingReview, WorkspaceDocRecord } from "./types";
 import { listDocRows, patchDocRow as patchDocRowRaw, setDocState as setDocStateRaw } from "./workspace-store";
 
@@ -50,6 +52,10 @@ export interface RuntimeOptions {
     /** Tests pass a change source that never polls. */
     createSource?: (onPossibleChange: () => void) => ChangeSource;
     isVisible?: () => boolean;
+    /** Tests that do not exercise export requests can switch them off. */
+    requests?: boolean;
+    /** Tests replace the exporter (it needs a real layout engine for HTML). */
+    produceExport?: Parameters<typeof processRequests>[0]["produce"];
 }
 
 export interface WorkspaceRuntime {
@@ -193,6 +199,20 @@ export function createWorkspaceRuntime(options: RuntimeOptions): WorkspaceRuntim
         await patchDocRow(docId, { reason: missing ? { code: "unknown-cv" } : null });
     }
 
+    let handlingRequests = false;
+    /** Export requests an agent left behind; one pass at a time, never while the runtime is stopping. */
+    async function handleRequests() {
+        if (!running || handlingRequests || options.requests === false) return;
+        handlingRequests = true;
+        try {
+            await processRequests({ adapter: options.adapter, produce: options.produceExport });
+        } catch {
+            // A folder problem is the controller's to report; an unhandled request is picked up on the next pass.
+        } finally {
+            handlingRequests = false;
+        }
+    }
+
     async function attach(row: WorkspaceDocRecord) {
         if (!row.included || !row.fileName || engines.has(row.docId)) return;
         if (row.kind === "cv") {
@@ -292,7 +312,7 @@ export function createWorkspaceRuntime(options: RuntimeOptions): WorkspaceRuntim
             await reconcileFolder().catch(() => undefined);
             source = options.createSource
                 ? options.createSource(() => void this.checkNow())
-                : createChangeSource({ adapter: options.adapter, folders: ["cvs", "letters"], root: options.root, onPossibleChange: () => void this.checkNow(), isVisible: options.isVisible });
+                : createChangeSource({ adapter: options.adapter, folders: ["cvs", "letters", REQUESTS_DIR], root: options.root, onPossibleChange: () => void this.checkNow(), isVisible: options.isVisible });
             await source.start();
             if (typeof document !== "undefined") document.addEventListener("visibilitychange", visibility);
             if (typeof window !== "undefined") window.addEventListener("focus", focus);
@@ -317,6 +337,7 @@ export function createWorkspaceRuntime(options: RuntimeOptions): WorkspaceRuntim
                 options.events?.onFolderProblem?.();
             }
             await Promise.all([...engines.values()].map((entry) => entry.engine.checkNow()));
+            await handleRequests();
         },
         get changeSource() {
             return source;
