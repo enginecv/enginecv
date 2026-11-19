@@ -1,16 +1,22 @@
 import type { Notice } from "@/lib/agent/authoring/notices";
 import { forEachInSlices } from "./batch";
 import { createCvCodec } from "./codecs/cv";
+import { createLetterCodec } from "./codecs/letter";
+import type { DocumentCodec } from "./codecs/types";
+import type { LetterDocument } from "@/lib/letters/schema";
+import { createLetterBinding } from "./letter-binding";
 import { readFolderSnapshot, reconcile, type IdCache, type Reconciliation } from "./documents";
 import type { ConflictCopy } from "./scan";
 import { getWorkspace } from "./workspace-store";
 import { createChangeSource, type ChangeSource } from "./change-source";
-import { createCvBinding, type CvBinding } from "./cv-binding";
+import { db } from "@/lib/db";
+import { createCvBinding, type DocBinding } from "./cv-binding";
 import type { DirectoryAdapter } from "./directory-adapter";
 import { appendLog, clearRefusal, recordActivity as recordActivityRaw, writeRefusal } from "./activity";
 import { createDocumentSyncEngine, type DocumentSyncEngine, type EngineState } from "./engine";
 import { checkShrink, pendingReviewFor, removedEntryTitles } from "./shrink-guard";
-import type { DocReason, DocState, WorkspaceDocRecord } from "./types";
+import { importUnclaimed } from "./discover";
+import type { DocKind, DocReason, DocState, PendingReview, WorkspaceDocRecord } from "./types";
 import { listDocRows, patchDocRow as patchDocRowRaw, setDocState as setDocStateRaw } from "./workspace-store";
 
 /**
@@ -24,6 +30,8 @@ export interface RuntimeEvents {
     onApplied?: (docId: string, summary: { added: number; removed: number; changed: number; notices: Notice[] }) => void;
     /** What needs a look in the folder: unclaimed files, duplicates, sync-tool conflict copies. */
     onAttention?: (attention: { unmatched: Reconciliation["unmatched"]; duplicates: Reconciliation["duplicates"]; conflictCopies: ConflictCopy[] }) => void;
+    /** A file nobody claimed became a new document. */
+    onImported?: (docId: string, kind: DocKind) => void;
     /** A file or folder operation failed in a way that may mean the folder itself is gone or no longer allowed. */
     onFolderProblem?: () => void;
     /** The app's own records could not be saved (storage full or unavailable). */
@@ -56,6 +64,8 @@ export interface WorkspaceRuntime {
     keepMine(docId: string): Promise<void>;
     /** Writes every included document's file again (the privacy option changed), a few at a time so the page stays responsive. */
     rewriteAll(onProgress?: (done: number, total: number) => void): Promise<void>;
+    /** Re-reads CV titles (a CV was renamed), so letter files keep an accurate hint. */
+    refreshTitles(): Promise<void>;
     /** Rebuilds one document's engine from its row (after a relink or a resolved conflict). */
     reload(docId: string): Promise<void>;
     /** The engines by document id, for tests and the controller. */
@@ -63,6 +73,12 @@ export interface WorkspaceRuntime {
 }
 
 const cvCodec = createCvCodec();
+
+/** The first words of the paragraphs a letter would lose, for the review dialog (shown in the app only). */
+function removedParagraphPreviews(before: LetterDocument, after: LetterDocument, max = 10): string[] {
+    const kept = new Set(after.paragraphs.map((paragraph) => paragraph.id));
+    return before.paragraphs.filter((paragraph) => !kept.has(paragraph.id)).slice(0, max).map((paragraph) => paragraph.markdown.trim().slice(0, 60) || "…");
+}
 
 function docStateOf(state: EngineState): { state: DocState; reason: DocReason | null } {
     switch (state.status) {
@@ -87,7 +103,14 @@ export function createWorkspaceRuntime(options: RuntimeOptions): WorkspaceRuntim
     const recordActivity = guarded(recordActivityRaw);
     const patchDocRow = guarded(patchDocRowRaw);
     const setDocState = guarded(setDocStateRaw);
-    const engines = new Map<string, { engine: DocumentSyncEngine; binding: CvBinding; unsubscribe: () => void; row: WorkspaceDocRecord }>();
+    // CV titles, written beside a letter's CV id as a hint for humans.
+    const cvTitles = new Map<string, string>();
+    const letterCodec = createLetterCodec({ cvTitle: (id) => cvTitles.get(id) });
+    const refreshCvTitles = async () => {
+        cvTitles.clear();
+        for (const row of await db.resumes.toArray()) if (row.id) cvTitles.set(row.id, row.meta?.title || row.basics?.name || "");
+    };
+    const engines = new Map<string, { engine: DocumentSyncEngine; binding: Pick<DocBinding<unknown>, "dispose">; unsubscribe: () => void; row: WorkspaceDocRecord }>();
     let source: ChangeSource | null = null;
     let running = false;
     const idCache: IdCache = new Map();
@@ -146,16 +169,55 @@ export function createWorkspaceRuntime(options: RuntimeOptions): WorkspaceRuntim
                 if (fresh) await attach(fresh);
             }
         }
-        options.events?.onAttention?.({ unmatched: result.unmatched, duplicates: result.duplicates, conflictCopies: snapshot.conflictCopies });
+        // Complete files nobody claims become new documents (an agent made a new CV or letter).
+        let leftOver = result.unmatched;
+        if (result.unmatched.some((file) => file.valid)) {
+            const found = await importUnclaimed(options.adapter, result.unmatched, { hideContact: options.hideContact() });
+            for (const item of found.imported) {
+                await recordActivity({ docId: item.docId, kind: "accepted", code: "applied", detail: "new document from file" });
+                await appendLog(options.adapter, { at: Date.now(), doc: item.docId, file: `${item.kind === "cv" ? "cvs" : "letters"}/${item.fileName}`, outcome: "accepted", detail: "new document" }).catch(() => undefined);
+                const fresh = (await listDocRows()).find((candidate) => candidate.docId === item.docId);
+                if (fresh) await attach(fresh);
+                options.events?.onImported?.(item.docId, item.kind);
+            }
+            const importedNames = new Set(found.imported.map((item) => item.fileName));
+            leftOver = result.unmatched.filter((file) => !importedNames.has(file.fileName));
+        }
+        options.events?.onAttention?.({ unmatched: leftOver, duplicates: result.duplicates, conflictCopies: snapshot.conflictCopies });
+    }
+
+    /** A draft that names a CV the app does not have keeps working; it is marked so the person can pick a CV. */
+    async function markUnknownCv(docId: string) {
+        const letter = await db.coverLetters.get(docId);
+        const missing = !!letter && letter.status === "draft" && !!letter.cvId && (await db.resumes.where("id").equals(letter.cvId).count()) === 0;
+        await patchDocRow(docId, { reason: missing ? { code: "unknown-cv" } : null });
     }
 
     async function attach(row: WorkspaceDocRecord) {
-        if (row.kind !== "cv" || !row.included || !row.fileName || engines.has(row.docId)) return;
-        const binding = await createCvBinding(row.docId);
+        if (!row.included || !row.fileName || engines.has(row.docId)) return;
+        if (row.kind === "cv") {
+            const binding = await createCvBinding(row.docId);
+            if (!binding) return;
+            await attachEngine(row, "cvs", cvCodec, binding, (before, incoming) => {
+                const verdict = checkShrink(cvCodec.entryCount(before), cvCodec.entryCount(incoming));
+                return verdict.triggered ? pendingReviewFor(verdict, removedEntryTitles(before, incoming).titles, Date.now()) : null;
+            });
+            return;
+        }
+        const binding = await createLetterBinding(row.docId);
         if (!binding) return;
+        await attachEngine(row, "letters", letterCodec, binding, (before, incoming) => {
+            // A letter file can leave paragraphs out (then they stay), so judge what the letter would hold after the apply.
+            const after = letterCodec.apply(before, incoming, { hideContact: options.hideContact() });
+            const verdict = checkShrink(letterCodec.entryCount(before), letterCodec.entryCount(after));
+            return verdict.triggered ? pendingReviewFor(verdict, removedParagraphPreviews(before, after), Date.now()) : null;
+        });
+    }
+
+    async function attachEngine<TDoc>(row: WorkspaceDocRecord, folder: "cvs" | "letters", codec: DocumentCodec<TDoc>, binding: DocBinding<TDoc>, guard: (before: TDoc, incoming: TDoc) => PendingReview | null) {
         let file;
         try {
-            file = await options.adapter.fileAdapter("cvs", row.fileName);
+            file = await options.adapter.fileAdapter(folder, row.fileName!);
         } catch {
             await setDocState(row.docId, "detached", { code: "file-missing" });
             options.events?.onState?.(row.docId, "detached", { code: "file-missing" });
@@ -164,9 +226,9 @@ export function createWorkspaceRuntime(options: RuntimeOptions): WorkspaceRuntim
         }
         let lastRestoreId: number | null = null;
         let knownHash: string | null = row.lastHash;
-        const engine = createDocumentSyncEngine({
+        const engine = createDocumentSyncEngine<TDoc>({
             adapter: file,
-            codec: cvCodec,
+            codec,
             getDoc: binding.getDoc,
             applyIncoming: binding.applyIncoming,
             snapshot: async (doc) => {
@@ -175,21 +237,18 @@ export function createWorkspaceRuntime(options: RuntimeOptions): WorkspaceRuntim
                 return id;
             },
             knownFileHash: () => knownHash,
-            guard: (before, incoming) => {
-                const verdict = checkShrink(cvCodec.entryCount(before), cvCodec.entryCount(incoming));
-                return verdict.triggered ? pendingReviewFor(verdict, removedEntryTitles(before, incoming).titles, Date.now()) : null;
-            },
+            guard,
             flushLocal: binding.flushLocal,
             hideContact: options.hideContact,
             poll: false,
             isVisible: options.isVisible,
             onState: (patch) => {
-                const fileLabel = `cvs/${row.fileName}`;
+                const fileLabel = `${folder}/${row.fileName}`;
                 if (patch.lastUpdate) {
                     const { added, removed, changed, notices } = patch.lastUpdate;
                     options.events?.onApplied?.(row.docId, { added, removed, changed, notices });
                     const detail = `+${added}/-${removed}/~${changed}`;
-                    void recordActivity({ docId: row.docId, kind: "accepted", code: "applied", detail, restoreId: lastRestoreId, restoreKind: "cv" });
+                    void recordActivity({ docId: row.docId, kind: "accepted", code: "applied", detail, restoreId: lastRestoreId, restoreKind: row.kind });
                     void appendLog(options.adapter, { at: Date.now(), doc: row.docId, file: fileLabel, outcome: "accepted", detail }).catch(() => undefined);
                 }
                 if (patch.syncedHash) {
@@ -200,6 +259,7 @@ export function createWorkspaceRuntime(options: RuntimeOptions): WorkspaceRuntim
                 if (patch.status === "broken") options.events?.onFolderProblem?.();
                 const next = docStateOf({ ...({} as EngineState), status: patch.status, error: patch.error ?? null, storageFull: patch.storageFull } as EngineState);
                 void setDocState(row.docId, next.state, next.reason);
+                if (row.kind === "letter" && next.state === "in-sync") void markUnknownCv(row.docId);
                 options.events?.onState?.(row.docId, next.state, next.reason);
                 if (next.state === "review" && patch.review) {
                     void patchDocRow(row.docId, { pendingReview: patch.review });
@@ -226,6 +286,7 @@ export function createWorkspaceRuntime(options: RuntimeOptions): WorkspaceRuntim
         async start() {
             if (running) return;
             running = true;
+            await refreshCvTitles().catch(() => undefined);
             const rows = await listDocRows();
             for (const row of rows) await attach(row);
             await reconcileFolder().catch(() => undefined);
@@ -270,6 +331,7 @@ export function createWorkspaceRuntime(options: RuntimeOptions): WorkspaceRuntim
                 onProgress?.(done, all.length);
             });
         },
+        refreshTitles: refreshCvTitles,
         reload: async (docId) => {
             detach(docId);
             const fresh = (await listDocRows()).find((candidate) => candidate.docId === docId);

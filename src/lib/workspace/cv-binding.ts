@@ -11,15 +11,17 @@ import { useResumeStore } from "@/lib/store";
  * autosave cannot overwrite it); a closed CV is read from a cache that follows the database and
  * changed with a database write.
  */
-export interface CvBinding {
-    getDoc(): Resume;
-    applyIncoming(transform: (resume: Resume) => Resume): void;
-    snapshot(resume: Resume): Promise<unknown>;
+export interface DocBinding<TDoc> {
+    getDoc(): TDoc;
+    applyIncoming(transform: (doc: TDoc) => TDoc): void;
+    snapshot(doc: TDoc): Promise<unknown>;
     flushLocal(): Promise<void>;
     /** Calls `listener` when the CV changes in the app (typing in the editor or a write from elsewhere). */
     onLocalChange(listener: () => void): () => void;
     dispose(): void;
 }
+
+export type CvBinding = DocBinding<Resume>;
 
 /** Slices of the CV a file owns; a change in any of them is a content change. */
 function contentSlices(resume: Resume): unknown[] {

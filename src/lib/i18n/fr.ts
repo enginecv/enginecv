@@ -827,6 +827,7 @@ export const fr: Translations = {
   "workspace.state.detached": "Sans fichier",
   "workspace.state.broken": "Dossier introuvable",
   "workspace.state.excluded": "Hors du dossier de travail",
+  "workspace.state.needs-cv": "Besoin d'un CV",
   "workspace.review.title": "Vérifier une modification importante",
   "workspace.review.body": "Le fichier conserve {kept} éléments sur {previous}. L'appliquer supprimerait :",
   "workspace.review.andMore": "et d'autres",

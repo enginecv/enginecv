@@ -827,6 +827,7 @@ export const de: Translations = {
   "workspace.state.detached": "Keine Datei",
   "workspace.state.broken": "Ordner fehlt",
   "workspace.state.excluded": "Nicht im Arbeitsordner",
+  "workspace.state.needs-cv": "Braucht einen Lebenslauf",
   "workspace.review.title": "Große Änderung prüfen",
   "workspace.review.body": "Die Datei behält {kept} von {previous} Einträgen. Das Übernehmen würde entfernen:",
   "workspace.review.andMore": "und weitere",

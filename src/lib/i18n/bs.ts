@@ -827,6 +827,7 @@ export const bs: Translations = {
   "workspace.state.detached": "Bez datoteke",
   "workspace.state.broken": "Mapa nedostaje",
   "workspace.state.excluded": "Nije u radnoj mapi",
+  "workspace.state.needs-cv": "Treba životopis",
   "workspace.review.title": "Provjerite veliku promjenu",
   "workspace.review.body": "Datoteka zadržava {kept} od {previous} unosa. Primjena bi uklonila:",
   "workspace.review.andMore": "i još",

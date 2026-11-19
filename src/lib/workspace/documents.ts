@@ -20,6 +20,8 @@ export interface SnapshotFile {
     name: string;
     /** The document id written in the file, or null when it has none or does not parse. */
     id: string | null;
+    /** The file holds a complete, usable document (it parsed), whether or not it names an id. */
+    valid: boolean;
 }
 
 export interface FolderSnapshot {
@@ -33,7 +35,7 @@ export interface FolderSnapshot {
 const cvCodec = createCvCodec();
 
 /** Stamp and id cache, so a scan reads a file again only when its timestamp or size moved. */
-export type IdCache = Map<string, { stamp: string; id: string | null }>;
+export type IdCache = Map<string, { stamp: string; id: string | null; valid: boolean }>;
 
 export async function readFolderSnapshot(adapter: DirectoryAdapter, cache: IdCache, ignored: ReadonlySet<string> = new Set()): Promise<FolderSnapshot> {
     const scan = classifyListing({ cvs: await adapter.listFiles("cvs"), letters: await adapter.listFiles("letters") });
@@ -46,19 +48,22 @@ export async function readFolderSnapshot(adapter: DirectoryAdapter, cache: IdCac
         if (!cached || cached.stamp !== stamp) {
             const text = await adapter.readText(doc.kind === "cv" ? "cvs" : "letters", doc.name);
             let id: string | null = null;
+            let valid = false;
             if (text !== null) {
                 if (doc.kind === "cv") {
                     const parsed = cvCodec.parse(text, { now: 0, hideContact: false });
                     id = parsed.ok ? parsed.id : null;
+                    valid = parsed.ok;
                 } else {
                     const parsed = parseLetterText(text);
                     id = parsed.ok ? parsed.id : null;
+                    valid = parsed.ok;
                 }
             }
-            cached = { stamp, id };
+            cached = { stamp, id, valid };
             cache.set(key, cached);
         }
-        files.push({ kind: doc.kind, name: doc.name, id: cached.id });
+        files.push({ kind: doc.kind, name: doc.name, id: cached.id, valid: cached.valid });
     }
     const tooLarge = scan.skipped.filter((entry) => entry.reason === "too-large").map((entry) => entry.fileName);
     return { files, tooLarge, conflictCopies: scan.conflictCopies.filter((copy) => !ignored.has(nameKey(copy.fileName))), skipped: [...scan.skipped.map((entry) => entry.fileName), ...scan.notWorkspaceFiles] };
@@ -72,7 +77,7 @@ export interface Reconciliation {
     /** Two or more files claim one document. */
     duplicates: Array<{ docId: string; kind: DocKind; files: string[] }>;
     /** Files no document claims. */
-    unmatched: Array<{ kind: DocKind; fileName: string; id: string | null }>;
+    unmatched: Array<{ kind: DocKind; fileName: string; id: string | null; valid: boolean }>;
 }
 
 /** Pure: compares the folder with the document rows. Rows that are excluded or have no file are left out of it. */
@@ -85,7 +90,12 @@ export function reconcile(rows: readonly WorkspaceDocRecord[], snapshot: FolderS
     const tooLarge = new Set((snapshot.tooLarge ?? []).map(nameKey));
 
     for (const row of rows) {
-        if (!row.included || !row.fileName) continue;
+        if (!row.included) {
+            // Left out of the workspace on purpose: its file is still its own, never a stray or a new document.
+            for (const file of snapshot.files) if (file.kind === row.kind && (file.id === row.docId || (row.fileName && nameKey(file.name) === nameKey(row.fileName)))) claimed.add(file);
+            continue;
+        }
+        if (!row.fileName) continue;
         if (tooLarge.has(nameKey(row.fileName))) continue; // too large to read, but not gone
         const own = byName.get(`${row.kind}:${nameKey(row.fileName)}`);
         const sameId = (byId.get(row.docId) ?? []).filter((file) => file.kind === row.kind);
@@ -112,7 +122,7 @@ export function reconcile(rows: readonly WorkspaceDocRecord[], snapshot: FolderS
         }
     }
 
-    for (const file of snapshot.files) if (!claimed.has(file)) result.unmatched.push({ kind: file.kind, fileName: file.name, id: file.id });
+    for (const file of snapshot.files) if (!claimed.has(file)) result.unmatched.push({ kind: file.kind, fileName: file.name, id: file.id, valid: file.valid });
     return result;
 }
 

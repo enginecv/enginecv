@@ -15,9 +15,9 @@ const TONE: Record<DocState, string> = {
 };
 
 /** Small status chip for a workspace document; the reason is the tooltip so the chip stays short. */
-export function DocStateChip({ state, reason, excluded }: { state: DocState; reason?: DocReason | null; excluded?: boolean }) {
+export function DocStateChip({ state, reason, excluded, label }: { state: DocState; reason?: DocReason | null; excluded?: boolean; label?: string }) {
     const { t } = useTranslation();
-    const key = excluded ? "workspace.state.excluded" : `workspace.state.${state}`;
+    const key = label ?? (excluded ? "workspace.state.excluded" : `workspace.state.${state}`);
     const tone = excluded ? TONE.paused : TONE[state];
     return (
         <span title={reason ? t(`workspace.reason.${reason.code}`) : undefined} data-testid={`doc-state-${excluded ? "excluded" : state}`} className={`inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 text-[11px] font-medium ${tone}`}>

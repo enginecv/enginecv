@@ -6,7 +6,7 @@ import { reconcile, readFolderSnapshot, type FolderSnapshot } from "./documents"
 import { newDocRow } from "./workspace-store";
 
 const row = (docId: string, fileName: string | null, over: Partial<ReturnType<typeof newDocRow>> = {}) => newDocRow({ docId, kind: "cv", fileName, ...over }, 1);
-const file = (name: string, id: string | null) => ({ kind: "cv" as const, name, id });
+const file = (name: string, id: string | null, valid = true) => ({ kind: "cv" as const, name, id, valid });
 const snapshot = (files: ReturnType<typeof file>[]): FolderSnapshot => ({ files, conflictCopies: [], skipped: [] });
 
 describe("reconcile", () => {
@@ -37,7 +37,7 @@ describe("reconcile", () => {
 
     it("lists files nobody claims, with their id", () => {
         const result = reconcile([row("1", "a.cv.json")], snapshot([file("a.cv.json", "1"), file("stranger.cv.json", "zzz"), file("noid.cv.json", null)]));
-        expect(result.unmatched).toEqual([{ kind: "cv", fileName: "stranger.cv.json", id: "zzz" }, { kind: "cv", fileName: "noid.cv.json", id: null }]);
+        expect(result.unmatched).toEqual([{ kind: "cv", fileName: "stranger.cv.json", id: "zzz", valid: true }, { kind: "cv", fileName: "noid.cv.json", id: null, valid: true }]);
     });
 
     it("treats a file without an id at the expected name as the document's own", () => {
@@ -67,7 +67,7 @@ describe("readFolderSnapshot", () => {
         await dir.writeExternal("cvs/a.cv.json", cvFileText(makeWorkspaceCv({ id: "cv-1" })));
         const cache = new Map();
         const first = await readFolderSnapshot(adapter, cache);
-        expect(first.files).toEqual([{ kind: "cv", name: "a.cv.json", id: "cv-1" }]);
+        expect(first.files).toEqual([{ kind: "cv", name: "a.cv.json", id: "cv-1", valid: true }]);
 
         // Corrupt the cache entry: an unchanged stamp must not re-read.
         const key = [...cache.keys()][0];
@@ -89,5 +89,13 @@ describe("readFolderSnapshot", () => {
         const snap = await readFolderSnapshot(adapter, new Map(), new Set(["skipme.cv.json"]));
         expect(snap.files.map((entry) => entry.name)).toEqual(["a.cv.json"]);
         expect(snap.conflictCopies.map((copy) => copy.fileName)).toEqual(["a (conflicted copy 2026).cv.json"]);
+    });
+});
+
+describe("reconcile: documents left out of the workspace", () => {
+    it("still claims their file, so it is neither a stray nor a new document", () => {
+        const result = reconcile([row("1", "a.cv.json", { included: false })], snapshot([file("a.cv.json", "1"), file("renamed.cv.json", "1")]));
+        expect(result.unmatched).toEqual([]);
+        expect(result.detached).toEqual([]);
     });
 });

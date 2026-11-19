@@ -9,7 +9,7 @@ import { readFolderSnapshot, type FolderSnapshot, type IdCache } from "./documen
 import { keysOf, nameKey, safeStem, uniqueFileName } from "./names";
 import { appText, cvTitle, letterTitle } from "./setup";
 import type { DocKind, WorkspaceDocRecord } from "./types";
-import { listDocRows, newDocRow, patchDocRow, putDocRow, removeDocRow } from "./workspace-store";
+import { getWorkspace, listDocRows, newDocRow, patchDocRow, putDocRow, removeDocRow, updateWorkspace } from "./workspace-store";
 
 /**
  * Documents come and go in the app while a workspace is connected. New ones get a file, a renamed one
@@ -62,6 +62,11 @@ export async function mirrorDocuments(adapter: DirectoryAdapter, options: Option
         if (!live.has(row.docId)) {
             await removeDocRow(row.docId);
             result.orphaned.push(row.docId);
+            // Deleted in the app without a word about its file: the file stays, but it is not a new document.
+            if (row.fileName) {
+                const workspace = await getWorkspace();
+                await updateWorkspace({ ignoredFiles: [...new Set([...(workspace?.ignoredFiles ?? []), row.fileName])] });
+            }
         }
     }
 
@@ -167,6 +172,11 @@ export async function retireDocument(adapter: DirectoryAdapter, docId: string, c
         await adapter.remove(FOLDER[row.kind], row.fileName);
     }
     await removeDocRow(docId);
+    // A file kept on purpose is not a new document: it is left alone and not reported again.
+    if (choice === "keep-file" && row.fileName) {
+        const workspace = await getWorkspace();
+        await updateWorkspace({ ignoredFiles: [...new Set([...(workspace?.ignoredFiles ?? []), row.fileName])] });
+    }
 }
 
 /** True when the workspace has a file for this document, so deleting it should ask about the file. */

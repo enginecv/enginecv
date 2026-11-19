@@ -98,11 +98,11 @@ describe("workspace runtime: who is who in the folder", () => {
         expect((await db.resumes.get("cv-1"))?.basics.headline).toBe("From the original");
     });
 
-    it("lists a file nobody claims and a sync-tool conflict copy without applying or importing either", async () => {
+    it("lists a file that cannot be used and a sync-tool conflict copy without applying or importing either", async () => {
         const { dir, runtime, attention } = await connected();
         current = runtime;
         const text = (await dir.readExternal(FILE))!;
-        await dir.writeExternal("cvs/Stranger.cv.json", editFile(text, (doc) => { doc.id = "someone-else"; }));
+        await dir.writeExternal("cvs/Stranger.cv.json", "{ not a cv at all");
         await dir.writeExternal("cvs/Master CV (conflicted copy 2026-11-19).cv.json", editFile(text, (doc) => { (doc.basics as Record<string, unknown>).headline = "From a conflict copy"; }));
         await runtime.checkNow();
         await flush();

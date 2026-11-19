@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { makeLetter, makeSentLetter } from "../../../test/setup/letter-fixtures";
+import { MANGLES } from "../../../test/setup/workspace-fixtures";
 import { letterFileText, parseLetterText, toLetterFile } from "./file-format";
 
 const options = { hideContact: false, cvTitle: "Master CV" };
@@ -91,5 +92,42 @@ describe("letter file format", () => {
         const accepted: number[] = [];
         for (let cut = 0; cut < text.length - 1; cut += 3) if (parseLetterText(text.slice(0, cut)).ok) accepted.push(cut);
         expect(accepted).toEqual([]);
+    });
+
+    describe("cut-off and mangled files (the same property as the CV's)", () => {
+        const full = makeLetter({
+            id: "l-full",
+            cvId: "cv-1",
+            title: "Full letter",
+            company: "Acme",
+            role: "Designer",
+            subject: "Application for Designer",
+            recipient: { name: "Jane Doe", address: "Acme GmbH\nMusterstr. 1\n10115 Berlin" },
+            paragraphs: Array.from({ length: 6 }, (_, index) => ({ id: `p${index}`, markdown: `Paragraph ${index} with **bold** and a {{company}} token and some more words to make it long.` })),
+            senderOverrides: { email: "work@example.com", phone: "+49 30 1234567" },
+            designOverrides: { accentColor: "#123456" },
+        });
+        const text = letterFileText(full, options);
+
+        it("blocks the file at every single cut-off point", () => {
+            const accepted: number[] = [];
+            for (let cut = 0; cut < text.length - 1; cut += 1) if (parseLetterText(text.slice(0, cut)).ok) accepted.push(cut);
+            expect(accepted).toEqual([]);
+        }, 30_000);
+
+        it("repairs the harmless slips, keeping the same content, and says so", () => {
+            const expected = JSON.stringify(toLetterFile(full, options).paragraphs);
+            for (const [name, mangle] of Object.entries(MANGLES)) {
+                const result = parseLetterText(mangle(text));
+                expect(result.ok, name).toBe(true);
+                if (result.ok) expect(JSON.stringify(result.content.paragraphs), name).toBe(expected);
+            }
+        });
+
+        it("blocks what loses structure: single quotes, empty and blank text", () => {
+            expect(parseLetterText(text.replace(/"/g, "'")).ok).toBe(false);
+            expect(parseLetterText("")).toMatchObject({ ok: false, reason: { code: "empty" } });
+            expect(parseLetterText("  \n ").ok).toBe(false);
+        });
     });
 });

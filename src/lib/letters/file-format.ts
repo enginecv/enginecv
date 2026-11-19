@@ -117,3 +117,18 @@ export function parseLetterText(text: string): LetterParseResult {
     }
     return { ok: true, content: result.data, id: result.data.id ?? null, notices };
 }
+
+/** The JSON Schema agents and editors read for letter files, served at /schema/letter/v1.json. */
+export function buildLetterJsonSchema(): Record<string, unknown> {
+    const generated = z.toJSONSchema(letterFileSchema, { io: "input", unrepresentable: "any" }) as Record<string, unknown>;
+    const { $schema, ...rest } = generated;
+    return {
+        $schema,
+        $id: LETTER_SCHEMA_URL,
+        title: "EngineCV letter format v1",
+        description:
+            "A cover letter as content only. Leave out any field you do not want to change; an empty string clears a field. "
+            + "\"id\" and \"status\" belong to EngineCV and are never changed from the file. Keep {{tokens}} such as {{company}} as they are.",
+        ...rest,
+    };
+}

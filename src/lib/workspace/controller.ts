@@ -80,7 +80,7 @@ function syncRuntime() {
             root: rootHandle,
             hideContact: () => useWorkspaceStore.getState().hideContact,
             paused: () => useWorkspaceStore.getState().paused,
-            events: { onState: () => void refreshCounts(), onAttention: (attention) => set({ attention }), onFolderProblem: () => void verifyFolder(), onStorageProblem: () => set({ storageProblem: true }) },
+            events: { onState: () => void refreshCounts(), onAttention: (attention) => set({ attention }), onImported: () => void refreshCounts(), onFolderProblem: () => void verifyFolder(), onStorageProblem: () => set({ storageProblem: true }) },
         });
         void runtime.start().then(() => set({ changeSource: runtime?.changeSource?.kind ?? "poll" })).catch(() => undefined);
         startMirroring();
@@ -134,6 +134,7 @@ export async function mirrorNow(): Promise<void> {
     mirrorRunning = true;
     try {
         const result = await mirrorDocuments(adapter, { hideContact: useWorkspaceStore.getState().hideContact });
+        await runtime?.refreshTitles().catch(() => undefined);
         for (const docId of [...result.created, ...result.renamed]) await runtime?.reload(docId);
         await refreshCounts();
     } catch {

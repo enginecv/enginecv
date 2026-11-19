@@ -9,6 +9,7 @@ export function DocStateBadge({ docId }: { docId: string | null | undefined }) {
     const row = useLiveQuery(() => (docId ? db.workspaceDocs.get(docId) : undefined), [docId]);
     if (!row) return null;
     if (!row.included) return <DocStateChip state={row.state} excluded />;
+    if (row.state === "in-sync" && row.reason?.code === "unknown-cv") return <DocStateChip state="review" label="workspace.state.needs-cv" reason={row.reason} />;
     if (row.state === "in-sync" || row.state === "paused") return null;
     return <DocStateChip state={row.state} reason={row.reason} />;
 }

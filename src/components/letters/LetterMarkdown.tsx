@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { toDocumentLink } from "@/lib/document-model";
 import { parseMarkdownBlocks, type InlineToken } from "@/lib/markdown-inline";
 import { CHIP_END, CHIP_START, CHIP_UNRESOLVED_START } from "@/lib/letters/tokens";
 
@@ -44,8 +45,12 @@ function renderInline(tokens: InlineToken[], keyBase: string): ReactNode[] {
                 return <em key={key}>{renderInline(token.children, key)}</em>;
             case "code":
                 return <span key={key}>{token.value}</span>;
-            case "link":
-                return <a key={key} href={token.url} style={{ color: "inherit", textDecoration: "underline" }}>{renderInline(token.children, key)}</a>;
+            case "link": {
+                // Letter text can come from a file an agent wrote: only the same link schemes the exports allow become links.
+                const safe = toDocumentLink(token.url, "");
+                if (!safe) return <span key={key}>{renderInline(token.children, key)}</span>;
+                return <a key={key} href={safe.url} style={{ color: "inherit", textDecoration: "underline" }}>{renderInline(token.children, key)}</a>;
+            }
         }
     });
 }
