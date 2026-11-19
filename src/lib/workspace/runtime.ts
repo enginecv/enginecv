@@ -1,4 +1,5 @@
 import type { Notice } from "@/lib/agent/authoring/notices";
+import { forEachInSlices } from "./batch";
 import { createCvCodec } from "./codecs/cv";
 import { readFolderSnapshot, reconcile, type IdCache, type Reconciliation } from "./documents";
 import type { ConflictCopy } from "./scan";
@@ -6,11 +7,11 @@ import { getWorkspace } from "./workspace-store";
 import { createChangeSource, type ChangeSource } from "./change-source";
 import { createCvBinding, type CvBinding } from "./cv-binding";
 import type { DirectoryAdapter } from "./directory-adapter";
-import { appendLog, clearRefusal, recordActivity, writeRefusal } from "./activity";
+import { appendLog, clearRefusal, recordActivity as recordActivityRaw, writeRefusal } from "./activity";
 import { createDocumentSyncEngine, type DocumentSyncEngine, type EngineState } from "./engine";
 import { checkShrink, pendingReviewFor, removedEntryTitles } from "./shrink-guard";
 import type { DocReason, DocState, WorkspaceDocRecord } from "./types";
-import { listDocRows, patchDocRow, setDocState } from "./workspace-store";
+import { listDocRows, patchDocRow as patchDocRowRaw, setDocState as setDocStateRaw } from "./workspace-store";
 
 /**
  * The running part of a workspace: one sync engine per included CV, one change source for the whole
@@ -25,6 +26,8 @@ export interface RuntimeEvents {
     onAttention?: (attention: { unmatched: Reconciliation["unmatched"]; duplicates: Reconciliation["duplicates"]; conflictCopies: ConflictCopy[] }) => void;
     /** A file or folder operation failed in a way that may mean the folder itself is gone or no longer allowed. */
     onFolderProblem?: () => void;
+    /** The app's own records could not be saved (storage full or unavailable). */
+    onStorageProblem?: () => void;
     /** A document's state changed (for the UI and the index). */
     onState?: (docId: string, state: DocState, reason: DocReason | null) => void;
 }
@@ -51,6 +54,8 @@ export interface WorkspaceRuntime {
     applyHeld(docId: string): Promise<void>;
     /** The person confirmed keeping the app's version: it is written over the file. */
     keepMine(docId: string): Promise<void>;
+    /** Writes every included document's file again (the privacy option changed), a few at a time so the page stays responsive. */
+    rewriteAll(onProgress?: (done: number, total: number) => void): Promise<void>;
     /** Rebuilds one document's engine from its row (after a relink or a resolved conflict). */
     reload(docId: string): Promise<void>;
     /** The engines by document id, for tests and the controller. */
@@ -66,7 +71,7 @@ function docStateOf(state: EngineState): { state: DocState; reason: DocReason | 
         case "error":
             return { state: "blocked", reason: state.error ? { code: state.error.code, line: state.error.line, column: state.error.column } : { code: "invalid-json" } };
         case "busy":
-            return { state: "busy", reason: { code: "file-busy" } };
+            return { state: "busy", reason: { code: state.storageFull ? "storage-full" : "file-busy" } };
         case "broken":
             return { state: "detached", reason: { code: "file-missing" } };
         case "paused":
@@ -77,6 +82,11 @@ function docStateOf(state: EngineState): { state: DocState; reason: DocReason | 
 }
 
 export function createWorkspaceRuntime(options: RuntimeOptions): WorkspaceRuntime {
+    // The app's own records can fail to save (storage full or unavailable): say so once and carry on, the documents are untouched.
+    const guarded = <A extends unknown[], R>(work: (...args: A) => Promise<R>) => (...args: A): Promise<R | undefined> => work(...args).catch(() => { options.events?.onStorageProblem?.(); return undefined; });
+    const recordActivity = guarded(recordActivityRaw);
+    const patchDocRow = guarded(patchDocRowRaw);
+    const setDocState = guarded(setDocStateRaw);
     const engines = new Map<string, { engine: DocumentSyncEngine; binding: CvBinding; unsubscribe: () => void; row: WorkspaceDocRecord }>();
     let source: ChangeSource | null = null;
     let running = false;
@@ -188,7 +198,7 @@ export function createWorkspaceRuntime(options: RuntimeOptions): WorkspaceRuntim
                 }
                 if (patch.status === undefined) return;
                 if (patch.status === "broken") options.events?.onFolderProblem?.();
-                const next = docStateOf({ ...({} as EngineState), status: patch.status, error: patch.error ?? null } as EngineState);
+                const next = docStateOf({ ...({} as EngineState), status: patch.status, error: patch.error ?? null, storageFull: patch.storageFull } as EngineState);
                 void setDocState(row.docId, next.state, next.reason);
                 options.events?.onState?.(row.docId, next.state, next.reason);
                 if (next.state === "review" && patch.review) {
@@ -249,6 +259,16 @@ export function createWorkspaceRuntime(options: RuntimeOptions): WorkspaceRuntim
         },
         get changeSource() {
             return source;
+        },
+        rewriteAll: async (onProgress) => {
+            const all = [...engines.values()];
+            let done = 0;
+            onProgress?.(0, all.length);
+            await forEachInSlices(all, async (entry) => {
+                await entry.engine.rewrite().catch(() => undefined);
+                done += 1;
+                onProgress?.(done, all.length);
+            });
         },
         reload: async (docId) => {
             detach(docId);

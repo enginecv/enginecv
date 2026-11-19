@@ -4,7 +4,7 @@
  * later transport (MCP bridge, WebMCP) can reuse everything above it.
  */
 
-export type FileErrorCode = "not-found" | "busy" | "permission" | "unknown";
+export type FileErrorCode = "not-found" | "busy" | "permission" | "storage-full" | "unknown";
 
 export class FileAccessError extends Error {
     constructor(
@@ -56,6 +56,8 @@ export function mapFileError(error: unknown): FileAccessError {
         case "NotAllowedError":
         case "SecurityError":
             return new FileAccessError("permission");
+        case "QuotaExceededError":
+            return new FileAccessError("storage-full");
         case "NoModificationAllowedError":
         case "InvalidStateError":
             return new FileAccessError("busy");

@@ -15,6 +15,12 @@ import type { PendingReview, ReasonCode } from "./types";
 export const POLL_MS = 1500;
 export const IDLE_POLL_MS = 2000;
 const IDLE_AFTER_MS = 60_000;
+/** A write that failed because the disk (or quota) is full: nothing partial is left, the swap is discarded. */
+export function isStorageFull(error: unknown): boolean {
+    const name = (error as { name?: string } | null)?.name;
+    return name === "QuotaExceededError" || (error as { code?: number } | null)?.code === 22;
+}
+
 export const WRITE_DEBOUNCE_MS = 800;
 export const STABILITY_MS = 400;
 export const BUSY_BACKOFF_MS = [1000, 2000, 4000, 8000] as const;
@@ -29,6 +35,8 @@ export interface EngineState extends Omit<LinkedFileState, "error" | "status"> {
     review: PendingReview | null;
     /** Hash of the text last written or applied, so the caller can remember it across sessions. */
     syncedHash?: string | null;
+    /** The busy state is because storage is full rather than because another program holds the file. */
+    storageFull?: boolean;
 }
 
 export interface DocumentEngineDeps<TDoc> {
@@ -70,6 +78,8 @@ export interface DocumentSyncEngine {
     pause(): Promise<void>;
     resume(): Promise<void>;
     resolveDivergence(winner: "file" | "cv"): Promise<void>;
+    /** Writes the document again in full (for example after the privacy option changed). Outside changes are taken first; a document that is blocked, held or paused is left alone. */
+    rewrite(): Promise<void>;
     /** Applies the held change after the person confirmed it (a restore point is taken first). */
     applyHeld(): Promise<void>;
     /** Drops the held change and writes the app's version over the file (the person confirmed). */
@@ -137,7 +147,7 @@ export function createDocumentSyncEngine<TDoc>(deps: DocumentEngineDeps<TDoc>): 
 
     const settleInSync = () => {
         busyAttempt = 0;
-        emit({ status: "in-sync", error: null, review: null, lastSyncedAt: now(), fileName: deps.adapter.name, syncedHash: lastSyncedHash });
+        emit({ storageFull: false, status: "in-sync", error: null, review: null, lastSyncedAt: now(), fileName: deps.adapter.name, syncedHash: lastSyncedHash });
     };
 
     const goBroken = () => {
@@ -147,12 +157,13 @@ export function createDocumentSyncEngine<TDoc>(deps: DocumentEngineDeps<TDoc>): 
 
     const handleFileError = (error: unknown, retry: () => void) => {
         const mapped = mapFileError(error);
+        const storageFull = mapped.code === "storage-full" || isStorageFull(error);
         if (mapped.code === "not-found" || mapped.code === "permission") {
             goBroken();
             return;
         }
-        if (mapped.code === "busy") {
-            emit({ status: "busy" });
+        if (mapped.code === "busy" || storageFull) {
+            emit({ status: "busy", storageFull });
             if (busyAttempt < BUSY_BACKOFF_MS.length) {
                 const delay = BUSY_BACKOFF_MS[busyAttempt];
                 busyAttempt += 1;
@@ -488,6 +499,13 @@ export function createDocumentSyncEngine<TDoc>(deps: DocumentEngineDeps<TDoc>): 
         });
     }
 
+    async function rewrite() {
+        if (!running || paused || status !== "in-sync") return;
+        await checkNow();
+        if (!running || paused || status !== "in-sync") return;
+        await enqueue(() => writeCycle({ force: true }));
+    }
+
     function onVisibilityChange() {
         if (!running) return;
         if (!visible()) {
@@ -522,6 +540,7 @@ export function createDocumentSyncEngine<TDoc>(deps: DocumentEngineDeps<TDoc>): 
         resolveDivergence,
         applyHeld,
         keepMine,
+        rewrite,
         onVisibilityChange,
         onFocus,
         get lastSyncedHash() {

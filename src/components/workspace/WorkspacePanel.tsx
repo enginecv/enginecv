@@ -7,7 +7,7 @@ import { db } from "@/lib/db";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { useDialogFocus } from "@/hooks/useDialogFocus";
 import { useTranslation } from "@/lib/i18n";
-import { analyzeFolderHandle, applyHeldChange, chooseDuplicate, connectFolder, disconnectWorkspace, ignoreFile, keepAppVersion, recreateDocumentFile, relinkDocumentTo, resumePermission, setPaused, useWorkspaceStore } from "@/lib/workspace/controller";
+import { analyzeFolderHandle, applyHeldChange, chooseDuplicate, connectFolder, disconnectWorkspace, ignoreFile, keepAppVersion, recreateDocumentFile, relinkDocumentTo, resumePermission, setHideContact, setPaused, useWorkspaceStore } from "@/lib/workspace/controller";
 import { pickWorkspaceFolder } from "@/lib/workspace/directory-adapter";
 import type { PlanItem } from "@/lib/workspace/first-sync";
 import type { SetupAnalysis } from "@/lib/workspace/setup";
@@ -97,6 +97,7 @@ export function WorkspacePanel({ onClose }: { onClose: () => void }) {
                 </div>
                 <p className="mt-2 text-sm text-mid">{t("workspace.panel.intro")}</p>
 
+                {state.storageProblem && <p role="alert" className="mt-3 text-sm text-danger" data-testid="workspace-storage-problem">{t("workspace.storage.problem")}</p>}
                 {error && <p role="alert" className="mt-3 text-sm text-danger" data-testid="workspace-error">{t(error)}</p>}
 
                 <div className="mt-4 space-y-3" data-testid={`workspace-phase-${state.phase}`}>
@@ -134,6 +135,14 @@ export function WorkspacePanel({ onClose }: { onClose: () => void }) {
                                 {state.paused && <p className="text-xs text-accent" data-testid="workspace-paused">{t("workspace.panel.paused")}</p>}
                                 {!state.isLeader && <p className="text-xs text-faint" data-testid="workspace-other-tab">{t("workspace.panel.otherTab")}</p>}
                             </div>
+                            <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-edge bg-surface-1 p-3">
+                                <input type="checkbox" checked={state.hideContact} disabled={!!state.rewriting} onChange={(event) => void setHideContact(event.target.checked)} data-testid="workspace-hide-contact" className="mt-1" />
+                                <span className="min-w-0">
+                                    <span className="block text-sm font-medium text-strong">{t("workspace.warning.hide")}</span>
+                                    <span className="block text-xs text-mid">{state.hideContact ? t("workspace.panel.hideOnNote") : t("workspace.warning.hideHint")}</span>
+                                    {state.rewriting && <span role="status" className="block text-xs text-accent" data-testid="workspace-rewriting">{t("workspace.panel.rewriting", { done: state.rewriting.done, total: state.rewriting.total })}</span>}
+                                </span>
+                            </label>
                             {attention.length > 0 && (
                                 <ul className="space-y-1" data-testid="workspace-doc-list">
                                     {attention.map((row) => (

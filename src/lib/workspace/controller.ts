@@ -37,10 +37,14 @@ export interface WorkspaceUiState {
     /** A message key for the last problem the panel should show, or null. */
     error: string | null;
     /** What needs a look in the folder: unclaimed files, duplicates, sync-tool copies. */
+    /** Set while every file is being rewritten after the privacy option changed. */
+    /** The app could not save its own workspace records (storage full or unavailable). */
+    storageProblem: boolean;
+    rewriting: { done: number; total: number } | null;
     attention: { unmatched: Reconciliation["unmatched"]; duplicates: Reconciliation["duplicates"]; conflictCopies: ConflictCopy[] };
 }
 
-const initial: WorkspaceUiState = { phase: "loading", folderName: null, changeSource: null, hideContact: false, paused: false, isLeader: false, docCount: 0, byState: {}, error: null, attention: { unmatched: [], duplicates: [], conflictCopies: [] } };
+const initial: WorkspaceUiState = { phase: "loading", folderName: null, changeSource: null, hideContact: false, paused: false, isLeader: false, docCount: 0, byState: {}, error: null, storageProblem: false, rewriting: null, attention: { unmatched: [], duplicates: [], conflictCopies: [] } };
 
 export const useWorkspaceStore = create<WorkspaceUiState>(() => initial);
 
@@ -76,7 +80,7 @@ function syncRuntime() {
             root: rootHandle,
             hideContact: () => useWorkspaceStore.getState().hideContact,
             paused: () => useWorkspaceStore.getState().paused,
-            events: { onState: () => void refreshCounts(), onAttention: (attention) => set({ attention }), onFolderProblem: () => void verifyFolder() },
+            events: { onState: () => void refreshCounts(), onAttention: (attention) => set({ attention }), onFolderProblem: () => void verifyFolder(), onStorageProblem: () => set({ storageProblem: true }) },
         });
         void runtime.start().then(() => set({ changeSource: runtime?.changeSource?.kind ?? "poll" })).catch(() => undefined);
         startMirroring();
@@ -373,4 +377,21 @@ export async function documentHasWorkspaceFile(docId: string): Promise<boolean> 
     if (useWorkspaceStore.getState().phase !== "connected") return false;
     const row = await db.workspaceDocs.get(docId);
     return !!row && row.included && !!row.fileName;
+}
+
+/**
+ * Turns "leave contact details out of the files" on or off and rewrites every included file. Each file is
+ * replaced whole (never half-written), so an interruption leaves every file either old or new, and the
+ * documents in the app are never touched.
+ */
+export async function setHideContact(hide: boolean): Promise<void> {
+    if (useWorkspaceStore.getState().hideContact === hide) return;
+    await updateWorkspace({ hideContact: hide });
+    set({ hideContact: hide, rewriting: { done: 0, total: 0 } });
+    try {
+        await runtime?.rewriteAll((done, total) => set({ rewriting: { done, total } }));
+    } finally {
+        set({ rewriting: null });
+        await refreshCounts();
+    }
 }

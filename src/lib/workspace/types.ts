@@ -36,6 +36,7 @@ export const REASON_CODES = [
     "reserved-name",
     "file-missing",
     "file-busy",
+    "storage-full",
     "permission",
     "folder-missing",
     "unknown-cv",
