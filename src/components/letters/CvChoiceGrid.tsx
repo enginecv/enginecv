@@ -15,9 +15,6 @@ export interface CvChoice {
     detail?: string;
 }
 
-/** Past this many CVs the grid gets a search field. */
-const SEARCH_FROM = 6;
-
 /**
  * Shows every CV as a card with a preview of its first page and lets the person choose one.
  * Built on native radio inputs, so arrow keys, focus and screen readers work without extra code.
@@ -38,12 +35,10 @@ export function CvChoiceGrid({ choices, value, onChange, name, testIdPrefix }: {
 
     return (
         <div className="mt-4 space-y-3">
-            {choices.length >= SEARCH_FROM && (
-                <label className="flex h-10 items-center gap-2 rounded-xl border border-edge bg-surface-4 px-3 text-sm text-mid focus-within:border-faint">
-                    <Search className="h-4 w-4 shrink-0" aria-hidden="true" />
-                    <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t("dashboard.letters.searchCvs")} aria-label={t("dashboard.letters.searchCvs")} data-testid={`${testIdPrefix}-search`} className="min-w-0 flex-1 bg-transparent text-strong placeholder:text-faint focus:outline-none" />
-                </label>
-            )}
+            <label className="flex h-10 items-center gap-2 rounded-xl border border-edge bg-surface-4 px-3 text-sm text-mid focus-within:border-faint">
+                <Search className="h-4 w-4 shrink-0" aria-hidden="true" />
+                <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t("dashboard.letters.searchCvs")} aria-label={t("dashboard.letters.searchCvs")} data-testid={`${testIdPrefix}-search`} className="min-w-0 flex-1 bg-transparent text-strong placeholder:text-faint focus:outline-none" />
+            </label>
             {visible.length === 0 ? (
                 <p className="rounded-xl border border-dashed border-edge p-6 text-center text-sm text-faint" data-testid={`${testIdPrefix}-no-match`}>{t("dashboard.letters.noCvMatch", { query })}</p>
             ) : (

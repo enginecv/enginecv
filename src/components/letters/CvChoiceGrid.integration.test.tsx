@@ -23,11 +23,7 @@ describe("CvChoiceGrid", () => {
         expect(screen.getAllByRole("radio")[2]).toBeChecked();
     });
 
-    it("offers search only when there are many CVs, and says when nothing matches", () => {
-        const { unmount } = render(<Harness choices={make(3)} />);
-        expect(screen.queryByTestId("pick-search")).toBeNull();
-        unmount();
-
+    it("filters by name or headline and says when nothing matches", () => {
         render(<Harness choices={make(8)} />);
         fireEvent.change(screen.getByTestId("pick-search"), { target: { value: "CV 7" } });
         expect(screen.getAllByRole("radio")).toHaveLength(1);
