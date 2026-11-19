@@ -772,6 +772,8 @@ export const es: Translations = {
   "dashboard.writeLetter": "Escribir una carta de presentación para este CV",
   "dashboard.letters.filteredBy": "Cartas para {cv}",
   "dashboard.letters.clearFilter": "Mostrar todas las cartas",
+  "dashboard.letters.showAll": "Mostrar las {count} cartas de presentación de este CV",
+  "dashboard.letters.showFewer": "Mostrar menos",
   "letters.tips.howToWrite": "Cómo escribir una carta de presentación",
   "letters.tips.oneCvManyLetters": "Un CV, varias cartas de presentación",
   "letters.tips.inEnginecv": "Cómo funcionan las cartas en EngineCV",

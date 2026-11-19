@@ -772,6 +772,8 @@ export const bs: Translations = {
   "dashboard.writeLetter": "Napiši propratno pismo za ovaj životopis",
   "dashboard.letters.filteredBy": "Pisma za {cv}",
   "dashboard.letters.clearFilter": "Prikaži sva pisma",
+  "dashboard.letters.showAll": "Prikaži svih {count} propratnih pisama za ovaj životopis",
+  "dashboard.letters.showFewer": "Prikaži manje",
   "letters.tips.howToWrite": "Kako napisati propratno pismo",
   "letters.tips.oneCvManyLetters": "Jedan životopis, više propratnih pisama",
   "letters.tips.inEnginecv": "Kako propratna pisma rade u EngineCV-u",

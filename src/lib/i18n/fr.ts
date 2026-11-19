@@ -772,6 +772,8 @@ export const fr: Translations = {
   "dashboard.writeLetter": "Écrire une lettre de motivation pour ce CV",
   "dashboard.letters.filteredBy": "Lettres pour {cv}",
   "dashboard.letters.clearFilter": "Afficher toutes les lettres",
+  "dashboard.letters.showAll": "Afficher les {count} lettres de motivation pour ce CV",
+  "dashboard.letters.showFewer": "Afficher moins",
   "letters.tips.howToWrite": "Comment rédiger une lettre de motivation",
   "letters.tips.oneCvManyLetters": "Un CV, plusieurs lettres de motivation",
   "letters.tips.inEnginecv": "Comment fonctionnent les lettres dans EngineCV",

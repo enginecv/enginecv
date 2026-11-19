@@ -67,6 +67,25 @@ describe("LettersTab groups and actions", () => {
         expect(push).toHaveBeenCalledWith("/editor/cv-a");
     });
 
+    it("folds a long group to two rows behind a Show all button, unless searching", async () => {
+        await db.resumes.put(makeCv({ id: "cv-a", title: "Design CV" }));
+        await db.coverLetters.bulkPut(Array.from({ length: 8 }, (_, index) => makeLetter({ id: `m${index}`, cvId: "cv-a", company: `Firm ${index}`, updatedAt: index })));
+        render(<LettersTab onCreateCv={vi.fn()} />);
+        const group = await screen.findByTestId("letters-group-cv-a");
+        expect(within(group).getAllByTestId("letter-card")).toHaveLength(6); // two rows of three
+        const toggle = within(group).getByTestId("letters-group-toggle");
+        expect(toggle).toHaveTextContent("Show all 8 cover letters for this CV");
+
+        fireEvent.click(toggle);
+        expect(within(group).getAllByTestId("letter-card")).toHaveLength(8);
+        fireEvent.click(within(group).getByTestId("letters-group-toggle"));
+        expect(within(group).getAllByTestId("letter-card")).toHaveLength(6);
+
+        fireEvent.change(screen.getByTestId("letters-search"), { target: { value: "Firm" } });
+        expect(within(screen.getByTestId("letters-group-cv-a")).getAllByTestId("letter-card")).toHaveLength(8); // search results are never hidden
+        expect(screen.queryByTestId("letters-group-toggle")).toBeNull();
+    });
+
     it("puts letters whose CV is gone in their own group instead of hiding them", async () => {
         await seed();
         await db.resumes.delete("cv-b");

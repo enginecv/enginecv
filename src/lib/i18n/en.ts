@@ -772,6 +772,8 @@ export const en: Translations = {
   "dashboard.writeLetter": "Write a cover letter for this CV",
   "dashboard.letters.filteredBy": "Letters for {cv}",
   "dashboard.letters.clearFilter": "Show all letters",
+  "dashboard.letters.showAll": "Show all {count} cover letters for this CV",
+  "dashboard.letters.showFewer": "Show fewer",
   "letters.tips.howToWrite": "How to write a cover letter",
   "letters.tips.oneCvManyLetters": "One CV, many cover letters",
   "letters.tips.inEnginecv": "How cover letters work in EngineCV",
