@@ -73,9 +73,12 @@ export class MemoryFileHandle {
         private readonly parent: MemoryDirectoryHandle,
         private data: MemoryFileData | null,
         public name: string,
+        /** A listing-only handle (the swap file of a write in progress): readable, not part of the tree. */
+        private readonly virtual = false,
     ) {}
 
     private alive(): MemoryFileData {
+        if (this.virtual && this.data) return this.data;
         // The file is alive only while its parent still holds this very data object under this name.
         const current = this.parent._lookupFile(this.name);
         if (!this.data || !current || current !== this.data) throw domError("NotFoundError", "A requested file or directory could not be found at the time an operation was processed.");
@@ -239,7 +242,7 @@ export class MemoryDirectoryHandle {
         for (const [key, count] of this.openWrites) {
             if (count > 0 && this.files.has(key)) {
                 const name = `${this.files.get(key)!.name}.crswap`;
-                yield [name, new MemoryFileHandle(this.shared, this, new MemoryFileData("", 0), name)];
+                yield [name, new MemoryFileHandle(this.shared, this, new MemoryFileData("", tick(this.shared)), name, true)];
             }
         }
         for (const { name, dir } of [...this.dirs.values()]) yield [name, dir];
