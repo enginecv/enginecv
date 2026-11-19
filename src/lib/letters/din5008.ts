@@ -8,6 +8,14 @@
  * trusted template. The 2 blank lines between the address field and the subject are approximated
  * as 8.5 mm.
  *
+ * Rendered check (2026-11-19, exported HTML printed to PDF by headless Chrome, positions read back from the PDF):
+ * page 209.9 x 297.0 mm; sender block at 25 mm left from 12.7 mm down; return line 6.6 pt at 45.5 mm; recipient lines
+ * start at 50.4 mm and 20 mm from the left; subject at 99.1 mm; fold marks drawn at 105.2 and 210.1 mm and the punch mark
+ * at 148.3 mm, 5 mm / 4 mm long at the left edge. A further source (a 2008 DIN 676 handout) confirms the Form B field
+ * (45 mm from the top, 20 mm from the left, 85 mm wide, 5 mm return line + 12.7 mm notes zone + 27.3 mm address zone).
+ * Not checked against the standard itself: the second fold (one printer template says 205 mm) and the envelope window
+ * position (DIN 680).
+ *
  * Sources: de.wikipedia.org/wiki/DIN_5008 (field heights and the older 50 mm), macwelt.de
  * "Know-how Normsatz" (fold marks 105 and 210 mm, centre and punch mark 148.5 mm),
  * briefmarkenmesse-essen.de and gruendung.de/din-5008 (address field and margins).
