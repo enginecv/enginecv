@@ -38,6 +38,8 @@ export interface DocumentEngineDeps<TDoc> {
     flushLocal?: () => Promise<void>;
     /** The privacy option: leave contact fields out of written text. */
     hideContact?: () => boolean;
+    /** Set to false when something else decides when to check (the workspace scans the folder once for all documents). */
+    poll?: boolean;
     onState: (patch: Partial<EngineState>) => void;
     /** Tells the host the person paused or resumed (it persists the choice). */
     onPausedChange?: (paused: boolean) => void;
@@ -299,7 +301,7 @@ export function createDocumentSyncEngine<TDoc>(deps: DocumentEngineDeps<TDoc>): 
     function schedulePoll() {
         if (pollTimer) clearTimeout(pollTimer);
         pollTimer = null;
-        if (!running || paused || status === "broken" || !visible()) return;
+        if (deps.poll === false || !running || paused || status === "broken" || !visible()) return;
         pollTimer = setTimeout(() => {
             pollTimer = null;
             // Skip this tick while a read or write is still in flight.

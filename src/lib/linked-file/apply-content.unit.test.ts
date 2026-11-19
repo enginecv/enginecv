@@ -64,6 +64,23 @@ describe("applyContent", () => {
         expect(applyContent(current, incoming).declaration[0].signature).toBe("data:sig");
     });
 
+    it("keeps the link icons and layout choices a file cannot carry, for entries the file keeps", () => {
+        const current = base();
+        (current.experience[0] as unknown as Record<string, unknown>).urlIcon = "graduation-cap";
+        current.basics.detailsOrder = ["email", "phone"];
+        const incoming = incomingFrom(current);
+        (incoming.experience[0] as unknown as Record<string, unknown>).urlIcon = "auto";
+        incoming.basics.detailsOrder = [];
+        incoming.experience[0].position = "Changed";
+        const next = applyContent(current, incoming);
+        expect((next.experience[0] as unknown as Record<string, unknown>).urlIcon).toBe("graduation-cap");
+        expect(next.experience[0].position).toBe("Changed");
+        expect(next.basics.detailsOrder).toEqual(["email", "phone"]);
+        // A new entry (no matching id) takes the file's defaults.
+        incoming.experience.push({ ...incoming.experience[0], id: "e2" });
+        expect((applyContent(current, incoming).experience[1] as unknown as Record<string, unknown>).urlIcon).toBe("auto");
+    });
+
     it("handles an empty file", () => {
         const current = base();
         const next = applyContent(current, createEmptyResume());

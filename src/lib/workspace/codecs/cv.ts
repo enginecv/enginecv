@@ -45,8 +45,9 @@ type Obj = Record<string, unknown>;
 
 export function createCvCodec(options: CvCodecOptions = {}): DocumentCodec<Resume> {
     const includeId = options.includeId ?? true;
+    const canonicalText = (doc: Resume) => codec.serialize(doc, { hideContact: false });
 
-    return {
+    const codec: DocumentCodec<Resume> = {
         kind: "cv",
 
         parse(text, { now, hideContact }): ParseOutcome<Resume> {
@@ -108,6 +109,8 @@ export function createCvCodec(options: CvCodecOptions = {}): DocumentCodec<Resum
         entryCount: countEntries,
         canApplyExternal: () => ({ ok: true }),
         describeChange: describeContentChange,
-        isSameContent: (a, b) => JSON.stringify(a) === JSON.stringify(b),
+        // Same content means the same text in the file: normalisation a round trip causes does not count as a change.
+        isSameContent: (a, b) => canonicalText(a) === canonicalText(b),
     };
+    return codec;
 }

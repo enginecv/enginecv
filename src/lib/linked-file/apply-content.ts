@@ -29,6 +29,24 @@ export interface ContentChange {
     changed: number;
 }
 
+/**
+ * Per-entry settings a file does not carry (the person picks them in the editor): link icons and a
+ * project's icon. An entry the file keeps (same id) keeps them too, so an
+ * agent editing one line never resets the look or visibility of the others.
+ */
+const APP_ONLY_ENTRY_KEYS = ["urlIcon", "issuerUrlIcon", "icon"] as const;
+
+function keepAppOnlyFields(incoming: Obj[], existing: Obj[]): Obj[] {
+    const byId = new Map(existing.map((entry) => [entry.id as string, entry]));
+    return incoming.map((entry) => {
+        const before = byId.get(entry.id as string);
+        if (!before) return entry;
+        const kept: Obj = {};
+        for (const key of APP_ONLY_ENTRY_KEYS) if (key in before) kept[key] = before[key];
+        return { ...entry, ...kept };
+    });
+}
+
 export function applyContent(current: Resume, incoming: Resume): Resume {
     const next: Resume = {
         ...current,
@@ -36,6 +54,8 @@ export function applyContent(current: Resume, incoming: Resume): Resume {
             ...incoming.basics,
             photo: current.basics.photo,
             photoEdit: current.basics.photoEdit,
+            // The order of the details block is a layout choice made in the editor.
+            detailsOrder: current.basics.detailsOrder,
         },
         skillGroups: incoming.skillGroups,
         customSections: incoming.customSections.map((section) => {
@@ -49,7 +69,7 @@ export function applyContent(current: Resume, incoming: Resume): Resume {
         },
     };
     for (const key of ENTRY_SECTIONS) {
-        (next as unknown as Obj)[key] = incoming[key];
+        (next as unknown as Obj)[key] = keepAppOnlyFields(incoming[key] as unknown as Obj[], current[key] as unknown as Obj[]);
     }
     // The signature is drawn in the app and has no place in the file.
     next.declaration = incoming.declaration.map((entry) => {

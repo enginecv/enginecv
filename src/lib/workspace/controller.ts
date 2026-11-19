@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { db } from "@/lib/db";
 import { createDirectoryAdapter, isWorkspaceSupported, pickWorkspaceFolder, type DirectoryAdapter } from "./directory-adapter";
 import { createLeader, type Leader } from "./leader";
+import { createWorkspaceRuntime, type WorkspaceRuntime } from "./runtime";
 import { readAppDocuments } from "./apply-stored";
 import { analyzeFolder, runSetup, type SetupAnalysis, type SetupOptions, type SetupResult } from "./setup";
 import type { ChangeSourceKind, DocState } from "./types";
@@ -37,6 +38,8 @@ const set = (patch: Partial<WorkspaceUiState>) => useWorkspaceStore.setState(pat
 
 let adapter: DirectoryAdapter | null = null;
 let leader: Leader | null = null;
+let runtime: WorkspaceRuntime | null = null;
+let rootHandle: FileSystemDirectoryHandle | undefined;
 
 export function getAdapter(): DirectoryAdapter | null {
     return adapter;
@@ -49,10 +52,36 @@ async function refreshCounts() {
     set({ docCount: rows.length, byState });
 }
 
+/** The engines run only while this tab leads, a folder is connected with permission, and syncing is not paused. */
+function syncRuntime() {
+    const state = useWorkspaceStore.getState();
+    const wanted = state.phase === "connected" && state.isLeader && !state.paused && adapter !== null;
+    if (wanted && !runtime && adapter) {
+        runtime = createWorkspaceRuntime({
+            adapter,
+            root: rootHandle,
+            hideContact: () => useWorkspaceStore.getState().hideContact,
+            paused: () => useWorkspaceStore.getState().paused,
+            events: { onState: () => void refreshCounts() },
+        });
+        void runtime.start().then(() => set({ changeSource: runtime?.changeSource?.kind ?? "poll" })).catch(() => undefined);
+    } else if (!wanted && runtime) {
+        runtime.stop();
+        runtime = null;
+    }
+}
+
+export function getRuntime(): WorkspaceRuntime | null {
+    return runtime;
+}
+
 function startLeader() {
     leader?.stop();
     leader = createLeader();
-    leader.onChange((value) => set({ isLeader: value }));
+    leader.onChange((value) => {
+        set({ isLeader: value });
+        syncRuntime();
+    });
     leader.start();
 }
 
@@ -68,6 +97,7 @@ export async function initWorkspace(): Promise<void> {
         return;
     }
     adapter = createDirectoryAdapter(row.handle);
+    rootHandle = row.handle;
     set({ folderName: row.folderName, hideContact: row.hideContact, paused: row.paused, changeSource: row.changeSource });
     await refreshCounts();
     try {
@@ -104,6 +134,7 @@ export async function connectFolder(input: { handle: FileSystemDirectoryHandle; 
         const docs = await readAppDocuments();
         const result = await runSetup({ adapter: candidate, handle: input.handle, plan: input.analysis.plan, appDocs: input.analysis.appDocs, docs, options: input.options });
         adapter = candidate;
+        rootHandle = input.handle;
         set({ phase: "connected", folderName: candidate.name, hideContact: input.options.hideContact, paused: false, changeSource: "poll", error: null });
         await refreshCounts();
         startLeader();
@@ -133,10 +164,13 @@ export async function resumePermission(): Promise<boolean> {
 export async function setPaused(paused: boolean): Promise<void> {
     await updateWorkspace({ paused });
     set({ paused });
+    syncRuntime();
 }
 
 /** Stops syncing and forgets the folder. The files stay exactly as they are and every document stays in the app. */
 export async function disconnectWorkspace(): Promise<void> {
+    runtime?.stop();
+    runtime = null;
     leader?.stop();
     leader = null;
     adapter = null;
@@ -146,6 +180,9 @@ export async function disconnectWorkspace(): Promise<void> {
 
 /** For tests: forget module state. */
 export function resetWorkspaceController(): void {
+    runtime?.stop();
+    runtime = null;
+    rootHandle = undefined;
     leader?.stop();
     leader = null;
     adapter = null;
