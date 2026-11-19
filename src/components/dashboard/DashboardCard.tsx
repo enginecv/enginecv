@@ -31,6 +31,7 @@ export function DashboardCard({
     actions,
     errorMessage,
     linkedFileName,
+    meta,
     children,
 }: {
     testId: string;
@@ -49,6 +50,8 @@ export function DashboardCard({
     errorMessage?: string | null;
     /** The file this CV is linked to (feature 089); shown wherever the CV name is. */
     linkedFileName?: string;
+    /** Extra line under the title, such as a count that links to related documents. */
+    meta?: ReactNode;
     children?: ReactNode;
 }) {
     const { t } = useTranslation();
@@ -85,6 +88,7 @@ export function DashboardCard({
                                             <span className="truncate">{linkedFileName}</span>
                                         </p>
                                     )}
+                                    {meta && <div className="mt-1.5">{meta}</div>}
                                     {description && (
                                         <p className="mt-1 line-clamp-2 text-[13px] leading-relaxed text-mid">
                                             {description}

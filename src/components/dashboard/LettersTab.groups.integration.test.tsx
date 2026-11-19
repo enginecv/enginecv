@@ -43,6 +43,27 @@ describe("LettersTab groups and actions", () => {
         expect(within(design).getAllByTestId("letter-card").map((element) => element.getAttribute("data-letter-id"))).toEqual(["a2", "a1", "a3"]);
     });
 
+    it("limits the list to one CV when opened from that CV's card, and can show all again", async () => {
+        await seed();
+        const onClear = vi.fn();
+        const { rerender } = render(<LettersTab onCreateCv={vi.fn()} cvFilter="cv-b" onClearCvFilter={onClear} />);
+        await screen.findByTestId("letters-group-cv-b");
+        expect(screen.queryByTestId("letters-group-cv-a")).toBeNull();
+        expect(screen.getByTestId("letters-filter")).toHaveTextContent("Research CV");
+        fireEvent.click(screen.getByTestId("letters-filter-clear"));
+        expect(onClear).toHaveBeenCalled();
+        rerender(<LettersTab onCreateCv={vi.fn()} cvFilter={null} onClearCvFilter={onClear} />);
+        expect(await screen.findByTestId("letters-group-cv-a")).toBeInTheDocument();
+        expect(screen.queryByTestId("letters-filter")).toBeNull();
+    });
+
+    it("shows a small preview of the CV in each group header", async () => {
+        await seed();
+        render(<LettersTab onCreateCv={vi.fn()} />);
+        const design = await screen.findByTestId("letters-group-cv-a");
+        expect(within(design).getByTestId("letter-group-thumb")).toBeInTheDocument();
+    });
+
     it("puts letters whose CV is gone in their own group instead of hiding them", async () => {
         await seed();
         await db.resumes.delete("cv-b");
