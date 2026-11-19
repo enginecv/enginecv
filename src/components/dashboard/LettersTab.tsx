@@ -22,6 +22,9 @@ import { DASHBOARD_CONTENT_CLASS, DASHBOARD_NAV_CLASS } from "./layout";
 const UNDO_WINDOW_MS = 8000;
 type Density = "large" | "normal" | "compact";
 
+/** Two rows of cards at the widest layout; a group longer than this folds behind "Show all". */
+const COLLAPSED_LETTERS: Record<Density, number> = { large: 4, normal: 6, compact: 8 };
+
 type CvOption = CvChoice;
 
 interface LetterGroup {
@@ -87,6 +90,7 @@ export function LettersTab({ onCreateCv, gridClass = "grid-cols-1 md:grid-cols-2
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [query, setQuery] = useState("");
+    const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
     const [dialog, setDialog] = useState<{ mode: "repoint" | "duplicate"; letter: LetterDocument } | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<LetterDocument | null>(null);
     const [undoRow, setUndoRow] = useState<LetterDocument | null>(null);
@@ -118,6 +122,18 @@ export function LettersTab({ onCreateCv, gridClass = "grid-cols-1 md:grid-cols-2
         if (orphans) result.push({ cvId: null, title: t("dashboard.letters.noCvGroup"), letters: orphans });
         return result;
     }, [letters, cvs, query, cvFilter, t]);
+
+    /** A group folds to two rows unless the person is searching, filtered to one CV, or expanded it. */
+    const folded = (group: LetterGroup) => !query.trim() && !cvFilter && !expanded.has(group.cvId ?? "none") && group.letters.length > COLLAPSED_LETTERS[density];
+    const visibleLetters = (group: LetterGroup) => (folded(group) ? group.letters.slice(0, COLLAPSED_LETTERS[density]) : group.letters);
+    const canFold = (group: LetterGroup) => !query.trim() && !cvFilter && group.letters.length > COLLAPSED_LETTERS[density];
+    const toggleExpanded = (group: LetterGroup) => setExpanded((current) => {
+        const next = new Set(current);
+        const key = group.cvId ?? "none";
+        if (next.has(key)) next.delete(key);
+        else next.add(key);
+        return next;
+    });
 
     const run = async (action: () => Promise<void>) => {
         setBusy(true);
@@ -264,34 +280,41 @@ export function LettersTab({ onCreateCv, gridClass = "grid-cols-1 md:grid-cols-2
                         </h3>
                         <div className="flex items-start gap-5">
                             {group.resume && group.cvId && (
-                                <button type="button" onClick={() => router.push(`/editor/${group.cvId}`)} title={t("dashboard.letters.openNamed", { name: group.title })} aria-label={t("dashboard.letters.openNamed", { name: group.title })} data-testid="letter-group-thumb" className="hidden aspect-[210/297] w-32 shrink-0 self-start sm:sticky sm:top-20 sm:block overflow-hidden rounded-md border border-edge bg-white shadow-md transition-all hover:-translate-y-0.5 hover:border-accent/50 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+                                <button type="button" onClick={() => router.push(`/editor/${group.cvId}`)} title={t("dashboard.letters.openNamed", { name: group.title })} aria-label={t("dashboard.letters.openNamed", { name: group.title })} data-testid="letter-group-thumb" className="hidden aspect-[210/297] w-48 shrink-0 self-start md:sticky md:top-20 md:block xl:w-64 overflow-hidden rounded-md border border-edge bg-white shadow-md transition-all hover:-translate-y-0.5 hover:border-accent/50 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
                                     <span className="pointer-events-none block h-full w-full" aria-hidden="true">
                                         <LiveResumeThumbnail resume={group.resume} />
                                     </span>
                                 </button>
                             )}
-                            <div className={`grid ${gridClass} min-w-0 flex-1 gap-5`}>
-                                {group.letters.map((letter) => (
-                                    <LetterCard
-                                        key={letter.id}
-                                        letter={letter}
-                                        needsCv={letter.status === "draft" && group.cvId === null}
-                                        onOpen={() => router.push(`/letters/${letter.id}`)}
-                                        actions={{
-                                            onDuplicate: () => void run(async () => {
-                                                // A letter whose CV is gone needs a CV to copy onto: ask which.
-                                                if (!letter.cvId || !cvs.some((cv) => cv.id === letter.cvId)) {
-                                                    setDialog({ mode: "duplicate", letter });
-                                                    return;
-                                                }
-                                                await duplicateLetter(letter.id, { copyLabel: t("dashboard.copy") });
-                                            }),
-                                            onDuplicateInto: () => setDialog({ mode: "duplicate", letter }),
-                                            onRepoint: () => setDialog({ mode: "repoint", letter }),
-                                            onDelete: () => setDeleteTarget(letter),
-                                        }}
-                                    />
-                                ))}
+                            <div className="min-w-0 flex-1 space-y-4">
+                                <div className={`grid ${gridClass} gap-5`}>
+                                    {visibleLetters(group).map((letter) => (
+                                        <LetterCard
+                                            key={letter.id}
+                                            letter={letter}
+                                            needsCv={letter.status === "draft" && group.cvId === null}
+                                            onOpen={() => router.push(`/letters/${letter.id}`)}
+                                            actions={{
+                                                onDuplicate: () => void run(async () => {
+                                                    // A letter whose CV is gone needs a CV to copy onto: ask which.
+                                                    if (!letter.cvId || !cvs.some((cv) => cv.id === letter.cvId)) {
+                                                        setDialog({ mode: "duplicate", letter });
+                                                        return;
+                                                    }
+                                                    await duplicateLetter(letter.id, { copyLabel: t("dashboard.copy") });
+                                                }),
+                                                onDuplicateInto: () => setDialog({ mode: "duplicate", letter }),
+                                                onRepoint: () => setDialog({ mode: "repoint", letter }),
+                                                onDelete: () => setDeleteTarget(letter),
+                                            }}
+                                        />
+                                    ))}
+                                </div>
+                                {canFold(group) && (
+                                    <button type="button" onClick={() => toggleExpanded(group)} aria-expanded={!folded(group)} data-testid="letters-group-toggle" className="rounded-xl border border-edge bg-surface-4 px-3 py-2 text-sm font-medium text-strong transition-colors hover:border-faint">
+                                        {folded(group) ? t("dashboard.letters.showAll", { count: group.letters.length }) : t("dashboard.letters.showFewer")}
+                                    </button>
+                                )}
                             </div>
                         </div>
                     </section>

@@ -772,6 +772,8 @@ export const de: Translations = {
   "dashboard.writeLetter": "Anschreiben für diesen Lebenslauf schreiben",
   "dashboard.letters.filteredBy": "Anschreiben für {cv}",
   "dashboard.letters.clearFilter": "Alle Anschreiben anzeigen",
+  "dashboard.letters.showAll": "Alle {count} Anschreiben für diesen Lebenslauf anzeigen",
+  "dashboard.letters.showFewer": "Weniger anzeigen",
   "letters.tips.howToWrite": "Anschreiben schreiben: die Anleitung",
   "letters.tips.oneCvManyLetters": "Ein Lebenslauf, viele Anschreiben",
   "letters.tips.inEnginecv": "So funktionieren Anschreiben in EngineCV",
