@@ -13,7 +13,7 @@ import { db } from "@/lib/db";
 import { useTranslation } from "@/lib/i18n";
 import type { LetterDocument } from "@/lib/letters/schema";
 import type { Resume } from "@/lib/schema";
-import { createLetterRecord, deleteLetter, duplicateLetter, listLetters, repointLetter, restoreLetter } from "@/lib/letters/store";
+import { createLetterRecord, createStandaloneLetterRecord, deleteLetter, duplicateLetter, listLetters, repointLetter, restoreLetter } from "@/lib/letters/store";
 import { LetterCard, letterDisplayTitle } from "./LetterCard";
 import { LiveResumeThumbnail } from "./LiveResumeThumbnail";
 import { NavSearch } from "./NavSearch";
@@ -27,28 +27,37 @@ const COLLAPSED_LETTERS: Record<Density, number> = { large: 4, normal: 6, compac
 
 type CvOption = CvChoice;
 
+const groupKey = (group: LetterGroup) => (group.standalone ? "standalone" : (group.cvId ?? "none"));
+
+/** Stands in for the CV id of letters written without one, so they get a group of their own. */
+const STANDALONE_KEY = "__standalone__";
+const NO_CV = "__no-cv__";
+
 interface LetterGroup {
     cvId: string | null;
+    /** Letters written without a CV; not the same as letters whose CV was deleted. */
+    standalone?: boolean;
     resume?: Resume;
     title: string;
     letters: LetterDocument[];
 }
 
-function CvPickerDialog({ cvs, onPick, onClose, busy, error }: { cvs: CvOption[]; onPick: (cvId: string) => void; onClose: () => void; busy: boolean; error: boolean }) {
+function CvPickerDialog({ cvs, onPick, onClose, busy, error }: { cvs: CvOption[]; onPick: (cvId: string | null) => void; onClose: () => void; busy: boolean; error: boolean }) {
     const { t } = useTranslation();
     const ref = useDialogFocus<HTMLDivElement>(true, onClose);
-    const [cvId, setCvId] = useState(cvs[0]?.id ?? "");
+    const [cvId, setCvId] = useState(cvs[0]?.id ?? NO_CV);
+    const choices = useMemo<CvOption[]>(() => [...cvs, { id: NO_CV, label: t("dashboard.letters.pickNoCv"), detail: t("dashboard.letters.pickNoCvHint") }], [cvs, t]);
     return (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-surface-2/80 backdrop-blur-md" onClick={onClose} />
             <div ref={ref} role="dialog" aria-modal="true" aria-label={t("dashboard.letters.pickCv")} className="glass-panel relative w-full max-w-2xl rounded-2xl p-6 shadow-2xl" data-testid="letters-cv-picker">
                 <h2 className="text-lg font-bold text-strong">{t("dashboard.letters.pickCv")}</h2>
                 <p className="mt-2 text-sm text-mid">{t("dashboard.letters.pickCvHint")}</p>
-                <CvChoiceGrid choices={cvs} value={cvId} onChange={setCvId} name="letters-cv" testIdPrefix="letters-cv" />
+                <CvChoiceGrid choices={choices} value={cvId} onChange={setCvId} name="letters-cv" testIdPrefix="letters-cv" />
                 {error && <p role="alert" className="mt-3 text-sm text-danger" data-testid="letters-cv-picker-error">{t("dashboard.letters.createError")}</p>}
                 <div className="mt-5 flex justify-end gap-2">
                     <button type="button" onClick={onClose} className="rounded-xl border border-edge bg-surface-4 px-4 py-2 text-sm font-bold text-mid hover:border-faint hover:text-strong">{t("dashboard.cancel")}</button>
-                    <button type="button" disabled={busy || !cvId} onClick={() => onPick(cvId)} data-testid="letters-cv-create" className="flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-bold text-surface-2 hover:bg-accent-soft disabled:opacity-60">
+                    <button type="button" disabled={busy || !cvId} onClick={() => onPick(cvId === NO_CV ? null : cvId)} data-testid="letters-cv-create" className="flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-bold text-surface-2 hover:bg-accent-soft disabled:opacity-60">
                         {busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
                         {t("dashboard.letters.create")}
                     </button>
@@ -79,7 +88,7 @@ export function LettersTab({ onCreateCv, gridClass = "grid-cols-1 md:grid-cols-2
     /** Right end of the toolbar (theme and language controls). */
     navTrail?: ReactNode;
 }) {
-    const { t } = useTranslation();
+    const { t, locale } = useTranslation();
     const router = useRouter();
     const letters = useLiveQuery(() => listLetters(), []);
     const cvs = useLiveQuery(async (): Promise<CvOption[]> => {
@@ -111,25 +120,27 @@ export function LettersTab({ onCreateCv, gridClass = "grid-cols-1 md:grid-cols-2
         const resumeById = new Map(cvs.map((cv) => [cv.id, cv.resume]));
         const grouped = new Map<string | null, LetterDocument[]>();
         for (const letter of matches) {
-            const key = letter.cvId && byId.has(letter.cvId) ? letter.cvId : null;
+            const key = letter.standalone ? STANDALONE_KEY : letter.cvId && byId.has(letter.cvId) ? letter.cvId : null;
             grouped.set(key, [...(grouped.get(key) ?? []), letter]);
         }
         const result: LetterGroup[] = [...grouped.entries()]
-            .filter(([key]) => key !== null)
+            .filter(([key]) => key !== null && key !== STANDALONE_KEY)
             .map(([key, items]) => ({ cvId: key, title: byId.get(key as string) ?? "", resume: resumeById.get(key as string), letters: items }))
             .sort((a, b) => a.title.localeCompare(b.title));
+        const standalone = grouped.get(STANDALONE_KEY);
+        if (standalone) result.push({ cvId: null, standalone: true, title: t("dashboard.letters.standaloneGroup"), letters: standalone });
         const orphans = grouped.get(null);
         if (orphans) result.push({ cvId: null, title: t("dashboard.letters.noCvGroup"), letters: orphans });
         return result;
     }, [letters, cvs, query, cvFilter, t]);
 
     /** A group folds to two rows unless the person is searching, filtered to one CV, or expanded it. */
-    const folded = (group: LetterGroup) => !query.trim() && !cvFilter && !expanded.has(group.cvId ?? "none") && group.letters.length > COLLAPSED_LETTERS[density];
+    const folded = (group: LetterGroup) => !query.trim() && !cvFilter && !expanded.has(groupKey(group)) && group.letters.length > COLLAPSED_LETTERS[density];
     const visibleLetters = (group: LetterGroup) => (folded(group) ? group.letters.slice(0, COLLAPSED_LETTERS[density]) : group.letters);
     const canFold = (group: LetterGroup) => !query.trim() && !cvFilter && group.letters.length > COLLAPSED_LETTERS[density];
     const toggleExpanded = (group: LetterGroup) => setExpanded((current) => {
         const next = new Set(current);
-        const key = group.cvId ?? "none";
+        const key = groupKey(group);
         if (next.has(key)) next.delete(key);
         else next.add(key);
         return next;
@@ -148,11 +159,11 @@ export function LettersTab({ onCreateCv, gridClass = "grid-cols-1 md:grid-cols-2
     };
 
     /** Creates a letter and opens it. Returns false (and says why) when it could not be created. */
-    const create = async (cvId: string): Promise<boolean> => {
+    const create = async (cvId: string | null): Promise<boolean> => {
         setBusy(true);
         setError(null);
         try {
-            const letter = await createLetterRecord(cvId);
+            const letter = cvId ? await createLetterRecord(cvId) : await createStandaloneLetterRecord({ language: locale });
             router.push(`/letters/${letter.id}`);
             return true;
         } catch (cause) {
@@ -165,8 +176,9 @@ export function LettersTab({ onCreateCv, gridClass = "grid-cols-1 md:grid-cols-2
     };
 
     const startNew = () => {
-        if (!cvs || cvs.length === 0) return;
-        if (cvs.length === 1) void create(cvs[0].id);
+        if (!cvs) return;
+        // With no CV there is nothing to choose: write a standalone letter.
+        if (cvs.length === 0) void create(null);
         else setPicking(true);
     };
 
@@ -195,7 +207,7 @@ export function LettersTab({ onCreateCv, gridClass = "grid-cols-1 md:grid-cols-2
                     {navLead}
                     {controls}
                     <div className="ml-auto flex items-center gap-2">
-                        {cvs && cvs.length > 0 && (
+                        {cvs && (
                             <button type="button" onClick={startNew} disabled={busy} data-testid="letter-new" title={t("dashboard.letters.new")} aria-label={t("dashboard.letters.new")} className="flex h-10 items-center gap-2 rounded-xl bg-accent px-3 text-sm font-medium text-surface-2 transition-colors hover:bg-accent-soft disabled:opacity-60">
                                 <Plus className="h-4 w-4" aria-hidden="true" />
                                 <span className="hidden sm:inline">{t("dashboard.letters.new")}</span>
@@ -213,17 +225,6 @@ export function LettersTab({ onCreateCv, gridClass = "grid-cols-1 md:grid-cols-2
         return frame(
             <div className={`grid ${gridClass} gap-5`} data-testid="letters-loading">
                 {Array.from({ length: 3 }).map((_, index) => <Skeleton key={index} className="h-36 w-full rounded-2xl" />)}
-            </div>,
-        );
-    }
-
-    if (cvs.length === 0 && letters.length === 0) {
-        return frame(
-            <div className="flex flex-col items-center gap-3 rounded-[1.25rem] border border-dashed border-edge p-12 text-center text-faint" data-testid="letters-no-cvs">
-                <Mail className="h-10 w-10" aria-hidden="true" />
-                <p className="text-sm font-medium text-strong">{t("dashboard.letters.noCvs")}</p>
-                <p className="max-w-md text-xs">{t("dashboard.letters.noCvsHint")}</p>
-                <button type="button" onClick={onCreateCv} data-testid="letters-create-cv" className="rounded-xl bg-accent px-4 py-2 text-sm font-bold text-surface-2 hover:bg-accent-soft">{t("dashboard.letters.createCv")}</button>
             </div>,
         );
     }
@@ -265,7 +266,10 @@ export function LettersTab({ onCreateCv, gridClass = "grid-cols-1 md:grid-cols-2
                 <div className="flex flex-col items-center gap-2 rounded-[1.25rem] border border-dashed border-edge p-10 text-center text-faint" data-testid="letters-empty">
                     <Mail className="h-8 w-8" aria-hidden="true" />
                     <p className="text-sm font-medium text-strong">{t("dashboard.letters.empty")}</p>
-                    <p className="text-xs">{t("dashboard.letters.emptyHint")}</p>
+                    <p className="max-w-md text-xs">{t(cvs.length === 0 ? "dashboard.letters.emptyHintNoCv" : "dashboard.letters.emptyHint")}</p>
+                    {cvs.length === 0 && (
+                        <button type="button" onClick={onCreateCv} data-testid="letters-create-cv" className="mt-2 rounded-xl border border-edge bg-surface-4 px-4 py-2 text-sm font-bold text-strong hover:border-faint">{t("dashboard.letters.createCv")}</button>
+                    )}
                 </div>
             ) : groups.length === 0 ? (
                 <div className="rounded-[1.25rem] border border-dashed border-edge p-10 text-center text-sm text-faint" data-testid="letters-no-match">
@@ -273,7 +277,7 @@ export function LettersTab({ onCreateCv, gridClass = "grid-cols-1 md:grid-cols-2
                 </div>
             ) : (
                 groups.map((group) => (
-                    <section key={group.cvId ?? "none"} data-testid={`letters-group-${group.cvId ?? "none"}`} aria-label={group.title} className="space-y-3">
+                    <section key={groupKey(group)} data-testid={`letters-group-${groupKey(group)}`} aria-label={group.title} className="space-y-3">
                         <h3 className="flex items-center gap-2 text-sm font-semibold text-strong">
                             {group.title}
                             <span className="rounded-md bg-surface-1 px-1.5 py-0.5 text-[11px] font-semibold text-mid" data-testid="letters-group-count">{group.letters.length}</span>
@@ -292,12 +296,12 @@ export function LettersTab({ onCreateCv, gridClass = "grid-cols-1 md:grid-cols-2
                                         <LetterCard
                                             key={letter.id}
                                             letter={letter}
-                                            needsCv={letter.status === "draft" && group.cvId === null}
+                                            needsCv={letter.status === "draft" && group.cvId === null && !letter.standalone}
                                             onOpen={() => router.push(`/letters/${letter.id}`)}
                                             actions={{
                                                 onDuplicate: () => void run(async () => {
                                                     // A letter whose CV is gone needs a CV to copy onto: ask which.
-                                                    if (!letter.cvId || !cvs.some((cv) => cv.id === letter.cvId)) {
+                                                    if (!letter.standalone && (!letter.cvId || !cvs.some((cv) => cv.id === letter.cvId))) {
                                                         setDialog({ mode: "duplicate", letter });
                                                         return;
                                                     }

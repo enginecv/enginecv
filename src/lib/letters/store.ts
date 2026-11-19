@@ -1,11 +1,11 @@
 import { db } from "@/lib/db";
 import { createEmptyResume, resumeSchema, type Resume } from "@/lib/schema";
 import { applyDeletionDecisions, planCvDeletion, snapshotLetter, type DeletionDecision } from "./deletion";
-import { freezeLetter, unfreezeLetter } from "./freeze";
+import { freezeLetter, unfreezeLetter, unfreezeStandalone } from "./freeze";
 import { remapLetters, remapParagraphs } from "./import";
 import { buildLastResolved } from "./resolve";
 import { createId } from "@/lib/id";
-import { createLetter, letterDocumentSchema, paragraphEntrySchema, todayIso, type LetterDocument, type ParagraphEntry, type SenderKey } from "./schema";
+import { createLetter, createStandaloneLetter, letterDocumentSchema, paragraphEntrySchema, todayIso, type LetterDocument, type ParagraphEntry, type SenderKey } from "./schema";
 import { buildStarterContent } from "./starters";
 
 /**
@@ -95,6 +95,14 @@ export async function createLetterRecord(cvId: string, options: CreateLetterReco
     return letter;
 }
 
+/** A new draft with no CV, saved and returned. The sender block starts empty: the person types it. */
+export async function createStandaloneLetterRecord(options: { language: string; company?: string; role?: string; now?: number }): Promise<LetterDocument> {
+    const base = createStandaloneLetter({ language: options.language, now: options.now, starter: buildStarterContent(options.language, options.role ?? "") });
+    const letter = letterDocumentSchema.parse({ ...base, company: options.company ?? "", role: options.role ?? "" });
+    await db.coverLetters.put(letter);
+    return letter;
+}
+
 export type SaveLetterResult =
     | { ok: true; letter: LetterDocument }
     | { ok: false; conflict: LetterDocument | null };
@@ -167,6 +175,7 @@ export async function repointLetter(id: string, cvId: string, now: number = Date
         const letter = letterDocumentSchema.parse({
             ...stored,
             cvId,
+            standalone: false,
             updatedAt: Math.max(now, stored.updatedAt + 1),
             lastResolved: buildLastResolved(stored, cv, now),
         });
@@ -181,12 +190,13 @@ export async function repointLetter(id: string, cvId: string, now: number = Date
  * title ("(copy)"); an empty one leaves the title alone. Overrides are kept, the date is
  * today, and a frozen copy is never carried over.
  */
-function buildLetterCopy(source: LetterDocument, cvId: string, cv: Resume, now: number, label: string): LetterDocument {
+function buildLetterCopy(source: LetterDocument, cvId: string | null, cv: Resume | null, now: number, label: string): LetterDocument {
     const title = source.title.trim() || [source.company, source.role].map((part) => part.trim()).filter(Boolean).join(" - ");
     const base = {
         ...source,
         id: createId(),
         cvId,
+        standalone: cvId === null,
         status: "draft" as const,
         frozen: null,
         date: todayIso(now),
@@ -195,7 +205,7 @@ function buildLetterCopy(source: LetterDocument, cvId: string, cv: Resume, now: 
         createdAt: now,
         updatedAt: now,
     };
-    return letterDocumentSchema.parse({ ...base, lastResolved: buildLastResolved(base, cv, now) });
+    return letterDocumentSchema.parse({ ...base, lastResolved: cv ? buildLastResolved(base, cv, now) : null });
 }
 
 export interface DuplicateLetterOptions {
@@ -217,6 +227,12 @@ export async function duplicateLetter(id: string, options: DuplicateLetterOption
         const source = await getLetter(id);
         if (!source) throw new LetterOperationError("not-found");
         const cvId = options.cvId ?? source.cvId;
+        // A standalone letter copied without a CV stays standalone.
+        if (!cvId && source.standalone) {
+            const standaloneCopy = buildLetterCopy(source, null, null, now, options.copyLabel);
+            await db.coverLetters.put(standaloneCopy);
+            return standaloneCopy;
+        }
         const cv = await loadCv(cvId);
         if (!cvId || !cv) throw new LetterOperationError("cv-missing");
 
@@ -236,7 +252,7 @@ export async function markSent(id: string, now: number = Date.now()): Promise<Le
         if (!stored) throw new LetterOperationError("not-found");
         if (stored.status !== "draft") throw new LetterOperationError("not-draft");
         const cv = await loadCv(stored.cvId);
-        if (!cv) throw new LetterOperationError("cv-missing");
+        if (!cv && !stored.standalone) throw new LetterOperationError("cv-missing");
         const sent = freezeLetter(stored, cv, now);
         await db.coverLetters.put(sent);
         return sent;
@@ -250,9 +266,14 @@ export async function unfreeze(id: string, cvId?: string, now: number = Date.now
         if (!stored) throw new LetterOperationError("not-found");
         if (stored.status === "draft") throw new LetterOperationError("not-frozen");
         const target = cvId ?? stored.cvId;
+        if (!target && stored.standalone) {
+            const standaloneDraft = unfreezeStandalone(stored, now);
+            await db.coverLetters.put(standaloneDraft);
+            return standaloneDraft;
+        }
         const cv = await loadCv(target);
         if (!target || !cv) throw new LetterOperationError("cv-missing");
-        const draft = unfreezeLetter(stored, target, cv, now);
+        const draft = unfreezeLetter({ ...stored, standalone: false }, target, cv, now);
         await db.coverLetters.put(draft);
         return draft;
     });

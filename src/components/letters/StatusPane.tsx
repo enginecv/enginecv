@@ -1,6 +1,6 @@
 "use client";
 
-import { Copy, Lock, Send, Unlock } from "lucide-react";
+import { Copy, Link2, Lock, Send, Unlock } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
 import type { LetterDocument } from "@/lib/letters/schema";
 import { PaneSection } from "./fields";
@@ -9,7 +9,7 @@ import { PaneSection } from "./fields";
  * Where the letter stands: a draft follows its CV; a sent or frozen letter keeps what
  * it had. Sending, unfreezing and duplicating as a draft are explicit choices made here.
  */
-export function StatusPane({ letter, busy, canDuplicate, onMarkSent, onUnfreeze, onDuplicate }: {
+export function StatusPane({ letter, busy, canDuplicate, onMarkSent, onUnfreeze, onDuplicate, onLinkCv }: {
     letter: LetterDocument;
     busy: boolean;
     /** A copy needs a CV to follow; a letter whose CV is gone cannot be copied from here. */
@@ -17,6 +17,8 @@ export function StatusPane({ letter, busy, canDuplicate, onMarkSent, onUnfreeze,
     onMarkSent: () => void;
     onUnfreeze: () => void;
     onDuplicate: () => void;
+    /** Offered on a standalone draft: follow a CV from now on. */
+    onLinkCv?: () => void;
 }) {
     const { t } = useTranslation();
     const frozenOn = letter.frozen ? new Date(letter.frozen.at).toLocaleDateString() : "";
@@ -31,7 +33,7 @@ export function StatusPane({ letter, busy, canDuplicate, onMarkSent, onUnfreeze,
                 </span>
                 <p className="text-xs text-mid" data-testid="letter-status-text">
                     {draft
-                        ? t("letters.status.followsCv")
+                        ? t(letter.standalone ? "letters.status.standalone" : "letters.status.followsCv")
                         : t(letter.status === "sent" ? "letters.status.sentOn" : "letters.status.snapshotOn", { date: frozenOn })}
                 </p>
             </div>
@@ -41,7 +43,14 @@ export function StatusPane({ letter, busy, canDuplicate, onMarkSent, onUnfreeze,
                         <Send className="h-4 w-4" aria-hidden="true" />
                         {t("letters.action.markSent")}
                     </button>
-                ) : (
+                ) : null}
+                {draft && letter.standalone && onLinkCv ? (
+                    <button type="button" disabled={busy} onClick={onLinkCv} data-testid="letter-link-cv" className={button}>
+                        <Link2 className="h-4 w-4" aria-hidden="true" />
+                        {t("letters.action.linkCv")}
+                    </button>
+                ) : null}
+                {!draft && (
                     <>
                         <button type="button" disabled={busy} onClick={onUnfreeze} data-testid="letter-unfreeze" className={button}>
                             <Unlock className="h-4 w-4" aria-hidden="true" />

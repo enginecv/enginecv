@@ -1,7 +1,7 @@
 import type { Resume } from "@/lib/schema";
-import { pickLetterDesign } from "./design";
-import { missingSenderKeys, resolveSender } from "./sender";
-import type { LastResolved, LetterDesign, LetterDocument, LetterLayout, LetterPaperSize, Sender, SenderKey } from "./schema";
+import { DEFAULT_LETTER_DESIGN, applyDesignOverrides, overriddenDesignKeys, pickLetterDesign } from "./design";
+import { missingSenderKeys, resolveSender, resolveStandaloneSender } from "./sender";
+import type { DesignKey, LastResolved, LetterDesign, LetterDocument, LetterLayout, LetterPaperSize, Sender, SenderKey } from "./schema";
 import { senderSchema, letterDesignSchema } from "./schema";
 import { formatLetterDate } from "./starters";
 import { substituteTokens, tokenValues, type TokenValues } from "./tokens";
@@ -42,6 +42,10 @@ export interface ResolvedLetter {
     /** Sender fields set on this letter that differ from the CV's value. */
     overridden: SenderKey[];
     design: LetterDesign;
+    /** Design values set on this letter that differ from its CV (or from the default design). */
+    designOverridden: DesignKey[];
+    /** True for a letter written without a CV. */
+    standalone: boolean;
     /** Data URL to print in the header, or "". */
     photo: string;
     language: string;
@@ -73,12 +77,12 @@ export interface CvParts {
     cvTitle: string;
 }
 
-export function readCvParts(letter: Pick<LetterDocument, "senderOverrides" | "showPhoto">, cv: Resume): CvParts {
+export function readCvParts(letter: Pick<LetterDocument, "senderOverrides" | "designOverrides" | "showPhoto">, cv: Resume): CvParts {
     const { sender, overridden } = resolveSender(cv, letter.senderOverrides);
     return {
         sender,
         overridden,
-        design: pickLetterDesign(cv.settings),
+        design: applyDesignOverrides(pickLetterDesign(cv.settings), letter.designOverrides),
         photo: letter.showPhoto ? cv.basics.photo : "",
         tokens: tokenValues(cv),
         cvTitle: cv.meta.title,
@@ -86,12 +90,25 @@ export function readCvParts(letter: Pick<LetterDocument, "senderOverrides" | "sh
 }
 
 /** The cache a draft keeps so it can still be shown, frozen or imported without its CV. */
-export function buildLastResolved(letter: Pick<LetterDocument, "senderOverrides" | "showPhoto">, cv: Resume, now: number): LastResolved {
+export function buildLastResolved(letter: Pick<LetterDocument, "senderOverrides" | "designOverrides" | "showPhoto">, cv: Resume, now: number): LastResolved {
     const parts = readCvParts(letter, cv);
     return { sender: parts.sender, design: parts.design, tokens: parts.tokens, photo: parts.photo, cvTitle: parts.cvTitle, at: now };
 }
 
 const EMPTY_TOKENS: TokenValues = { name: "", role: "", location: "", skills: "" };
+
+/** What a letter with no CV prints: the sender the person typed, the default design with their changes, and only the name token. */
+export function readStandaloneParts(letter: Pick<LetterDocument, "senderOverrides" | "designOverrides">): CvParts {
+    const sender = resolveStandaloneSender(letter.senderOverrides);
+    return {
+        sender,
+        overridden: [],
+        design: applyDesignOverrides(DEFAULT_LETTER_DESIGN, letter.designOverrides),
+        photo: "",
+        tokens: { ...EMPTY_TOKENS, name: sender.name },
+        cvTitle: "",
+    };
+}
 
 export function resolveLetter(letter: LetterDocument, cv: Resume | null): ResolvedLetter {
     const warnings: LetterWarning[] = [];
@@ -106,14 +123,16 @@ export function resolveLetter(letter: LetterDocument, cv: Resume | null): Resolv
         design = letter.frozen.design;
         photo = letter.showPhoto ? letter.frozen.photo : "";
         tokens = { ...EMPTY_TOKENS, ...letter.frozen.tokens };
-        overridden = (Object.keys(letter.senderOverrides) as SenderKey[]).filter((key) => letter.senderOverrides[key] !== undefined);
+        overridden = letter.standalone ? [] : (Object.keys(letter.senderOverrides) as SenderKey[]).filter((key) => letter.senderOverrides[key] !== undefined);
+    } else if (letter.standalone) {
+        ({ sender, design, photo, tokens, overridden } = readStandaloneParts(letter));
     } else if (cv) {
         const parts = readCvParts(letter, cv);
         ({ sender, design, photo, tokens, overridden } = parts);
     } else {
         warnings.push({ code: "cv-missing" });
         sender = letter.lastResolved?.sender ?? senderSchema.parse({});
-        design = letter.lastResolved?.design ?? letterDesignSchema.parse({});
+        design = applyDesignOverrides(letter.lastResolved?.design ?? letterDesignSchema.parse({}), letter.designOverrides);
         photo = letter.showPhoto ? (letter.lastResolved?.photo ?? "") : "";
         // The values the CV had when this letter last saw it, so the text stays readable.
         tokens = { ...EMPTY_TOKENS, ...(letter.lastResolved?.tokens ?? {}) };
@@ -121,7 +140,7 @@ export function resolveLetter(letter: LetterDocument, cv: Resume | null): Resolv
     }
 
     for (const key of missingSenderKeys(sender)) warnings.push({ code: "missing-sender-field", detail: key });
-    if (letter.showPhoto && !photo) warnings.push({ code: "photo-unavailable" });
+    if (letter.showPhoto && !letter.standalone && !photo) warnings.push({ code: "photo-unavailable" });
 
     const unresolvedSeen = new Set<string>();
     const paragraphs: ResolvedParagraph[] = letter.paragraphs.map((paragraph) => {
@@ -146,6 +165,8 @@ export function resolveLetter(letter: LetterDocument, cv: Resume | null): Resolv
         sender,
         overridden,
         design,
+        designOverridden: overriddenDesignKeys(letter.designOverrides),
+        standalone: letter.standalone,
         photo,
         language: letter.language,
         layout: letter.layout,

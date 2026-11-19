@@ -127,7 +127,7 @@ function formatPointSizeWithPx(value: number) {
     return `${formatDisplayNumber(value)}pt • ${formatDisplayNumber(ptToPx(value))}px`;
 }
 
-function FontWeightSelect({
+export function FontWeightSelect({
     value,
     onChange,
 }: {
@@ -242,7 +242,7 @@ const FONT_ROLE_LABEL_KEYS: Record<FontRole, string> = {
     mono: "customize.fontRoleMono",
 };
 
-function FontSelect({
+export function FontSelect({
     value,
     customFonts,
     showInherit,
@@ -385,7 +385,7 @@ function FontSelect({
 // Generic Select dropdown
 // ---------------------------------------------------
 
-function Select({
+export function Select({
     value,
     options,
     onChange,
@@ -593,7 +593,7 @@ function ProportionsSlider({
 // Tick Slider
 // ---------------------------------------------------
 
-function TickSlider({
+export function TickSlider({
     value,
     min,
     max,
@@ -1486,7 +1486,7 @@ const ACCENT_SWATCHES = [
     "#4338ca", "#db2777", "#e11d48", "#f43f5e", "#fbbf24"
 ];
 
-function ColorPickerCard({
+export function ColorPickerCard({
     label,
     value,
     icon: Icon,
