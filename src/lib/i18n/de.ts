@@ -776,6 +776,7 @@ export const de: Translations = {
   "dashboard.letters.clearFilter": "Alle Anschreiben anzeigen",
   "dashboard.letters.showAll": "Alle {count} Anschreiben für diesen Lebenslauf anzeigen",
   "dashboard.letters.showFewer": "Weniger anzeigen",
+  "workspace.reason.applied": "Eine Änderung aus der Datei wurde übernommen.",
   "workspace.reason.empty": "Die Datei ist leer.",
   "workspace.reason.too-large": "Die Datei ist größer als 200 KB.",
   "workspace.reason.no-document": "Die Datei enthält weder Lebenslauf noch Anschreiben.",

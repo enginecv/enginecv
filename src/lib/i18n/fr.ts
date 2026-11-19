@@ -776,6 +776,7 @@ export const fr: Translations = {
   "dashboard.letters.clearFilter": "Afficher toutes les lettres",
   "dashboard.letters.showAll": "Afficher les {count} lettres de motivation pour ce CV",
   "dashboard.letters.showFewer": "Afficher moins",
+  "workspace.reason.applied": "Une modification du fichier a été appliquée.",
   "workspace.reason.empty": "Le fichier est vide.",
   "workspace.reason.too-large": "Le fichier dépasse 200 Ko.",
   "workspace.reason.no-document": "Le fichier ne contient ni CV ni lettre.",

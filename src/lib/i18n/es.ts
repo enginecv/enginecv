@@ -776,6 +776,7 @@ export const es: Translations = {
   "dashboard.letters.clearFilter": "Mostrar todas las cartas",
   "dashboard.letters.showAll": "Mostrar las {count} cartas de presentación de este CV",
   "dashboard.letters.showFewer": "Mostrar menos",
+  "workspace.reason.applied": "Se aplicó un cambio del archivo.",
   "workspace.reason.empty": "El archivo está vacío.",
   "workspace.reason.too-large": "El archivo supera los 200 KB.",
   "workspace.reason.no-document": "El archivo no contiene ni CV ni carta.",

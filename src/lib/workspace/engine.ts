@@ -2,7 +2,7 @@ import { mapFileError, type FileAdapter, type FileStamp } from "@/lib/linked-fil
 import { hashText } from "@/lib/linked-file/hash";
 import type { LinkDivergence, LinkedFileState } from "@/lib/linked-file/types";
 import type { DocumentCodec } from "./codecs/types";
-import type { ReasonCode } from "./types";
+import type { PendingReview, ReasonCode } from "./types";
 
 /**
  * The sync state machine for one document file: poll the file, validate what an outside program
@@ -22,8 +22,11 @@ export const BUSY_BACKOFF_MS = [1000, 2000, 4000, 8000] as const;
 export type StartMode = "adopt" | "load" | "reconcile" | "paused";
 
 /** The state an engine reports: `LinkedFileState` with a reason code that can name any refusal. */
-export interface EngineState extends Omit<LinkedFileState, "error"> {
+export interface EngineState extends Omit<LinkedFileState, "error" | "status"> {
+    status: LinkedFileState["status"] | "review";
     error: { code: ReasonCode; line?: number; column?: number } | null;
+    /** A complete file that would remove too much, held until the person decides. */
+    review: PendingReview | null;
 }
 
 export interface DocumentEngineDeps<TDoc> {
@@ -38,6 +41,8 @@ export interface DocumentEngineDeps<TDoc> {
     flushLocal?: () => Promise<void>;
     /** The privacy option: leave contact fields out of written text. */
     hideContact?: () => boolean;
+    /** Holds back a valid change that would remove too much; returns what to show the person, or null to apply. */
+    guard?: (before: TDoc, incoming: TDoc) => PendingReview | null;
     /** Set to false when something else decides when to check (the workspace scans the folder once for all documents). */
     poll?: boolean;
     onState: (patch: Partial<EngineState>) => void;
@@ -61,6 +66,10 @@ export interface DocumentSyncEngine {
     pause(): Promise<void>;
     resume(): Promise<void>;
     resolveDivergence(winner: "file" | "cv"): Promise<void>;
+    /** Applies the held change after the person confirmed it (a restore point is taken first). */
+    applyHeld(): Promise<void>;
+    /** Drops the held change and writes the app's version over the file (the person confirmed). */
+    keepMine(): Promise<void>;
     onVisibilityChange(): void;
     onFocus(): void;
     /** The text last written or applied; for tests and the link flow. */
@@ -71,7 +80,8 @@ const sameStamp = (a: FileStamp | null, b: FileStamp | null) =>
     a !== null && b !== null && a.lastModified === b.lastModified && a.size === b.size;
 
 type ReadOutcome =
-    | { kind: "applied" | "unchanged" }
+    | { kind: "applied" | "unchanged" | "held" }
+    | { kind: "review"; review: PendingReview }
     | { kind: "error"; code: ReasonCode; line?: number; column?: number };
 
 export function createDocumentSyncEngine<TDoc>(deps: DocumentEngineDeps<TDoc>): DocumentSyncEngine {
@@ -97,6 +107,8 @@ export function createDocumentSyncEngine<TDoc>(deps: DocumentEngineDeps<TDoc>): 
     let pausedBaseline: { fileHash: string | null; cvHash: string } | null = null;
     let divergence: LinkDivergence | null = null;
     let pendingWrite = false;
+    /** The text of a change held for review, so the same file is not judged again on every poll. */
+    let held: { hash: string; review: PendingReview } | null = null;
 
     const emit = (patch: Partial<EngineState>) => {
         if (patch.status) status = patch.status;
@@ -121,7 +133,7 @@ export function createDocumentSyncEngine<TDoc>(deps: DocumentEngineDeps<TDoc>): 
 
     const settleInSync = () => {
         busyAttempt = 0;
-        emit({ status: "in-sync", error: null, lastSyncedAt: now(), fileName: deps.adapter.name });
+        emit({ status: "in-sync", error: null, review: null, lastSyncedAt: now(), fileName: deps.adapter.name });
     };
 
     const goBroken = () => {
@@ -163,17 +175,27 @@ export function createDocumentSyncEngine<TDoc>(deps: DocumentEngineDeps<TDoc>): 
     // -- reading -----------------------------------------------------------------
 
     /** Validates `text`; a valid document is applied as one revertible update. */
-    async function processText(text: string, options: { force?: boolean } = {}): Promise<ReadOutcome> {
+    async function processText(text: string, options: { force?: boolean; skipGuard?: boolean } = {}): Promise<ReadOutcome> {
         const parsed = codec.parse(text, { now: now(), hideContact: deps.hideContact?.() ?? false });
         if (!parsed.ok) return { kind: "error", code: parsed.reason.code, line: parsed.reason.line, column: parsed.reason.column };
 
         const hash = hashText(text);
+        if (!options.force && held && held.hash === hash) return { kind: "held" };
         if (!options.force && hash === lastSyncedHash) return { kind: "unchanged" };
+        held = null;
 
         await deps.flushLocal?.();
         const before = deps.getDoc();
         const allowed = codec.canApplyExternal(before);
         if (!allowed.ok) return { kind: "error", code: allowed.reason.code, line: allowed.reason.line, column: allowed.reason.column };
+
+        if (!options.skipGuard && deps.guard) {
+            const review = deps.guard(before, parsed.doc);
+            if (review) {
+                held = { hash, review };
+                return { kind: "review", review };
+            }
+        }
 
         const next = codec.apply(before, parsed.doc, serializeOptions());
         const change = codec.describeChange(before, next);
@@ -195,9 +217,15 @@ export function createDocumentSyncEngine<TDoc>(deps: DocumentEngineDeps<TDoc>): 
     }
 
     function reportRead(outcome: ReadOutcome) {
+        if (outcome.kind === "held") return;
+        if (outcome.kind === "review") {
+            emit({ status: "review", error: null, review: outcome.review });
+            return;
+        }
         if (outcome.kind === "error") {
-            emit({ status: "error", error: { code: outcome.code, line: outcome.line, column: outcome.column } });
+            emit({ status: "error", error: { code: outcome.code, line: outcome.line, column: outcome.column }, review: null });
         } else {
+            held = null;
             settleInSync();
         }
     }
@@ -237,7 +265,7 @@ export function createDocumentSyncEngine<TDoc>(deps: DocumentEngineDeps<TDoc>): 
     // -- writing -----------------------------------------------------------------
 
     function scheduleWrite() {
-        if (!running || paused || status === "error" || status === "broken") {
+        if (!running || paused || status === "error" || status === "broken" || status === "review") {
             pendingWrite = false;
             return;
         }
@@ -251,7 +279,7 @@ export function createDocumentSyncEngine<TDoc>(deps: DocumentEngineDeps<TDoc>): 
 
     async function writeCycle(options: { force?: boolean } = {}): Promise<void> {
         if (!running || paused) return;
-        if (!options.force && (status === "error" || status === "broken")) return;
+        if (!options.force && (status === "error" || status === "broken" || status === "review")) return;
         pendingWrite = false;
         try {
             const text = canonicalText(deps.getDoc());
@@ -424,6 +452,30 @@ export function createDocumentSyncEngine<TDoc>(deps: DocumentEngineDeps<TDoc>): 
         schedulePoll();
     }
 
+    async function applyHeld() {
+        if (!running || status !== "review") return;
+        await enqueue(async () => {
+            try {
+                const text = await deps.adapter.readText();
+                lastStamp = await deps.adapter.stat();
+                lastSyncedHash = null;
+                held = null;
+                reportRead(await processText(text, { force: true, skipGuard: true }));
+            } catch (error) {
+                handleFileError(error, () => undefined);
+            }
+        });
+    }
+
+    async function keepMine() {
+        if (!running || status !== "review") return;
+        await enqueue(async () => {
+            held = null;
+            emit({ status: "in-sync", review: null, error: null });
+            await writeCycle({ force: true });
+        });
+    }
+
     function onVisibilityChange() {
         if (!running) return;
         if (!visible()) {
@@ -456,6 +508,8 @@ export function createDocumentSyncEngine<TDoc>(deps: DocumentEngineDeps<TDoc>): 
         pause,
         resume,
         resolveDivergence,
+        applyHeld,
+        keepMine,
         onVisibilityChange,
         onFocus,
         get lastSyncedHash() {

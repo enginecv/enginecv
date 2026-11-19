@@ -776,6 +776,7 @@ export const bs: Translations = {
   "dashboard.letters.clearFilter": "Prikaži sva pisma",
   "dashboard.letters.showAll": "Prikaži svih {count} propratnih pisama za ovaj životopis",
   "dashboard.letters.showFewer": "Prikaži manje",
+  "workspace.reason.applied": "Primijenjena je promjena iz datoteke.",
   "workspace.reason.empty": "Datoteka je prazna.",
   "workspace.reason.too-large": "Datoteka je veća od 200 KB.",
   "workspace.reason.no-document": "Datoteka ne sadrži ni životopis ni pismo.",

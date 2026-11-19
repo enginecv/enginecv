@@ -20,6 +20,7 @@ export type DocState =
 
 /** Closed set of reasons used for copy, the activity list, logs and result files. */
 export const REASON_CODES = [
+    "applied",
     "empty",
     "too-large",
     "no-document",
@@ -66,6 +67,8 @@ export interface WorkspaceRecord {
     hideContact: boolean;
     paused: boolean;
     changeSource: ChangeSourceKind;
+    /** File names the person chose to ignore (conflict copies, duplicates they decided about). */
+    ignoredFiles?: string[];
 }
 
 export interface FileStampRecord {
