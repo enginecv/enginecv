@@ -4,7 +4,7 @@ import { applyLetterContent } from "@/lib/letters/apply-content";
 import { letterFileText, parseLetterText } from "@/lib/letters/file-format";
 import type { LetterDocument } from "@/lib/letters/schema";
 import type { Resume } from "@/lib/schema";
-import { AGENTS_FILE, GENERATED_MARK, MACHINE_DIR, README_FILE, agentsMarkdown, machineGitignore, readmeMarkdown, workspaceJson } from "./agent-files";
+import { AGENTS_FILE, EXPORTS_REFERENCE_FILE, GENERATED_MARK, MACHINE_DIR, README_FILE, REFERENCE_DIR, agentsMarkdown, exportsReference, machineGitignore, readmeMarkdown, workspaceJson } from "./agent-files";
 import { applyFileToStoredCv, applyFileToStoredLetter, importCvFromText, importLetterFromText } from "./apply-stored";
 import { createCvCodec } from "./codecs/cv";
 import type { DirectoryAdapter } from "./directory-adapter";
@@ -220,5 +220,6 @@ export async function runSetup(input: {
     await adapter.writeText(MACHINE_DIR, ".gitignore", machineGitignore());
     await writeIfNotEdited(adapter, "", README_FILE, readmeMarkdown());
     await writeIfNotEdited(adapter, "", AGENTS_FILE, agentsMarkdown());
+    await writeIfNotEdited(adapter, REFERENCE_DIR, EXPORTS_REFERENCE_FILE, exportsReference());
     return result;
 }

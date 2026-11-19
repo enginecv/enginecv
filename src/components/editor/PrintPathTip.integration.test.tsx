@@ -5,6 +5,7 @@ import { DEFAULT_CLIENT_PREFERENCES } from "@/lib/preferences/schema";
 import { useExportSupportPromptStore } from "@/lib/preferences/export-support";
 import { useClientPreferencesStore } from "@/lib/preferences/store";
 import { createEmptyResume } from "@/lib/schema";
+import { useWorkspaceStore } from "@/lib/workspace/controller";
 import { ExportDialog } from "./ExportMenu";
 import { PrintPathTip } from "./PrintPathTip";
 
@@ -119,5 +120,19 @@ describe("ExportDialog print tip", () => {
         expect(await screen.findByText("Popup blocked")).toBeInTheDocument();
         expect(useClientPreferencesStore.getState().preferences.onboarding.printTipSeen).toBe(false);
         expect(screen.getByTestId("print-tip-dismiss")).toBeInTheDocument();
+    });
+
+    describe("with a workspace folder", () => {
+        it("says to save the PDF into the exports folder only when one is connected", () => {
+            useWorkspaceStore.setState({ phase: "none" });
+            const { unmount } = render(<PrintPathTip />);
+            expect(screen.queryByTestId("print-tip-workspace")).toBeNull();
+            unmount();
+
+            useWorkspaceStore.setState({ phase: "connected" });
+            render(<PrintPathTip />);
+            expect(screen.getByTestId("print-tip-workspace")).toHaveTextContent(/exports/);
+            useWorkspaceStore.setState({ phase: "none" });
+        });
     });
 });

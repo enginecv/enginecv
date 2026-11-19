@@ -2682,6 +2682,7 @@ export const en: Translations = {
   "onboarding.printTip.windows": "“Microsoft Print to PDF” also works, but links stop being clickable.",
   "onboarding.printTip.settings": "Under More settings, turn off Headers and footers and keep Margins at Default.",
   "onboarding.printTip.others": "Firefox: “Save to PDF”. Safari: the PDF menu at the bottom of the print dialog.",
+  "onboarding.printTip.workspace": "Connected workspace folder: save the PDF into its exports folder.",
   "onboarding.printTip.gotIt": "Got it",
   "onboarding.printTip.show": "How to save as PDF",
 

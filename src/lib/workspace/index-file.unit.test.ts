@@ -2,7 +2,7 @@ import { encode } from "gpt-tokenizer/encoding/o200k_base";
 import { describe, expect, it } from "vitest";
 import { sectionCounts } from "@/lib/linked-file/apply-content";
 import { makeWorkspaceCv } from "../../../test/setup/workspace-fixtures";
-import { AGENTS_FILE, agentsMarkdown, machineGitignore, readmeMarkdown, workspaceJson } from "./agent-files";
+import { AGENTS_FILE, agentsMarkdown, exportsReference, machineGitignore, readmeMarkdown, workspaceJson } from "./agent-files";
 import { buildIndex, indexText } from "./index-file";
 
 const tokens = (text: string) => encode(text).length;
@@ -64,6 +64,12 @@ describe("generated agent files", () => {
     it("keeps the instruction file within about 300 tokens", () => {
         expect(tokens(agentsMarkdown())).toBeLessThanOrEqual(320);
         expect(AGENTS_FILE).toBe("AGENTS.md");
+    });
+
+    it("keeps the exports reference within 1,500 tokens and gives a command for every system", () => {
+        const text = exportsReference();
+        expect(tokens(text)).toBeLessThanOrEqual(1500);
+        for (const needle of ["chrome.exe", "Google Chrome.app", "google-chrome", "has not changed for 1 second"]) expect(text).toContain(needle);
     });
 
     it("points an agent at the index first and states the safety rules", () => {

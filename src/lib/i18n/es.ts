@@ -2680,6 +2680,7 @@ export const es: Translations = {
   "onboarding.printTip.windows": "«Microsoft Print to PDF» también funciona, pero los enlaces dejan de funcionar.",
   "onboarding.printTip.settings": "En «Más opciones», desactiva los encabezados y pies de página y deja los márgenes en «Predeterminado».",
   "onboarding.printTip.others": "Firefox: «Guardar en PDF». Safari: el menú PDF en la parte inferior del cuadro de impresión.",
+  "onboarding.printTip.workspace": "Carpeta de trabajo conectada: guarda el PDF en su carpeta exports.",
   "onboarding.printTip.gotIt": "Entendido",
   "onboarding.printTip.show": "Cómo guardar como PDF",
 

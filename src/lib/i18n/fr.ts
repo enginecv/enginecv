@@ -2679,6 +2679,7 @@ export const fr: Translations = {
   "onboarding.printTip.windows": "« Microsoft Print to PDF » fonctionne aussi, mais les liens ne sont plus cliquables.",
   "onboarding.printTip.settings": "Dans « Plus de paramètres », désactivez les en-têtes et pieds de page et laissez les marges sur « Par défaut ».",
   "onboarding.printTip.others": "Firefox : « Enregistrer au format PDF ». Safari : le menu PDF en bas de la boîte d'impression.",
+  "onboarding.printTip.workspace": "Dossier de travail connecté : enregistrez le PDF dans son dossier exports.",
   "onboarding.printTip.gotIt": "Compris",
   "onboarding.printTip.show": "Comment enregistrer en PDF",
 

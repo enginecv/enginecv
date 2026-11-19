@@ -2680,6 +2680,7 @@ export const bs: Translations = {
   "onboarding.printTip.windows": "„Microsoft Print to PDF“ također radi, ali linkovi više nisu klikabilni.",
   "onboarding.printTip.settings": "Pod „Više postavki“ isključite zaglavlja i podnožja, a margine ostavite na „Zadano“.",
   "onboarding.printTip.others": "Firefox: „Sačuvaj u PDF“. Safari: PDF meni na dnu dijaloga za štampanje.",
+  "onboarding.printTip.workspace": "Radna mapa je povezana: spremite PDF u njenu mapu exports.",
   "onboarding.printTip.gotIt": "Razumijem",
   "onboarding.printTip.show": "Kako sačuvati kao PDF",
 

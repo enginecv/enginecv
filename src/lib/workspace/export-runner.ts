@@ -43,7 +43,7 @@ const STABLE_POLLS = 3;
 const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
 /** Draws `element` where nobody sees it, waits until its pages stop changing, and hands the container to `use`. */
-async function withOffscreenRender<T>(element: ReturnType<typeof createElement>, width: number, use: (container: HTMLElement) => Promise<T>): Promise<T> {
+async function withOffscreenRender<T>(element: ReturnType<typeof createElement>, width: number, consume: (container: HTMLElement) => Promise<T>): Promise<T> {
     const container = document.createElement("div");
     container.setAttribute("aria-hidden", "true");
     container.setAttribute("data-workspace-export", "true");
@@ -65,7 +65,7 @@ async function withOffscreenRender<T>(element: ReturnType<typeof createElement>,
             if (Date.now() - started > RENDER_TIMEOUT_MS) throw new ExportUnavailableError("export-failed", "The document did not finish rendering in time.");
         }
         await document.fonts?.ready;
-        return await use(container);
+        return await consume(container);
     } finally {
         root.unmount();
         container.remove();

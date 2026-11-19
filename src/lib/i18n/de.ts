@@ -2680,6 +2680,7 @@ export const de: Translations = {
   "onboarding.printTip.windows": "„Microsoft Print to PDF“ funktioniert auch, aber Links sind dann nicht mehr klickbar.",
   "onboarding.printTip.settings": "Schalte unter „Weitere Einstellungen“ Kopf- und Fußzeilen aus und lass die Ränder auf „Standard“.",
   "onboarding.printTip.others": "Firefox: „In PDF speichern“. Safari: das PDF-Menü unten im Druckdialog.",
+  "onboarding.printTip.workspace": "Arbeitsordner verbunden: Speichere das PDF in dessen Ordner „exports“.",
   "onboarding.printTip.gotIt": "Verstanden",
   "onboarding.printTip.show": "So speicherst du als PDF",
 

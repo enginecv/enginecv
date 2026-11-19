@@ -40,6 +40,63 @@ Read more only when needed
 `;
 }
 
+export const REFERENCE_DIR = `${MACHINE_DIR}/reference`;
+export const EXPORTS_REFERENCE_FILE = "exports.md";
+
+/** How an agent asks for an export and turns the HTML into a PDF. The commands were measured on Windows, macOS and Linux (spike S3). */
+export function exportsReference(): string {
+    const lines = [
+        GENERATED_MARK,
+        "# Exports",
+        "",
+        "EngineCV (open in a browser tab) makes exports when asked. Ask by writing one file, then read the answer.",
+        "",
+        "## Ask",
+        "",
+        "Write `.enginecv/requests/<id>.request.json` in one save. `<id>` is any short unique string and must also be the `id` inside.",
+        "",
+        "```json",
+        '{ "id": "a1", "action": "export", "target": "<document id or file path>", "format": "html" }',
+        "```",
+        "",
+        "- `target`: an id from `.enginecv/index.json`, or a path such as `cvs/Master CV.cv.json`",
+        "- `format`: CV `html` `docx` `md` `txt` `tex` `json`; letter `html` `docx` `md` `txt` `tex`",
+        "- `paper` (optional): `a4` or `letter`",
+        "",
+        "## Read the answer",
+        "",
+        "`.enginecv/results/<id>.result.json` appears when the file is complete (usually within 3 seconds).",
+        '- `{"ok": true, "file": "exports/master-cv.html"}`: the file is in `exports/`.',
+        '- `{"ok": false, "error": {"code", "message"}}`: `request-invalid`, `unknown-document`, `format-unavailable`, `request-expired`, `permission`, `file-busy`, `export-failed`. The message says what to change.',
+        "- No result after 30 seconds: EngineCV is probably not open. Ask the person to open it, then make a new request.",
+        "- A request older than 10 minutes is answered `request-expired`, never run late.",
+        "",
+        "Exports never replace a file EngineCV did not write; a clash gets `-2` in the name, and the result names the file used.",
+        "",
+        "## PDF",
+        "",
+        "PDF is not a request format. Request `html`, then print that file with the person's Chrome or Edge.",
+        "",
+        "Windows",
+        '`"C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe" --headless=new --disable-gpu --no-pdf-header-footer --virtual-time-budget=5000 --print-to-pdf="exports\\out.pdf" "file:///C:/path/to/exports/master-cv.html"`',
+        "(Edge: `C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe`, same flags)",
+        "",
+        "macOS",
+        '`"/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --disable-gpu --no-pdf-header-footer --virtual-time-budget=5000 --print-to-pdf="exports/out.pdf" "file:///path/to/exports/master-cv.html"`',
+        "",
+        "Linux",
+        '`google-chrome --headless=new --disable-gpu --no-pdf-header-footer --virtual-time-budget=5000 --print-to-pdf="exports/out.pdf" "file:///path/to/exports/master-cv.html"` (or `chromium`)',
+        "",
+        "Wait until the PDF exists and its size has not changed for 1 second before using it. Edge can return before the file is visible.",
+        "",
+        "No Chrome or Edge on the machine (for example on a phone)? Tell the person to open the document in EngineCV, choose Export, then Print, and save into this folder's `exports/`.",
+        "",
+        "Do not edit anything in `exports/`. EngineCV does not read it back.",
+        "",
+    ];
+    return lines.join("\n");
+}
+
 export function readmeMarkdown(): string {
     return `${GENERATED_MARK}
 # EngineCV workspace folder
