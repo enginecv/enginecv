@@ -9,7 +9,7 @@ import { db } from "@/lib/db";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useResumeStore } from "@/lib/store";
 import {
-    ArrowLeft, FileText, Plus, Trash2, X, AlertTriangle, Search, Edit2, Check, Copy, Download, LayoutTemplate, Upload, Mail, ListFilter, Grid2X2, Grid3X3, LayoutGrid, Radiation, ShieldCheck, type LucideIcon,
+    ArrowLeft, FileText, Plus, Trash2, X, AlertTriangle, Search, Edit2, Check, Copy, Download, LayoutTemplate, Upload, Mail, ListFilter, Grid2X2, Grid3X3, LayoutGrid, Radiation, ShieldCheck, FolderSync, type LucideIcon,
 } from "lucide-react";
 import { exportTemplateToJson, importTemplateFromJsonText } from "@/lib/templates/template-io";
 import { templateDocumentSchema, type TemplateDocument } from "@/lib/templates/template-schema";
@@ -30,6 +30,8 @@ import { DashboardCard, LastUpdatedTooltipContent } from "@/components/dashboard
 import { DashboardTemplateCard } from "@/components/dashboard/DashboardTemplateCard";
 import { LettersTab } from "@/components/dashboard/LettersTab";
 import { NavSearch } from "@/components/dashboard/NavSearch";
+import { WorkspacePanel } from "@/components/workspace/WorkspacePanel";
+import { initWorkspace, useWorkspaceStore } from "@/lib/workspace/controller";
 import { DASHBOARD_CONTENT_CLASS, DASHBOARD_NAV_CLASS } from "@/components/dashboard/layout";
 import { CopyLettersDialog } from "@/components/letters/CopyLettersDialog";
 import { DeleteCvDialog } from "@/components/letters/DeleteCvDialog";
@@ -635,13 +637,16 @@ function DashboardSidebar({
     activeTab,
     onSelectTab,
     onCreateResume,
+    onOpenWorkspace,
 }: {
     items: DashboardNavItem[];
     activeTab: DashboardTab;
     onSelectTab: (tab: DashboardTab) => void;
     onCreateResume: () => void;
+    onOpenWorkspace: () => void;
 }) {
     const { t, locale } = useTranslation();
+    const workspacePhase = useWorkspaceStore((state) => state.phase);
     const { isMobile, open, setOpenMobile } = useSidebar();
     const sidebarExpanded = open || isMobile;
 
@@ -725,6 +730,19 @@ function DashboardSidebar({
             <SidebarFooter className="space-y-2">
                 {/* The delete runs on the Your data page, which holds no live database queries. */}
                 <div className={`flex gap-1 ${sidebarExpanded ? "flex-col" : "flex-col items-center"}`}>
+                    <button
+                        type="button"
+                        onClick={onOpenWorkspace}
+                        data-testid="dashboard-sidebar-workspace"
+                        title={!sidebarExpanded ? t("workspace.title") : undefined}
+                        aria-label={!sidebarExpanded ? t("workspace.title") : undefined}
+                        className={`relative flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs text-faint transition-colors hover:text-strong ${sidebarExpanded ? "justify-start" : "justify-center px-2"}`}
+                    >
+                        <FolderSync className="h-4 w-4 shrink-0" aria-hidden="true" />
+                        {sidebarExpanded && t("workspace.title")}
+                        {workspacePhase === "connected" && <span className="h-1.5 w-1.5 rounded-full bg-success" aria-hidden="true" data-testid="workspace-dot" />}
+                        {workspacePhase === "needs-permission" && <span className="h-1.5 w-1.5 rounded-full bg-accent" aria-hidden="true" data-testid="workspace-dot" />}
+                    </button>
                     <Link
                         href="/your-data"
                         data-testid="dashboard-sidebar-your-data"
@@ -794,6 +812,12 @@ function Dashboard() {
     });
 
     const [showCreateModal, setShowCreateModal] = useState(false);
+    const [showWorkspace, setShowWorkspace] = useState(false);
+
+    // Restores a connected workspace folder (or says why there is none) once the dashboard is up.
+    useEffect(() => {
+        void initWorkspace();
+    }, []);
     const [showExamplePicker, setShowExamplePicker] = useState(false);
     // The Import data window, with a file or source it should start from.
     const [hub, setHub] = useState<{ files?: File[]; source?: "github" } | null>(null);
@@ -1284,7 +1308,9 @@ function Dashboard() {
                 activeTab={activeDashboardTab}
                 onSelectTab={setActiveDashboardTab}
                 onCreateResume={() => setShowCreateModal(true)}
+                onOpenWorkspace={() => setShowWorkspace(true)}
             />
+            {showWorkspace && <WorkspacePanel onClose={() => setShowWorkspace(false)} />}
 
             <SidebarInset className="relative bg-surface-2">
                 <div className="w-full pb-8">
