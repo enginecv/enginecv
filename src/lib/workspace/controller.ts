@@ -14,7 +14,7 @@ import { safeStem } from "./names";
 import { parseCv } from "@/lib/letters/store";
 import type { ChangeSourceKind, DocState } from "./types";
 import { excludeDocument, includeDocument, mirrorDocuments, retireDocument, type IncludeChoice, type RetireChoice } from "./lifecycle";
-import { clearWorkspace, getWorkspace, updateWorkspace } from "./workspace-store";
+import { clearWorkspace, getWorkspace, setDocState, updateWorkspace } from "./workspace-store";
 
 /**
  * The workspace's lifecycle in this browser: is there a folder, do we have permission, are we the tab
@@ -76,7 +76,7 @@ function syncRuntime() {
             root: rootHandle,
             hideContact: () => useWorkspaceStore.getState().hideContact,
             paused: () => useWorkspaceStore.getState().paused,
-            events: { onState: () => void refreshCounts(), onAttention: (attention) => set({ attention }) },
+            events: { onState: () => void refreshCounts(), onAttention: (attention) => set({ attention }), onFolderProblem: () => void verifyFolder() },
         });
         void runtime.start().then(() => set({ changeSource: runtime?.changeSource?.kind ?? "poll" })).catch(() => undefined);
         startMirroring();
@@ -84,6 +84,36 @@ function syncRuntime() {
         runtime.stop();
         runtime = null;
         stopMirroring();
+    }
+}
+
+let verifying = false;
+
+/**
+ * Something failed that may mean the folder is no longer ours: the browser took the permission back
+ * (one button restores it) or the folder is gone (choose it again). Editing in the app never stops.
+ */
+export async function verifyFolder(): Promise<void> {
+    if (!adapter || verifying || useWorkspaceStore.getState().phase !== "connected") return;
+    verifying = true;
+    try {
+        const stopAll = async (state: "needs-permission" | "broken", reason: "permission" | "folder-missing") => {
+            runtime?.stop();
+            runtime = null;
+            stopMirroring();
+            for (const row of await db.workspaceDocs.toArray()) if (row.included) await setDocState(row.docId, state === "broken" ? "broken" : "needs-permission", { code: reason });
+            set(state === "broken" ? { phase: "broken", error: "workspace.reason.folder-missing" } : { phase: "needs-permission" });
+            await refreshCounts();
+        };
+        try {
+            if ((await adapter.permissionState()) !== "granted") return await stopAll("needs-permission", "permission");
+            await adapter.listFolders("");
+        } catch (error) {
+            const code = (error as { code?: string }).code;
+            await stopAll(code === "permission" ? "needs-permission" : "broken", code === "permission" ? "permission" : "folder-missing");
+        }
+    } finally {
+        verifying = false;
     }
 }
 

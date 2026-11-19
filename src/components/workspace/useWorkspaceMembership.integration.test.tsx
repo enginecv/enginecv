@@ -5,7 +5,7 @@ import { newDocRow } from "@/lib/workspace/workspace-store";
 import { useWorkspaceMembership } from "./useWorkspaceMembership";
 
 const exclude = vi.fn();
-const include = vi.fn(async () => true);
+const include = vi.fn(async (_id: string, _choice: string) => true);
 let phase = "connected";
 vi.mock("@/lib/workspace/controller", () => ({
     useWorkspaceStore: (select: (state: { phase: string }) => unknown) => select({ phase }),

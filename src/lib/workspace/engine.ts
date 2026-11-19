@@ -27,6 +27,8 @@ export interface EngineState extends Omit<LinkedFileState, "error" | "status"> {
     error: { code: ReasonCode; line?: number; column?: number } | null;
     /** A complete file that would remove too much, held until the person decides. */
     review: PendingReview | null;
+    /** Hash of the text last written or applied, so the caller can remember it across sessions. */
+    syncedHash?: string | null;
 }
 
 export interface DocumentEngineDeps<TDoc> {
@@ -43,6 +45,8 @@ export interface DocumentEngineDeps<TDoc> {
     hideContact?: () => boolean;
     /** Holds back a valid change that would remove too much; returns what to show the person, or null to apply. */
     guard?: (before: TDoc, incoming: TDoc) => PendingReview | null;
+    /** The hash of the file text at the last sync in an earlier session: a file that still has it was not changed outside. */
+    knownFileHash?: () => string | null;
     /** Set to false when something else decides when to check (the workspace scans the folder once for all documents). */
     poll?: boolean;
     onState: (patch: Partial<EngineState>) => void;
@@ -133,7 +137,7 @@ export function createDocumentSyncEngine<TDoc>(deps: DocumentEngineDeps<TDoc>): 
 
     const settleInSync = () => {
         busyAttempt = 0;
-        emit({ status: "in-sync", error: null, review: null, lastSyncedAt: now(), fileName: deps.adapter.name });
+        emit({ status: "in-sync", error: null, review: null, lastSyncedAt: now(), fileName: deps.adapter.name, syncedHash: lastSyncedHash });
     };
 
     const goBroken = () => {
@@ -364,6 +368,14 @@ export function createDocumentSyncEngine<TDoc>(deps: DocumentEngineDeps<TDoc>): 
                 if (mode === "adopt" || fileHash === cvHash) {
                     lastSyncedHash = fileHash;
                     settleInSync();
+                    return;
+                }
+                const known = deps.knownFileHash?.() ?? null;
+                if (mode === "reconcile" && known !== null && known === fileHash) {
+                    // Only the app changed since the last sync (the file still holds what was last written): safe to write.
+                    lastSyncedHash = fileHash;
+                    settleInSync();
+                    scheduleWrite();
                     return;
                 }
                 if (mode === "load" || stamp.lastModified > codec.updatedAt(cv)) {

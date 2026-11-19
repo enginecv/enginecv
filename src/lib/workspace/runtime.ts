@@ -23,6 +23,8 @@ export interface RuntimeEvents {
     onApplied?: (docId: string, summary: { added: number; removed: number; changed: number; notices: Notice[] }) => void;
     /** What needs a look in the folder: unclaimed files, duplicates, sync-tool conflict copies. */
     onAttention?: (attention: { unmatched: Reconciliation["unmatched"]; duplicates: Reconciliation["duplicates"]; conflictCopies: ConflictCopy[] }) => void;
+    /** A file or folder operation failed in a way that may mean the folder itself is gone or no longer allowed. */
+    onFolderProblem?: () => void;
     /** A document's state changed (for the UI and the index). */
     onState?: (docId: string, state: DocState, reason: DocReason | null) => void;
 }
@@ -151,6 +153,7 @@ export function createWorkspaceRuntime(options: RuntimeOptions): WorkspaceRuntim
             return;
         }
         let lastRestoreId: number | null = null;
+        let knownHash: string | null = row.lastHash;
         const engine = createDocumentSyncEngine({
             adapter: file,
             codec: cvCodec,
@@ -161,6 +164,7 @@ export function createWorkspaceRuntime(options: RuntimeOptions): WorkspaceRuntim
                 lastRestoreId = typeof id === "number" ? id : null;
                 return id;
             },
+            knownFileHash: () => knownHash,
             guard: (before, incoming) => {
                 const verdict = checkShrink(cvCodec.entryCount(before), cvCodec.entryCount(incoming));
                 return verdict.triggered ? pendingReviewFor(verdict, removedEntryTitles(before, incoming).titles, Date.now()) : null;
@@ -178,7 +182,12 @@ export function createWorkspaceRuntime(options: RuntimeOptions): WorkspaceRuntim
                     void recordActivity({ docId: row.docId, kind: "accepted", code: "applied", detail, restoreId: lastRestoreId, restoreKind: "cv" });
                     void appendLog(options.adapter, { at: Date.now(), doc: row.docId, file: fileLabel, outcome: "accepted", detail }).catch(() => undefined);
                 }
+                if (patch.syncedHash) {
+                    knownHash = patch.syncedHash;
+                    void patchDocRow(row.docId, { lastHash: patch.syncedHash });
+                }
                 if (patch.status === undefined) return;
+                if (patch.status === "broken") options.events?.onFolderProblem?.();
                 const next = docStateOf({ ...({} as EngineState), status: patch.status, error: patch.error ?? null } as EngineState);
                 void setDocState(row.docId, next.state, next.reason);
                 options.events?.onState?.(row.docId, next.state, next.reason);
@@ -234,7 +243,7 @@ export function createWorkspaceRuntime(options: RuntimeOptions): WorkspaceRuntim
             try {
                 await reconcileFolder();
             } catch {
-                // An unreadable folder is the controller's concern (permission, missing); the engines report their own file errors.
+                options.events?.onFolderProblem?.();
             }
             await Promise.all([...engines.values()].map((entry) => entry.engine.checkNow()));
         },
