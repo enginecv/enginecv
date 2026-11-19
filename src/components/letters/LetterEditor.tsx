@@ -27,6 +27,7 @@ import { ParagraphLibrary } from "./ParagraphLibrary";
 import { RecipientPane } from "./RecipientPane";
 import { RepointDialog } from "./RepointDialog";
 import { SenderPane } from "./SenderPane";
+import { DocStateBadge } from "@/components/workspace/DocStateBadge";
 import { StatusPane } from "./StatusPane";
 import { warningText } from "./warnings";
 
@@ -196,6 +197,7 @@ export function LetterEditor({ letterId }: { letterId: string }) {
                             />
                             <Pencil className="pointer-events-none h-3 w-3 shrink-0 text-faint opacity-0 transition-opacity group-hover:opacity-100" />
                         </label>
+                        <DocStateBadge docId={letter.id} />
                         <span role="status" aria-live="polite" className={`flex min-w-0 shrink items-center truncate text-[11px] ${saveState === "error" ? "text-danger" : saveState === "saving" ? "text-info" : "text-faint"}`} data-testid="letter-save-state">
                             {saveState === "saving" ? (
                                 <><Loader2 className="w-3 h-3 mr-1 shrink-0 animate-spin" /> {t("dashboard.saving")}</>

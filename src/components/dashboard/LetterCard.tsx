@@ -3,6 +3,7 @@
 import { ArrowRightLeft, Copy, CopyPlus, Mail, Trash2, type LucideIcon } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
 import type { LetterDocument } from "@/lib/letters/schema";
+import { DocStateBadge } from "@/components/workspace/DocStateBadge";
 
 export function letterDisplayTitle(letter: LetterDocument, untitled: string): string {
     return letter.title.trim() || [letter.company, letter.role].map((part) => part.trim()).filter(Boolean).join(" - ") || untitled;
@@ -44,6 +45,7 @@ export function LetterCard({ letter, onOpen, actions, needsCv = false }: { lette
                 </div>
                 <div className="min-w-0">
                     <h3 className="truncate text-base font-semibold text-strong">{title}</h3>
+                    <div className="mt-1 empty:hidden"><DocStateBadge docId={letter.id} /></div>
                     {detail && <p className="mt-1 truncate text-sm text-mid">{detail}</p>}
                 </div>
                 <p className="mt-auto text-xs text-faint">{t("dashboard.letters.updated", { date: new Date(letter.updatedAt).toLocaleDateString() })}</p>

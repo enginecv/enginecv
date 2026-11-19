@@ -5,6 +5,7 @@ import { ArrowUpRight, Clock, Info, Link2, type LucideIcon } from "lucide-react"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useTranslation } from "@/lib/i18n";
 import { formatResumeTimestamp } from "@/lib/resume-utils";
+import { DocStateBadge } from "@/components/workspace/DocStateBadge";
 
 export type DashboardCardAction = {
     label: string;
@@ -31,6 +32,7 @@ export function DashboardCard({
     actions,
     errorMessage,
     linkedFileName,
+    docId,
     meta,
     children,
 }: {
@@ -48,6 +50,8 @@ export function DashboardCard({
     primaryLoading?: boolean;
     actions?: DashboardCardAction[];
     errorMessage?: string | null;
+    /** The CV id, so a workspace problem (blocked, review, no file) shows as a chip. */
+    docId?: string;
     /** The file this CV is linked to (feature 089); shown wherever the CV name is. */
     linkedFileName?: string;
     /** Extra line under the title, such as a count that links to related documents. */
@@ -82,6 +86,7 @@ export function DashboardCard({
                                     <h2 className="truncate text-base font-semibold tracking-tight text-strong group-hover:text-accent transition-colors">
                                         {title}
                                     </h2>
+                                    {docId && <div className="mt-1 empty:hidden"><DocStateBadge docId={docId} /></div>}
                                     {linkedFileName && (
                                         <p className="mt-1 flex items-center gap-1 truncate text-[11px] text-faint" data-testid="dashboard-linked-file" title={linkedFileName}>
                                             <Link2 className="h-3 w-3 shrink-0" aria-hidden="true" />

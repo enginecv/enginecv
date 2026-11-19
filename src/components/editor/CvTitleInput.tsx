@@ -2,6 +2,7 @@
 
 import { Pencil } from "lucide-react";
 import { useState } from "react";
+import { DocStateBadge } from "@/components/workspace/DocStateBadge";
 import { useTranslation } from "@/lib/i18n";
 import { renameLinkedCv } from "@/lib/linked-file/rename";
 import { useResumeStore } from "@/lib/store";
@@ -66,6 +67,7 @@ export function CvTitleInput() {
                 />
                 <Pencil className="pointer-events-none h-3 w-3 shrink-0 text-faint opacity-0 transition-opacity group-hover:opacity-100" aria-hidden="true" />
             </label>
+            <DocStateBadge docId={resumeId} />
             {error && <span role="alert" className="min-w-0 truncate text-[11px] text-danger" data-testid="cv-title-error" title={error}>{error}</span>}
         </>
     );

@@ -495,6 +495,7 @@ function ResumeCard({
             openLabel={openLabel}
             onOpen={onOpen}
             linkedFileName={linkedFileName}
+            docId={resume.id}
             meta={letterCount > 0 ? (
                 <button
                     type="button"
