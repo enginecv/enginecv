@@ -1147,6 +1147,7 @@ export const bs: Translations = {
   "editor.editEntry": "Uredi unos",
   "editor.editEntryIn": "Uredi stavku u sekciji {section}",
   "editor.getTips": "Dobij savjete",
+  "editor.opensInNewTab": "Otvara se u novoj kartici",
   "editor.description": "Opis",
   "editor.improveWriting": "Poboljšaj pisanje",
   "editor.suggestContent": "Predloži sadržaj",

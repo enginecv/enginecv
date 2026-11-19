@@ -1,6 +1,6 @@
 "use client";
 
-import { Lightbulb } from "lucide-react";
+import { ExternalLink, Lightbulb } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useTranslation } from "@/lib/i18n";
 import { SECTION_TIPS, letterTipHref, type LetterTipSection } from "@/lib/letters/tips";
@@ -34,9 +34,11 @@ export function LetterTipsLink({ section }: { section: LetterTipSection }) {
                         target="_blank"
                         rel="noopener"
                         data-testid={`letter-tip-${id}`}
-                        className="block rounded-lg px-3 py-2 text-sm text-strong transition-colors hover:bg-edge"
+                        className="flex items-center justify-between gap-3 rounded-lg px-3 py-2 text-sm text-strong transition-colors hover:bg-edge"
                     >
                         {t(`letters.tips.${id}`)}
+                        <ExternalLink className="h-3.5 w-3.5 shrink-0 text-faint" aria-hidden="true" />
+                        <span className="sr-only">{t("editor.opensInNewTab")}</span>
                     </a>
                 ))}
             </PopoverContent>

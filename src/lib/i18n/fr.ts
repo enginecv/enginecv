@@ -1147,6 +1147,7 @@ export const fr: Translations = {
   "editor.editEntry": "Modifier l'entrée",
   "editor.editEntryIn": "Modifier l'entrée dans {section}",
   "editor.getTips": "Obtenir des conseils",
+  "editor.opensInNewTab": "S'ouvre dans un nouvel onglet",
   "editor.description": "Description",
   "editor.improveWriting": "Améliorer la rédaction",
   "editor.suggestContent": "Suggérer du contenu",

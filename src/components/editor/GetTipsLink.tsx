@@ -1,6 +1,6 @@
 "use client";
 
-import { Lightbulb } from "lucide-react";
+import { ExternalLink, Lightbulb } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
 import { getGuideForSection } from "@/lib/guides/registry";
 import { guidePath } from "@/lib/site";
@@ -25,6 +25,8 @@ export function GetTipsLink({ sectionId, className }: { sectionId: string; class
         >
             <Lightbulb className="w-3.5 h-3.5" aria-hidden="true" />
             {t("editor.getTips")}
+            <ExternalLink className="w-3 h-3 text-faint" aria-hidden="true" />
+            <span className="sr-only">{t("editor.opensInNewTab")}</span>
         </a>
     );
 }

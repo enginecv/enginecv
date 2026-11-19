@@ -16,6 +16,7 @@ describe("LetterTipsLink", () => {
         expect(first).toHaveAttribute("target", "_blank");
         expect(first.getAttribute("rel")).toContain("noopener");
         expect(first).toHaveTextContent("How to write a cover letter");
+        expect(first).toHaveAccessibleName(/opens in a new tab/i);
         expect(screen.getByTestId("letter-tip-german")).toHaveAttribute("href", "/blog/german-cover-letter-din-5008");
     });
 
