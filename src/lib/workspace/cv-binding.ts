@@ -40,6 +40,8 @@ export async function createCvBinding(docId: string): Promise<CvBinding | null> 
 
     const listeners = new Set<() => void>();
     let ignoreNextEmission = 0;
+    /** Our last database write, so a refresh never reads a state older than something we just wrote. */
+    let pendingPut: Promise<unknown> = Promise.resolve();
 
     // The cache follows the database, so a write from another tab or a restore reaches the engine.
     const subscription = liveQuery(() => db.resumes.get(docId)).subscribe({
@@ -74,12 +76,20 @@ export async function createCvBinding(docId: string): Promise<CvBinding | null> 
             cache = next;
             // Our own write comes back through the live query: it is not a change made in the app.
             ignoreNextEmission += 1;
-            void db.resumes.put(next);
+            pendingPut = db.resumes.put(next).catch(() => undefined);
         },
         snapshot: (resume) => recordResumeHistory(resume, "file-sync"),
         flushLocal: async () => {
             const state = useResumeStore.getState();
-            if (isOpen() && state.isDirty) await state.saveToDb();
+            if (isOpen()) {
+                if (state.isDirty) await state.saveToDb();
+                return;
+            }
+            // A closed CV: take what the database holds now, which can be newer than the live-query cache by a moment (another tab's edit).
+            await pendingPut;
+            const row = await db.resumes.get(docId);
+            const parsed = row ? parseCv(row) : null;
+            if (parsed) cache = parsed;
         },
         onLocalChange(listener) {
             listeners.add(listener);
