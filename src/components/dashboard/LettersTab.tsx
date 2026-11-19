@@ -258,15 +258,19 @@ export function LettersTab({ onCreateCv, gridClass = "grid-cols-1 md:grid-cols-2
             ) : (
                 groups.map((group) => (
                     <section key={group.cvId ?? "none"} data-testid={`letters-group-${group.cvId ?? "none"}`} aria-label={group.title} className="space-y-3">
-                        <h3 className="flex items-center gap-2 text-sm font-semibold text-strong">
-                            {group.resume && (
-                                <span className="pointer-events-none h-10 w-7 shrink-0 overflow-hidden rounded border border-edge bg-white" aria-hidden="true" data-testid="letter-group-thumb">
-                                    <LiveResumeThumbnail resume={group.resume} />
-                                </span>
+                        <div className="flex items-center gap-3">
+                            {group.resume && group.cvId && (
+                                <button type="button" onClick={() => router.push(`/editor/${group.cvId}`)} title={t("dashboard.letters.openNamed", { name: group.title })} aria-label={t("dashboard.letters.openNamed", { name: group.title })} data-testid="letter-group-thumb" className="h-24 w-[68px] shrink-0 overflow-hidden rounded-md border border-edge bg-white shadow-md transition-all hover:-translate-y-0.5 hover:border-accent/50 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+                                    <span className="pointer-events-none block h-full w-full" aria-hidden="true">
+                                        <LiveResumeThumbnail resume={group.resume} />
+                                    </span>
+                                </button>
                             )}
-                            {group.title}
-                            <span className="rounded-md bg-surface-1 px-1.5 py-0.5 text-[11px] font-semibold text-mid" data-testid="letters-group-count">{group.letters.length}</span>
-                        </h3>
+                            <h3 className="flex items-center gap-2 text-sm font-semibold text-strong">
+                                {group.title}
+                                <span className="rounded-md bg-surface-1 px-1.5 py-0.5 text-[11px] font-semibold text-mid" data-testid="letters-group-count">{group.letters.length}</span>
+                            </h3>
+                        </div>
                         <div className={`grid ${gridClass} gap-5`}>
                             {group.letters.map((letter) => (
                                 <LetterCard
