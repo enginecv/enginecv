@@ -86,7 +86,7 @@ test("letters are grouped under their CV, can be duplicated and moved to another
     await page.goto("/dashboard?tab=letters");
     for (let count = 0; count < 2; count++) {
         await page.getByTestId("letter-new").click();
-        await page.getByTestId("letters-cv-select").selectOption(firstCv);
+        await page.getByTestId(`letters-cv-option-${firstCv}`).click();
         await page.getByTestId("letters-cv-create").click();
         await expect(page).toHaveURL(/\/letters\/[^/]+$/, { timeout: 30_000 });
         await page.goto("/dashboard?tab=letters");
@@ -100,7 +100,7 @@ test("letters are grouped under their CV, can be duplicated and moved to another
 
     // Move one to the second CV.
     await group.getByTestId("letter-action-repoint").first().click();
-    await page.getByTestId("letter-repoint-select").selectOption(secondCv);
+    await page.getByTestId(`letter-repoint-option-${secondCv}`).click();
     await page.getByTestId("letter-repoint-confirm").click();
     await expect(page.getByTestId(`letters-group-${secondCv}`).getByTestId("letter-card")).toHaveCount(1);
     await expect(group.getByTestId("letter-card")).toHaveCount(2);
@@ -157,7 +157,7 @@ test("deleting a CV with letters never deletes a letter: drafts are moved or fro
     await page.goto("/dashboard?tab=letters");
     for (let count = 0; count < 2; count++) {
         await page.getByTestId("letter-new").click();
-        await page.getByTestId("letters-cv-select").selectOption(doomed);
+        await page.getByTestId(`letters-cv-option-${doomed}`).click();
         await page.getByTestId("letters-cv-create").click();
         await expect(page).toHaveURL(/\/letters\/[^/]+$/, { timeout: 30_000 });
         if (count === 1) {

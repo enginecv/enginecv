@@ -53,7 +53,7 @@ describe("LettersTab", () => {
         fireEvent.click(await screen.findByTestId("letter-new"));
 
         const dialog = await screen.findByTestId("letters-cv-picker");
-        fireEvent.change(within(dialog).getByTestId("letters-cv-select"), { target: { value: "cv-b" } });
+        fireEvent.click(within(dialog).getByTestId("letters-cv-option-cv-b"));
         fireEvent.click(within(dialog).getByTestId("letters-cv-create"));
 
         await waitFor(() => expect(push).toHaveBeenCalledTimes(1));

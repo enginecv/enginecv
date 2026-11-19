@@ -766,6 +766,8 @@ export const es: Translations = {
   "dashboard.letters.updated": "Actualizada el {date}",
   "dashboard.letters.pickCv": "¿Para qué CV es esta carta?",
   "dashboard.letters.pickCvHint": "La carta toma tu nombre, tus datos de contacto y el diseño de este CV y lo sigue cuando cambia.",
+  "dashboard.letters.searchCvs": "Buscar en tus CV",
+  "dashboard.letters.noCvMatch": "Ningún CV coincide con \"{query}\".",
   "dashboard.letters.create": "Crear carta",
   "dashboard.letters.createError": "No se pudo crear la carta. Inténtalo de nuevo.",
   "dashboard.letters.noCvs": "Una carta necesita un CV",

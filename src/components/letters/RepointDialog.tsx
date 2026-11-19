@@ -5,11 +5,9 @@ import { useState } from "react";
 import { useDialogFocus } from "@/hooks/useDialogFocus";
 import { useTranslation } from "@/lib/i18n";
 import type { LetterDocument, SenderKey } from "@/lib/letters/schema";
+import { CvChoiceGrid, type CvChoice } from "./CvChoiceGrid";
 
-export interface CvChoice {
-    id: string;
-    label: string;
-}
+export type { CvChoice };
 
 /**
  * Picks a CV for a letter: to move a draft to it ("repoint"), or to copy the letter
@@ -35,15 +33,13 @@ export function RepointDialog({ letter, cvs, mode, busy, onConfirm, onClose }: {
     return (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-surface-2/80 backdrop-blur-md" onClick={onClose} />
-            <div ref={ref} role="dialog" aria-modal="true" aria-label={title} className="glass-panel relative w-full max-w-md rounded-2xl p-6 shadow-2xl" data-testid="letter-repoint-dialog">
+            <div ref={ref} role="dialog" aria-modal="true" aria-label={title} className="glass-panel relative w-full max-w-2xl rounded-2xl p-6 shadow-2xl" data-testid="letter-repoint-dialog">
                 <h2 className="text-lg font-bold text-strong">{title}</h2>
                 <p className="mt-2 text-sm text-mid">{t(mode === "repoint" ? "dashboard.letters.repoint.hint" : "dashboard.letters.duplicateInto.hint")}</p>
                 {choices.length === 0 ? (
                     <p className="mt-4 text-sm text-mid" data-testid="letter-repoint-none">{t("dashboard.letters.repoint.noOther")}</p>
                 ) : (
-                    <select value={cvId} onChange={(event) => setCvId(event.target.value)} aria-label={title} data-testid="letter-repoint-select" className="mt-4 w-full rounded-xl border border-edge bg-surface-1 px-4 py-2.5 text-sm text-strong">
-                        {choices.map((cv) => <option key={cv.id} value={cv.id}>{cv.label}</option>)}
-                    </select>
+                    <CvChoiceGrid choices={choices} value={cvId} onChange={setCvId} name="repoint-cv" testIdPrefix="letter-repoint" />
                 )}
                 {kept.length > 0 && (
                     <p className="mt-3 text-xs text-mid" data-testid="letter-repoint-kept">

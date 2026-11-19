@@ -1,9 +1,10 @@
 "use client";
 
 import { useLiveQuery } from "dexie-react-hooks";
-import { Grid2X2, Grid3X3, LayoutGrid, Loader2, Mail, Plus, Search } from "lucide-react";
+import { Grid2X2, Grid3X3, LayoutGrid, Loader2, Mail, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { CvChoiceGrid, type CvChoice } from "@/components/letters/CvChoiceGrid";
 import { RepointDialog } from "@/components/letters/RepointDialog";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -13,14 +14,13 @@ import { useTranslation } from "@/lib/i18n";
 import type { LetterDocument } from "@/lib/letters/schema";
 import { createLetterRecord, deleteLetter, duplicateLetter, listLetters, repointLetter, restoreLetter } from "@/lib/letters/store";
 import { LetterCard, letterDisplayTitle } from "./LetterCard";
+import { NavSearch } from "./NavSearch";
+import { DASHBOARD_CONTENT_CLASS, DASHBOARD_NAV_CLASS } from "./layout";
 
 const UNDO_WINDOW_MS = 8000;
 type Density = "large" | "normal" | "compact";
 
-interface CvOption {
-    id: string;
-    label: string;
-}
+type CvOption = CvChoice;
 
 interface LetterGroup {
     cvId: string | null;
@@ -35,12 +35,10 @@ function CvPickerDialog({ cvs, onPick, onClose, busy, error }: { cvs: CvOption[]
     return (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-surface-2/80 backdrop-blur-md" onClick={onClose} />
-            <div ref={ref} role="dialog" aria-modal="true" aria-label={t("dashboard.letters.pickCv")} className="glass-panel relative w-full max-w-md rounded-2xl p-6 shadow-2xl" data-testid="letters-cv-picker">
+            <div ref={ref} role="dialog" aria-modal="true" aria-label={t("dashboard.letters.pickCv")} className="glass-panel relative w-full max-w-2xl rounded-2xl p-6 shadow-2xl" data-testid="letters-cv-picker">
                 <h2 className="text-lg font-bold text-strong">{t("dashboard.letters.pickCv")}</h2>
                 <p className="mt-2 text-sm text-mid">{t("dashboard.letters.pickCvHint")}</p>
-                <select value={cvId} onChange={(event) => setCvId(event.target.value)} aria-label={t("dashboard.letters.pickCv")} data-testid="letters-cv-select" className="mt-4 w-full rounded-xl border border-edge bg-surface-1 px-4 py-2.5 text-sm text-strong">
-                    {cvs.map((cv) => <option key={cv.id} value={cv.id}>{cv.label}</option>)}
-                </select>
+                <CvChoiceGrid choices={cvs} value={cvId} onChange={setCvId} name="letters-cv" testIdPrefix="letters-cv" />
                 {error && <p role="alert" className="mt-3 text-sm text-danger" data-testid="letters-cv-picker-error">{t("dashboard.letters.createError")}</p>}
                 <div className="mt-5 flex justify-end gap-2">
                     <button type="button" onClick={onClose} className="rounded-xl border border-edge bg-surface-4 px-4 py-2 text-sm font-bold text-mid hover:border-faint hover:text-strong">{t("dashboard.cancel")}</button>
@@ -61,19 +59,23 @@ const DENSITY_LABEL_KEY = { large: "palette.optionLarge", normal: "palette.optio
  * The Cover Letters tab: letters grouped by the CV they follow, with search, density,
  * and per-letter actions. A letter needs a CV, so with none the person is sent to create one.
  */
-export function LettersTab({ onCreateCv, gridClass = "grid-cols-1 md:grid-cols-2 xl:grid-cols-3", density = "normal", onDensityChange }: {
+export function LettersTab({ onCreateCv, gridClass = "grid-cols-1 md:grid-cols-2 xl:grid-cols-3", density = "normal", onDensityChange, navLead, navTrail }: {
     onCreateCv: () => void;
     /** Tailwind grid-column classes for the card grid (shared with the other tabs). */
     gridClass?: string;
     density?: Density;
     onDensityChange?: (density: Density) => void;
+    /** Left end of the toolbar (the sidebar trigger on narrow screens). */
+    navLead?: ReactNode;
+    /** Right end of the toolbar (theme and language controls). */
+    navTrail?: ReactNode;
 }) {
     const { t } = useTranslation();
     const router = useRouter();
     const letters = useLiveQuery(() => listLetters(), []);
     const cvs = useLiveQuery(async (): Promise<CvOption[]> => {
         const rows = await db.resumes.toArray();
-        return rows.map((row) => ({ id: row.id as string, label: row.meta?.title?.trim() || row.basics?.name?.trim() || t("dashboard.untitled") }));
+        return rows.map((row) => ({ id: row.id as string, label: row.meta?.title?.trim() || row.basics?.name?.trim() || t("dashboard.untitled"), resume: row, detail: row.basics?.headline?.trim() || undefined }));
     }, [t]);
     const [picking, setPicking] = useState(false);
     const [busy, setBusy] = useState(false);
@@ -161,57 +163,71 @@ export function LettersTab({ onCreateCv, gridClass = "grid-cols-1 md:grid-cols-2
         setUndoRow(null);
     };
 
+    /** The toolbar every dashboard tab has, then the tab's content in the shared page column. */
+    const frame = (content: ReactNode, controls?: ReactNode) => (
+        <>
+            <nav className={DASHBOARD_NAV_CLASS} data-testid="letters-nav">
+                <div className="relative mx-auto flex h-full w-full max-w-7xl items-center gap-2 px-4 py-3 sm:px-6 md:py-0 lg:px-8">
+                    {navLead}
+                    {controls}
+                    <div className="ml-auto flex items-center gap-2">
+                        {cvs && cvs.length > 0 && (
+                            <button type="button" onClick={startNew} disabled={busy} data-testid="letter-new" title={t("dashboard.letters.new")} aria-label={t("dashboard.letters.new")} className="flex h-10 items-center gap-2 rounded-xl bg-accent px-3 text-sm font-medium text-surface-2 transition-colors hover:bg-accent-soft disabled:opacity-60">
+                                <Plus className="h-4 w-4" aria-hidden="true" />
+                                <span className="hidden sm:inline">{t("dashboard.letters.new")}</span>
+                            </button>
+                        )}
+                        {navTrail}
+                    </div>
+                </div>
+            </nav>
+            <div className={`${DASHBOARD_CONTENT_CLASS} pt-8`}>{content}</div>
+        </>
+    );
+
     if (letters === undefined || cvs === undefined) {
-        return (
+        return frame(
             <div className={`grid ${gridClass} gap-5`} data-testid="letters-loading">
                 {Array.from({ length: 3 }).map((_, index) => <Skeleton key={index} className="h-36 w-full rounded-2xl" />)}
-            </div>
+            </div>,
         );
     }
 
     if (cvs.length === 0 && letters.length === 0) {
-        return (
+        return frame(
             <div className="flex flex-col items-center gap-3 rounded-[1.25rem] border border-dashed border-edge p-12 text-center text-faint" data-testid="letters-no-cvs">
                 <Mail className="h-10 w-10" aria-hidden="true" />
                 <p className="text-sm font-medium text-strong">{t("dashboard.letters.noCvs")}</p>
                 <p className="max-w-md text-xs">{t("dashboard.letters.noCvsHint")}</p>
                 <button type="button" onClick={onCreateCv} data-testid="letters-create-cv" className="rounded-xl bg-accent px-4 py-2 text-sm font-bold text-surface-2 hover:bg-accent-soft">{t("dashboard.letters.createCv")}</button>
-            </div>
+            </div>,
         );
     }
 
     const dialogName = deleteTarget ? letterDisplayTitle(deleteTarget, t("letters.editor.untitled")) : "";
 
-    return (
-        <div className="space-y-6" data-testid="letters-tab">
-            <div className="flex flex-wrap items-center gap-3">
-                <h2 className="mr-auto text-lg font-semibold text-strong">{t("dashboard.tabCoverLetters")}</h2>
-                {letters.length > 0 && (
-                    <label className="flex h-10 items-center gap-2 rounded-xl border border-edge bg-surface-4 px-3 text-sm text-mid focus-within:border-faint">
-                        <Search className="h-4 w-4 shrink-0" aria-hidden="true" />
-                        <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t("dashboard.letters.search")} aria-label={t("dashboard.letters.search")} data-testid="letters-search" className="w-40 bg-transparent text-strong placeholder:text-faint focus:outline-none sm:w-56" />
-                    </label>
-                )}
-                {onDensityChange && letters.length > 0 && (
-                    <div className="flex items-center gap-1 rounded-xl border border-edge bg-surface-4 p-1" data-testid="letters-density">
-                        {(["large", "normal", "compact"] as const).map((value) => {
-                            const Icon = DENSITY_ICONS[value];
-                            return (
-                                <button key={value} type="button" onClick={() => onDensityChange(value)} aria-pressed={density === value} title={t("dashboard.densityTitle", { density: t(DENSITY_LABEL_KEY[value]) })} aria-label={t("dashboard.densityTitle", { density: t(DENSITY_LABEL_KEY[value]) })} data-testid={`letters-density-${value}`} className={`flex h-8 w-8 items-center justify-center rounded-lg transition-all ${density === value ? "bg-edge text-accent shadow-sm" : "text-faint hover:text-strong"}`}>
-                                    <Icon className="h-4 w-4" aria-hidden="true" />
-                                </button>
-                            );
-                        })}
-                    </div>
-                )}
-                {cvs.length > 0 && (
-                    <button type="button" onClick={startNew} disabled={busy} data-testid="letter-new" className="flex h-10 items-center gap-2 rounded-xl bg-accent px-3 text-sm font-medium text-surface-2 transition-colors hover:bg-accent-soft disabled:opacity-60">
-                        <Plus className="h-4 w-4" aria-hidden="true" />
-                        {t("dashboard.letters.new")}
-                    </button>
-                )}
-            </div>
+    const controls = (
+        <>
+            {letters.length > 0 && (
+                <NavSearch value={query} onChange={setQuery} placeholder={t("dashboard.letters.search")} testId="letters-search" />
+            )}
+            {onDensityChange && letters.length > 0 && (
+                <div className="hidden items-center gap-1 rounded-xl border border-edge bg-surface-4 p-1 sm:flex" data-testid="letters-density">
+                    {(["large", "normal", "compact"] as const).map((value) => {
+                        const Icon = DENSITY_ICONS[value];
+                        return (
+                            <button key={value} type="button" onClick={() => onDensityChange(value)} aria-pressed={density === value} title={t("dashboard.densityTitle", { density: t(DENSITY_LABEL_KEY[value]) })} aria-label={t("dashboard.densityTitle", { density: t(DENSITY_LABEL_KEY[value]) })} data-testid={`letters-density-${value}`} className={`flex h-8 w-8 items-center justify-center rounded-lg transition-all ${density === value ? "bg-edge text-accent shadow-sm" : "text-faint hover:text-strong"}`}>
+                                <Icon className="h-4 w-4" aria-hidden="true" />
+                            </button>
+                        );
+                    })}
+                </div>
+            )}
+        </>
+    );
 
+    return frame(
+        <div className="space-y-6" data-testid="letters-tab">
             {error && <p role="alert" className="text-sm text-danger" data-testid="letters-error">{error}</p>}
 
             {letters.length === 0 ? (
@@ -291,6 +307,7 @@ export function LettersTab({ onCreateCv, gridClass = "grid-cols-1 md:grid-cols-2
                 onConfirm={() => void confirmDelete()}
                 onCancel={() => setDeleteTarget(null)}
             />
-        </div>
+        </div>,
+        controls,
     );
 }

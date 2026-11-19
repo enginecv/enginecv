@@ -91,14 +91,14 @@ describe("LettersTab groups and actions", () => {
 
         fireEvent.click(within(card("a1")).getByTestId("letter-action-duplicate-into"));
         let dialog = await screen.findByTestId("letter-repoint-dialog");
-        fireEvent.change(within(dialog).getByTestId("letter-repoint-select"), { target: { value: "cv-b" } });
+        fireEvent.click(within(dialog).getByTestId("letter-repoint-option-cv-b"));
         fireEvent.click(within(dialog).getByTestId("letter-repoint-confirm"));
         await waitFor(async () => expect((await db.coverLetters.toArray()).some((letter) => letter.id !== "a1" && letter.cvId === "cv-b" && letter.company === "Acme")).toBe(true), { timeout: 4000 });
 
         fireEvent.click(within(card("b1")).getByTestId("letter-action-repoint"));
         dialog = await screen.findByTestId("letter-repoint-dialog");
         // A move offers only the other CV, and says which overrides stay.
-        expect(within(dialog).getAllByRole("option")).toHaveLength(1);
+        expect(within(dialog).getAllByRole("radio")).toHaveLength(1);
         expect(within(dialog).getByTestId("letter-repoint-kept")).toHaveTextContent("Email");
         fireEvent.click(within(dialog).getByTestId("letter-repoint-confirm"));
         await waitFor(async () => expect((await db.coverLetters.get("b1"))?.cvId).toBe("cv-a"), { timeout: 4000 });
@@ -111,8 +111,8 @@ describe("LettersTab groups and actions", () => {
         await screen.findByTestId("letters-group-cv-a");
         fireEvent.click(within(card("a1")).getByTestId("letter-action-repoint"));
         const dialog = await screen.findByTestId("letter-repoint-dialog");
-        expect(within(dialog).getAllByRole("combobox")).toHaveLength(1);
-        expect(dialog.querySelector("select[multiple]")).toBeNull();
+        expect(within(dialog).getByRole("radiogroup")).toBeInTheDocument();
+        expect(dialog.querySelector("input[type=checkbox]")).toBeNull();
     });
 
     it("cannot move a sent letter", async () => {
