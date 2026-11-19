@@ -40,10 +40,10 @@ export interface SetupAnalysis {
     skipped: string[];
 }
 
-const cvTitle = (cv: Resume) => cv.meta.title || cv.basics.name || "CV";
-const letterTitle = (letter: LetterDocument) => letter.title || [letter.company, letter.role].filter(Boolean).join(" - ") || "Letter";
+export const cvTitle = (cv: Resume) => cv.meta.title || cv.basics.name || "CV";
+export const letterTitle = (letter: LetterDocument) => letter.title || [letter.company, letter.role].filter(Boolean).join(" - ") || "Letter";
 
-function appText(doc: Resume | LetterDocument, kind: DocKind, options: SetupOptions, titles: Map<string, string>): string {
+export function appText(doc: Resume | LetterDocument, kind: DocKind, options: SetupOptions, titles: Map<string, string>): string {
     return kind === "cv"
         ? cvCodec.serialize(doc as Resume, { hideContact: options.hideContact })
         : letterFileText(doc as LetterDocument, { hideContact: options.hideContact, cvTitle: titles.get((doc as LetterDocument).cvId ?? "") });

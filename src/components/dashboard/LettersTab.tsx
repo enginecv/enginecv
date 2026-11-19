@@ -7,6 +7,10 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { CvChoiceGrid, type CvChoice } from "@/components/letters/CvChoiceGrid";
 import { RepointDialog } from "@/components/letters/RepointDialog";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
+import { DeleteDocumentDialog } from "@/components/workspace/DeleteDocumentDialog";
+import { useHasWorkspaceFile } from "@/components/workspace/useHasWorkspaceFile";
+import { retireBeforeDelete } from "@/lib/workspace/controller";
+import type { RetireChoice } from "@/lib/workspace/lifecycle";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDialogFocus } from "@/hooks/useDialogFocus";
 import { db } from "@/lib/db";
@@ -111,6 +115,7 @@ export function LettersTab({ onCreateCv, gridClass = "grid-cols-1 md:grid-cols-2
     const [focus, setFocus] = useState<string | null>(null);
     const [dialog, setDialog] = useState<{ mode: "repoint" | "duplicate"; letter: LetterDocument } | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<LetterDocument | null>(null);
+    const deleteHasFile = useHasWorkspaceFile(deleteTarget?.id);
     const [undoRow, setUndoRow] = useState<LetterDocument | null>(null);
     const undoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -196,8 +201,9 @@ export function LettersTab({ onCreateCv, gridClass = "grid-cols-1 md:grid-cols-2
         else setPicking(true);
     };
 
-    const confirmDelete = async () => {
+    const confirmDelete = async (fileChoice: RetireChoice = "keep-file") => {
         if (!deleteTarget) return;
+        await retireBeforeDelete(deleteTarget.id, fileChoice).catch(() => undefined);
         const row = await deleteLetter(deleteTarget.id);
         setDeleteTarget(null);
         if (!row) return;
@@ -385,8 +391,17 @@ export function LettersTab({ onCreateCv, gridClass = "grid-cols-1 md:grid-cols-2
                 />
             )}
 
+            {!!deleteTarget && deleteHasFile && (
+                <DeleteDocumentDialog
+                    name={dialogName}
+                    description={deleteTarget.status === "draft" ? t("dashboard.letters.deleteConfirm", { name: dialogName }) : t("dashboard.letters.deleteConfirmSent", { name: dialogName })}
+                    confirmLabel={t("dashboard.letters.deleteLetter")}
+                    onConfirm={(choice) => void confirmDelete(choice)}
+                    onCancel={() => setDeleteTarget(null)}
+                />
+            )}
             <ConfirmModal
-                open={!!deleteTarget}
+                open={!!deleteTarget && !deleteHasFile}
                 title={t("dashboard.letters.deleteTitle")}
                 description={deleteTarget?.status === "draft" ? t("dashboard.letters.deleteConfirm", { name: dialogName }) : t("dashboard.letters.deleteConfirmSent", { name: dialogName })}
                 confirmLabel={t("dashboard.letters.deleteLetter")}

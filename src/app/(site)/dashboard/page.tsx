@@ -30,8 +30,12 @@ import { DashboardCard, LastUpdatedTooltipContent } from "@/components/dashboard
 import { DashboardTemplateCard } from "@/components/dashboard/DashboardTemplateCard";
 import { LettersTab } from "@/components/dashboard/LettersTab";
 import { NavSearch } from "@/components/dashboard/NavSearch";
+import { DeleteDocumentDialog } from "@/components/workspace/DeleteDocumentDialog";
+import { useWorkspaceMembership } from "@/components/workspace/useWorkspaceMembership";
+import { useHasWorkspaceFile } from "@/components/workspace/useHasWorkspaceFile";
 import { WorkspacePanel } from "@/components/workspace/WorkspacePanel";
-import { initWorkspace, useWorkspaceStore } from "@/lib/workspace/controller";
+import { initWorkspace, retireBeforeDelete, useWorkspaceStore } from "@/lib/workspace/controller";
+import type { RetireChoice } from "@/lib/workspace/lifecycle";
 import { DASHBOARD_CONTENT_CLASS, DASHBOARD_NAV_CLASS } from "@/components/dashboard/layout";
 import { CopyLettersDialog } from "@/components/letters/CopyLettersDialog";
 import { DeleteCvDialog } from "@/components/letters/DeleteCvDialog";
@@ -470,6 +474,7 @@ function ResumeCard({
         setIsEditingMeta(false);
     };
 
+    const membership = useWorkspaceMembership(resume.id);
     const title = resume.meta.title || fallbackCvLabel;
     const description = resume.meta.description || resume.basics.headline || undefined;
     const openLabel = `Open ${title}`;
@@ -486,7 +491,7 @@ function ResumeCard({
     return (
         <DashboardCard
             testId="dashboard-resume-card"
-            preview={preview}
+            preview={<>{preview}{membership.dialog}</>}
             title={title}
             description={description}
             tags={existingTags}
@@ -515,7 +520,8 @@ function ResumeCard({
                 { label: t("dashboard.writeLetter"), icon: Mail, onClick: onWriteLetter },
                 { label: t("dashboard.duplicateResume"), icon: Copy, onClick: onDuplicate },
                 { label: t("templates.actions.download"), icon: Download, onClick: onDownload },
-                { label: t("dashboard.deleteResume"), icon: Trash2, onClick: onDelete, variant: "danger" },
+                ...(membership.item ? [{ label: membership.item.label, icon: FolderSync, onClick: membership.item.onClick }] : []),
+                { label: t("dashboard.deleteResume"), icon: Trash2, onClick: onDelete, variant: "danger" as const },
             ]}
         >
             {isEditingMeta ? (
@@ -830,6 +836,7 @@ function Dashboard() {
     const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
     // The letters linked to the CV being deleted; when there are any, a dialog decides what happens to them.
     const [deleteLetters, setDeleteLetters] = useState<LetterDocument[]>([]);
+    const deleteHasFile = useHasWorkspaceFile(deleteTarget?.id);
     const [deleteBusy, setDeleteBusy] = useState(false);
     const [deleteFailed, setDeleteFailed] = useState(false);
     // A CV that was just duplicated and has letters: the person may copy them onto the new one.
@@ -1033,6 +1040,7 @@ function Dashboard() {
         setDeleteBusy(true);
         setDeleteFailed(false);
         try {
+            await retireBeforeDelete(deleteTarget.id, "keep-file").catch(() => undefined);
             await deleteCvWithLetters(deleteTarget.id, decisions);
             cancelDelete();
         } catch {
@@ -1047,9 +1055,10 @@ function Dashboard() {
         exportToJson(resume, getResumeExportFilename(resume));
     }, []);
 
-    const handleDelete = useCallback(async () => {
+    const handleDelete = useCallback(async (fileChoice: RetireChoice = "keep-file") => {
         if (!deleteTarget) return;
         try {
+            await retireBeforeDelete(deleteTarget.id, fileChoice).catch(() => undefined);
             await deleteCvWithLetters(deleteTarget.id, []);
             cancelDelete();
         } catch {
@@ -1905,14 +1914,23 @@ function Dashboard() {
 
             {/* Delete confirmation */}
             <ConfirmModal
-                open={!!deleteTarget && deleteLetters.length === 0}
+                open={!!deleteTarget && deleteLetters.length === 0 && !deleteHasFile}
                 title={t("dashboard.deleteTitle")}
                 description={t("dashboard.deleteConfirm", { name: deleteTarget?.name ?? "" })}
                 confirmLabel={t("dashboard.deletePermanently")}
                 destructive
-                onConfirm={handleDelete}
+                onConfirm={() => void handleDelete()}
                 onCancel={cancelDelete}
             />
+            {!!deleteTarget && deleteLetters.length === 0 && deleteHasFile && (
+                <DeleteDocumentDialog
+                    name={deleteTarget.name}
+                    description={t("dashboard.deleteConfirm", { name: deleteTarget.name })}
+                    confirmLabel={t("dashboard.deletePermanently")}
+                    onConfirm={(choice) => void handleDelete(choice)}
+                    onCancel={cancelDelete}
+                />
+            )}
 
             {/* The CV has letters: nothing is deleted with it; each draft is moved or frozen first. */}
             {deleteTarget && deleteLetters.length > 0 && (

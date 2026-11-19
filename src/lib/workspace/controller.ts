@@ -1,3 +1,4 @@
+import { liveQuery, type Subscription } from "dexie";
 import { create } from "zustand";
 import { db } from "@/lib/db";
 import { createDirectoryAdapter, isWorkspaceSupported, pickWorkspaceFolder, type DirectoryAdapter } from "./directory-adapter";
@@ -12,6 +13,7 @@ import { MACHINE_DIR } from "./agent-files";
 import { safeStem } from "./names";
 import { parseCv } from "@/lib/letters/store";
 import type { ChangeSourceKind, DocState } from "./types";
+import { excludeDocument, includeDocument, mirrorDocuments, retireDocument, type IncludeChoice, type RetireChoice } from "./lifecycle";
 import { clearWorkspace, getWorkspace, updateWorkspace } from "./workspace-store";
 
 /**
@@ -48,6 +50,10 @@ let adapter: DirectoryAdapter | null = null;
 let leader: Leader | null = null;
 let runtime: WorkspaceRuntime | null = null;
 let rootHandle: FileSystemDirectoryHandle | undefined;
+let mirrorSubscription: Subscription | null = null;
+let mirrorTimer: ReturnType<typeof setTimeout> | null = null;
+let mirrorRunning = false;
+const MIRROR_DEBOUNCE_MS = 600;
 
 export function getAdapter(): DirectoryAdapter | null {
     return adapter;
@@ -73,10 +79,52 @@ function syncRuntime() {
             events: { onState: () => void refreshCounts(), onAttention: (attention) => set({ attention }) },
         });
         void runtime.start().then(() => set({ changeSource: runtime?.changeSource?.kind ?? "poll" })).catch(() => undefined);
+        startMirroring();
     } else if (!wanted && runtime) {
         runtime.stop();
         runtime = null;
+        stopMirroring();
     }
+}
+
+/** A signature of the documents' names, so the live query fires when one is added, removed or renamed (not on every keystroke in a body). */
+async function documentSignature(): Promise<string> {
+    const cvs = (await db.resumes.toArray()).map((row) => `${row.id}|${row.meta?.title ?? ""}|${row.basics?.name ?? ""}`);
+    const letters = (await db.coverLetters.toArray()).map((row) => `${row.id}|${row.title ?? ""}|${row.company ?? ""}|${row.role ?? ""}`);
+    return [...cvs, ...letters].sort().join("\n");
+}
+
+/** Mirrors new, renamed and deleted documents into the folder, then restarts the engines that moved. */
+export async function mirrorNow(): Promise<void> {
+    if (!adapter || !runtime || mirrorRunning) return;
+    mirrorRunning = true;
+    try {
+        const result = await mirrorDocuments(adapter, { hideContact: useWorkspaceStore.getState().hideContact });
+        for (const docId of [...result.created, ...result.renamed]) await runtime?.reload(docId);
+        await refreshCounts();
+    } catch {
+        // A folder problem is reported by the engines and the controller; the next change tries again.
+    } finally {
+        mirrorRunning = false;
+    }
+}
+
+function startMirroring() {
+    stopMirroring();
+    mirrorSubscription = liveQuery(documentSignature).subscribe({
+        next: () => {
+            if (mirrorTimer) clearTimeout(mirrorTimer);
+            mirrorTimer = setTimeout(() => void mirrorNow(), MIRROR_DEBOUNCE_MS);
+        },
+        error: () => undefined,
+    });
+}
+
+function stopMirroring() {
+    mirrorSubscription?.unsubscribe();
+    mirrorSubscription = null;
+    if (mirrorTimer) clearTimeout(mirrorTimer);
+    mirrorTimer = null;
 }
 
 export function getRuntime(): WorkspaceRuntime | null {
@@ -179,6 +227,7 @@ export async function setPaused(paused: boolean): Promise<void> {
 export async function disconnectWorkspace(): Promise<void> {
     runtime?.stop();
     runtime = null;
+    stopMirroring();
     leader?.stop();
     leader = null;
     adapter = null;
@@ -190,6 +239,7 @@ export async function disconnectWorkspace(): Promise<void> {
 export function resetWorkspaceController(): void {
     runtime?.stop();
     runtime = null;
+    stopMirroring();
     rootHandle = undefined;
     leader?.stop();
     leader = null;
@@ -260,4 +310,37 @@ export async function recreateDocumentFile(docId: string): Promise<void> {
     await recreateFile(docId, fileName, createCvCodec().serialize(cv, { hideContact: useWorkspaceStore.getState().hideContact }), "cv", adapter);
     await runtime?.reload(docId);
     await refreshCounts();
+}
+
+// -- document lifecycle from the app --------------------------------------------------------------
+
+/** Called before a document is deleted: what happens to its file (the person chose). */
+export async function retireBeforeDelete(docId: string, choice: RetireChoice): Promise<void> {
+    if (!adapter) return;
+    await retireDocument(adapter, docId, choice);
+    await runtime?.reload(docId);
+    await refreshCounts();
+}
+
+/** Leaves a document out of the folder; its file is left alone. */
+export async function excludeFromWorkspace(docId: string): Promise<void> {
+    await excludeDocument(docId);
+    await runtime?.reload(docId);
+    await refreshCounts();
+}
+
+/** Brings a document back, using the same choice the first sync offers for a file that already exists. */
+export async function includeInWorkspace(docId: string, choice: IncludeChoice): Promise<boolean> {
+    if (!adapter) return false;
+    const result = await includeDocument(adapter, docId, choice, { hideContact: useWorkspaceStore.getState().hideContact });
+    await runtime?.reload(docId);
+    await refreshCounts();
+    return result.ok;
+}
+
+/** True when the document has a file in a connected workspace folder. */
+export async function documentHasWorkspaceFile(docId: string): Promise<boolean> {
+    if (useWorkspaceStore.getState().phase !== "connected") return false;
+    const row = await db.workspaceDocs.get(docId);
+    return !!row && row.included && !!row.fileName;
 }

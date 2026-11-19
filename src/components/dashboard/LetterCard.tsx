@@ -1,9 +1,10 @@
 "use client";
 
-import { ArrowRightLeft, Copy, CopyPlus, Mail, Trash2, type LucideIcon } from "lucide-react";
+import { ArrowRightLeft, Copy, CopyPlus, FolderSync, Mail, Trash2, type LucideIcon } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
 import type { LetterDocument } from "@/lib/letters/schema";
 import { DocStateBadge } from "@/components/workspace/DocStateBadge";
+import { useWorkspaceMembership } from "@/components/workspace/useWorkspaceMembership";
 
 export function letterDisplayTitle(letter: LetterDocument, untitled: string): string {
     return letter.title.trim() || [letter.company, letter.role].map((part) => part.trim()).filter(Boolean).join(" - ") || untitled;
@@ -31,6 +32,7 @@ export function LetterCard({ letter, onOpen, actions, needsCv = false }: { lette
     const detail = [letter.recipient.name.trim(), letter.company.trim()].filter(Boolean).join(" · ");
     // Only a draft follows a CV, so only a draft can be moved.
     const canRepoint = letter.status === "draft";
+    const membership = useWorkspaceMembership(letter.id);
     return (
         <article data-testid="letter-card" data-letter-id={letter.id} className="group flex h-full flex-col rounded-2xl border border-edge bg-surface-4/80 p-4 transition-all duration-300 hover:border-accent/30 hover:bg-surface-5">
             <button type="button" onClick={onOpen} aria-label={t("dashboard.letters.openNamed", { name: title })} className="flex flex-1 flex-col gap-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
@@ -55,8 +57,10 @@ export function LetterCard({ letter, onOpen, actions, needsCv = false }: { lette
                 <ActionButton icon={CopyPlus} label={t("dashboard.letters.duplicateInto")} onClick={actions.onDuplicateInto} testId="letter-action-duplicate-into" />
                 <ActionButton icon={ArrowRightLeft} label={t("dashboard.letters.repoint")} onClick={actions.onRepoint} testId="letter-action-repoint" disabled={!canRepoint} />
                 <span className="flex-1" />
+                {membership.item && <ActionButton icon={FolderSync} label={membership.item.label} onClick={membership.item.onClick} testId={membership.item.testId} />}
                 <ActionButton icon={Trash2} label={t("dashboard.letters.delete")} onClick={actions.onDelete} testId="letter-action-delete" danger />
             </div>
+            {membership.dialog}
         </article>
     );
 }

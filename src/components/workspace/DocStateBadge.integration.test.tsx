@@ -10,13 +10,18 @@ describe("DocStateBadge", () => {
     });
     afterEach(cleanup);
 
-    it("shows nothing for a document that is in sync, paused, excluded or unknown", async () => {
+    it("shows nothing for a document that is in sync, paused or unknown", async () => {
         await db.workspaceDocs.put({ ...newDocRow({ docId: "a", kind: "cv", fileName: "a.cv.json" }, 1), state: "in-sync" });
         await db.workspaceDocs.put({ ...newDocRow({ docId: "b", kind: "cv", fileName: "b.cv.json" }, 1), state: "paused" });
-        await db.workspaceDocs.put({ ...newDocRow({ docId: "c", kind: "cv", fileName: null, included: false }, 1), state: "blocked" });
-        const { container } = render(<><DocStateBadge docId="a" /><DocStateBadge docId="b" /><DocStateBadge docId="c" /><DocStateBadge docId="zzz" /><DocStateBadge docId={null} /></>);
+        const { container } = render(<><DocStateBadge docId="a" /><DocStateBadge docId="b" /><DocStateBadge docId="zzz" /><DocStateBadge docId={null} /></>);
         await new Promise((resolve) => setTimeout(resolve, 50));
         expect(container.textContent).toBe("");
+    });
+
+    it("says when a document was left out of the workspace folder", async () => {
+        await db.workspaceDocs.put(newDocRow({ docId: "c", kind: "cv", fileName: null, included: false }, 1));
+        render(<DocStateBadge docId="c" />);
+        expect(await screen.findByTestId("doc-state-excluded")).toBeInTheDocument();
     });
 
     it("shows a chip with the reason when a document needs attention, and follows changes", async () => {
