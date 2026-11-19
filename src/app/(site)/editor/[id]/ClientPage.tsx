@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState, use, useCallback, useSyncExternalStore, type ChangeEvent, type ReactNode } from "react";
 import { getJsonSession, getEmptyJsonSession, subscribeJsonSession, requestJsonEditorLeave } from "@/lib/editor-json-session";
 import { useRouter } from "next/navigation";
+import { createLetterRecord } from "@/lib/letters/store";
 import dynamic from "next/dynamic";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useResumeStore } from "@/lib/store";
@@ -22,6 +23,7 @@ import { toDocumentModel } from "@/lib/document-model";
 import { HistoryPanel } from "@/components/editor/HistoryPanel";
 import { CvTitleInput } from "@/components/editor/CvTitleInput";
 import { LinkedFileControl } from "@/components/editor/LinkedFileControl";
+import { LinkedFileNotice } from "@/components/editor/LinkedFileNotice";
 import { useLinkedFile } from "@/hooks/useLinkedFile";
 import { OPEN_LINKED_FILE_PANEL_EVENT } from "@/lib/linked-file/types";
 import { hideChecklist, showChecklistAgain } from "@/lib/preferences/onboarding";
@@ -73,7 +75,7 @@ import {
     toggleContentEntryHidden,
     toggleContentSectionHidden,
 } from "@/lib/content-operations";
-import { ArrowLeft, Loader2, Bug, Eye, EyeOff, FileText, FileJson, SlidersHorizontal, Menu, X, History, Copy, BookmarkPlus, Save, RefreshCw, Download, Upload, Languages, Keyboard, Search, Sun, Moon, Monitor, Maximize2, Columns3, PanelLeftClose, PanelLeftOpen, Plus, FolderOpen, LayoutTemplate, Clock3, ListTree, FilePlus2, CopyPlus, Paintbrush, Trash2, BringToFront, SendToBack, Pin, Undo2, Redo2, RotateCcw, ZoomIn, ZoomOut, Type, ShieldCheck, Radiation } from "lucide-react";
+import { ArrowLeft, Loader2, Bug, Eye, EyeOff, FileText, FileJson, SlidersHorizontal, Menu, X, History, Copy, BookmarkPlus, Save, RefreshCw, Download, Upload, Languages, Keyboard, Search, Sun, Moon, Monitor, Maximize2, Columns3, PanelLeftClose, PanelLeftOpen, Plus, FolderOpen, LayoutTemplate, Clock3, ListTree, FilePlus2, CopyPlus, Paintbrush, Trash2, BringToFront, SendToBack, Pin, Undo2, Redo2, RotateCcw, ZoomIn, ZoomOut, Type, ShieldCheck, Radiation, Mail } from "lucide-react";
 import { Group, Panel, Separator, type GroupImperativeHandle } from "react-resizable-panels";
 import Link from "next/link";
 import { localeLabels, useTranslation, type Locale } from "@/lib/i18n";
@@ -144,6 +146,22 @@ export default function EditorPage({ params }: { params: Promise<{ id: string }>
     const unwrappedParams = use(params);
     const { id } = unwrappedParams;
     const router = useRouter();
+
+    /** Starts a cover letter linked to the CV open here and goes to it. Saves the CV first so the letter reads what is on screen. */
+    const [letterError, setLetterError] = useState(false);
+    const writeLetterForThisCv = async () => {
+        const cvId = useResumeStore.getState().activeResumeId;
+        if (!cvId) return;
+        setLetterError(false);
+        try {
+            await useResumeStore.getState().saveToDb();
+            const letter = await createLetterRecord(cvId);
+            router.push(`/letters/${letter.id}`);
+        } catch (cause) {
+            console.error("[EngineCV] Could not create a cover letter.", cause);
+            setLetterError(true);
+        }
+    };
 
     const loadFromDb = useResumeStore((state) => state.loadFromDb);
     const saveToDb = useResumeStore((state) => state.saveToDb);
@@ -2004,6 +2022,17 @@ export default function EditorPage({ params }: { params: Promise<{ id: string }>
                         </button>
                         <button
                             type="button"
+                            onClick={() => void writeLetterForThisCv()}
+                            title={t("editor.writeLetter")}
+                            aria-label={t("editor.writeLetter")}
+                            data-testid="editor-write-letter"
+                            className={headerIconButton(false)}
+                        >
+                            <Mail className="h-4 w-4" />
+                        </button>
+                        {letterError && <span role="alert" className="text-[11px] text-danger" data-testid="editor-write-letter-error">{t("dashboard.letters.createError")}</span>}
+                        <button
+                            type="button"
                             onClick={() => setIsShortcutsOpen(true)}
                             title={t("shortcuts.title")}
                             className={headerIconButton(false)}
@@ -2107,6 +2136,8 @@ export default function EditorPage({ params }: { params: Promise<{ id: string }>
                     </div>
                 )}
             </header>
+
+            {isLoaded && activeResumeId && !isFocusMode && <LinkedFileNotice resumeId={activeResumeId} />}
 
             <ExportDialog
                 open={isExportDialogOpen}

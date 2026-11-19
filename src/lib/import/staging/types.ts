@@ -1,6 +1,10 @@
 import type { ImportResult, Notice } from "@/lib/agent/authoring";
 import type { Resume } from "@/lib/schema";
 import type { ConversionReport } from "@/lib/json-resume/report";
+import type { LetterDocument, ParagraphEntry } from "@/lib/letters/schema";
+
+/** What a "Download my data" file brings besides CVs. */
+export type DataExportExtras = { letters: LetterDocument[]; paragraphs: ParagraphEntry[] };
 
 /** Sections the hub can combine. Skills are read across all groups. */
 export const STAGE_SECTIONS = [
@@ -31,6 +35,8 @@ export interface StagedBatch {
     resume: Resume;
     /** Came from a "Download my data" file, which cannot replace a single CV. */
     fromDataExport?: boolean;
+    /** Cover letters and saved paragraphs of a "Download my data" file; carried by its first batch only. */
+    dataExportExtras?: DataExportExtras;
     /** An AI-written document: what was read and every value touched, shown as the Paste from AI summary. */
     authoring?: { result: ImportResult; parseNotices: Notice[] };
     /** What the source could not carry, when it can say. */

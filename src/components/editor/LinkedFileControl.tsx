@@ -1,6 +1,6 @@
 "use client";
 
-import { FileCheck2, FileWarning, Link2, Loader2, PauseCircle } from "lucide-react";
+import { FileCheck2, FileWarning, Link2, Loader2, PauseCircle, X } from "lucide-react";
 import { createPortal } from "react-dom";
 import { useCallback, useEffect, useId, useState, type ReactNode } from "react";
 import { useDialogFocus } from "@/hooks/useDialogFocus";
@@ -11,7 +11,6 @@ import { linkFile, relinkFile, unlinkFile, type ExistingChoice, type LinkResult 
 import { OPEN_LINKED_FILE_PANEL_EVENT, type LinkErrorCode } from "@/lib/linked-file/types";
 import { useClientPreferencesStore } from "@/lib/preferences/store";
 import { useResumeStore } from "@/lib/store";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { AgentHelp } from "./AgentHelp";
 
 const ERROR_KEYS: Record<LinkErrorCode, string> = {
@@ -27,15 +26,22 @@ const UPDATE_VISIBLE_MS = 10_000;
 
 type Dialog = { kind: "privacy"; resolve: (ok: boolean) => void } | { kind: "existing"; resolve: (choice: ExistingChoice | null) => void } | null;
 
-function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: ReactNode }) {
+function Modal({ title, onClose, children, wide = false, closeLabel = "" }: { title: string; onClose: () => void; children: ReactNode; wide?: boolean; closeLabel?: string }) {
     const ref = useDialogFocus<HTMLDivElement>(true, onClose);
     // Portaled to the body: the header is its own stacking context, and the editor panels
     // below it would otherwise paint over the dialog.
     return createPortal(
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-surface-2/80 backdrop-blur-md" onClick={onClose} />
-            <div ref={ref} role="dialog" aria-modal="true" aria-label={title} className="glass-panel relative w-full max-w-md rounded-2xl p-6 shadow-2xl">
-                <h2 className="text-lg font-bold leading-tight text-strong">{title}</h2>
+            <div ref={ref} role="dialog" aria-modal="true" aria-label={title} className={`glass-panel relative max-h-[90vh] w-full ${wide ? "max-w-lg" : "max-w-md"} overflow-y-auto rounded-2xl p-6 shadow-2xl`}>
+                <div className="flex items-start justify-between gap-3">
+                    <h2 className="text-lg font-bold leading-tight text-strong">{title}</h2>
+                    {wide && (
+                        <button type="button" onClick={onClose} aria-label={closeLabel} title={closeLabel} className="-mr-2 -mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-faint transition-colors hover:bg-edge hover:text-strong" data-testid="linked-file-close">
+                            <X className="h-4 w-4" aria-hidden="true" />
+                        </button>
+                    )}
+                </div>
                 {children}
             </div>
         </div>,
@@ -57,6 +63,8 @@ export function LinkedFileControl({ resumeId }: { resumeId: string }) {
     const [dismissedAt, setDismissedAt] = useState<number | null>(null);
     const [helpOpen, setHelpOpen] = useState(false);
     const [dontShow, setDontShow] = useState(false);
+    const [checking, setChecking] = useState(false);
+    const [checkedAt, setCheckedAt] = useState<number | null>(null);
     const supported = typeof window !== "undefined" && isLinkingSupported();
     const status = supported || linked.status !== "none" ? linked.status : "unsupported";
 
@@ -120,6 +128,18 @@ export function LinkedFileControl({ resumeId }: { resumeId: string }) {
 
     const engine = () => getActiveEngine(resumeId);
 
+    // "Check now" used to say nothing when the file had not changed. Show that it ran and what it found.
+    const checkNow = async () => {
+        setChecking(true);
+        setCheckedAt(null);
+        try {
+            await engine()?.checkNow();
+        } finally {
+            setChecking(false);
+            setCheckedAt(Date.now());
+        }
+    };
+
     const timeLabel = linked.lastSyncedAt
         ? new Date(linked.lastSyncedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
         : "";
@@ -145,6 +165,12 @@ export function LinkedFileControl({ resumeId }: { resumeId: string }) {
         ].filter(Boolean).join(" ")
         : "";
 
+    // After a manual check: say so when it came back clean. Problems already show their own message.
+    const checkedLabel = checkedAt ? new Date(checkedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }) : "";
+    const checkResult = checkedAt && !checking && status === "in-sync"
+        ? t(linked.lastUpdate && linked.lastUpdate.at >= checkedAt - 5000 ? "linkedFile.checked.updated" : "linkedFile.checked.upToDate", { time: checkedLabel })
+        : "";
+
     const update = linked.lastUpdate;
     const updateText = update
         ? (update.added + update.removed + update.changed > 0
@@ -168,20 +194,21 @@ export function LinkedFileControl({ resumeId }: { resumeId: string }) {
 
     return (
         <div className="flex min-w-0 items-center gap-2" data-testid="linked-file-control">
-            <Popover open={open} onOpenChange={setOpen}>
-                <PopoverTrigger asChild>
-                    <button
+            <button
                         type="button"
+                        onClick={() => setOpen(true)}
+                        aria-haspopup="dialog"
                         data-testid="linked-file-trigger"
                         title={statusLabel || triggerLabel}
                         className="flex h-8 min-w-0 max-w-[14rem] items-center gap-1.5 rounded-lg border border-edge bg-surface-1 px-2 text-xs text-mid transition-colors hover:border-faint hover:text-strong"
                     >
                         <Icon className={`h-3.5 w-3.5 shrink-0 ${status === "busy" ? "animate-spin" : ""} ${status === "in-sync" ? "text-success" : status === "error" || status === "broken" ? "text-danger" : ""}`} aria-hidden="true" />
                         <span className="truncate">{triggerLabel}</span>
-                    </button>
-                </PopoverTrigger>
-                <PopoverContent align="end" className="w-[min(92vw,24rem)] space-y-3" data-testid="linked-file-panel">
-                    <h2 className="text-sm font-medium text-strong">{t("linkedFile.title")}</h2>
+            </button>
+
+            {open && !dialog && (
+                <Modal wide title={t("linkedFile.title")} closeLabel={t("linkedFile.close")} onClose={() => setOpen(false)}>
+                <div className="mt-4 space-y-4" data-testid="linked-file-panel">
 
                     {status === "unsupported" && (
                         <p className="text-xs leading-relaxed text-mid" data-testid="linked-file-unsupported">{t("linkedFile.unsupported")}</p>
@@ -214,7 +241,7 @@ export function LinkedFileControl({ resumeId }: { resumeId: string }) {
                     {(status === "in-sync" || status === "busy") && (
                         <div className="flex flex-wrap gap-2">
                             <button type="button" className={smallButton} onClick={() => void engine()?.pause()} data-testid="linked-file-pause">{t("linkedFile.pause")}</button>
-                            <button type="button" className={smallButton} onClick={() => void engine()?.checkNow()} data-testid="linked-file-check">{t("linkedFile.checkNow")}</button>
+                            <button type="button" className={smallButton} onClick={() => void checkNow()} disabled={checking} data-testid="linked-file-check">{checking ? t("linkedFile.checking") : t("linkedFile.checkNow")}</button>
                             <button type="button" className={smallButton} onClick={() => void unlinkFile(resumeId)} data-testid="linked-file-unlink">{t("linkedFile.unlink")}</button>
                         </div>
                     )}
@@ -242,7 +269,7 @@ export function LinkedFileControl({ resumeId }: { resumeId: string }) {
                         <div className="space-y-2">
                             <p className="text-xs leading-relaxed text-danger" role="alert" data-testid="linked-file-error">{errorText}</p>
                             <div className="flex flex-wrap gap-2">
-                                <button type="button" className={smallButton} onClick={() => void engine()?.checkNow()} data-testid="linked-file-check">{t("linkedFile.checkNow")}</button>
+                                <button type="button" className={smallButton} onClick={() => void checkNow()} disabled={checking} data-testid="linked-file-check">{checking ? t("linkedFile.checking") : t("linkedFile.checkNow")}</button>
                                 <button type="button" className={smallButton} onClick={() => void unlinkFile(resumeId)} data-testid="linked-file-unlink">{t("linkedFile.unlink")}</button>
                             </div>
                         </div>
@@ -274,6 +301,8 @@ export function LinkedFileControl({ resumeId }: { resumeId: string }) {
                         </div>
                     )}
 
+                    {checkResult && <p className="text-xs text-success" role="status" data-testid="linked-file-check-result">{checkResult}</p>}
+
                     {message && <p className="text-xs text-danger" role="alert" data-testid="linked-file-message">{message}</p>}
 
                     {status !== "none" && status !== "unsupported" && linked.fileName && (
@@ -299,8 +328,9 @@ export function LinkedFileControl({ resumeId }: { resumeId: string }) {
                         </button>
                         {helpOpen && <div className="mt-2"><AgentHelp filePath={linked.fileName ?? undefined} /></div>}
                     </div>
-                </PopoverContent>
-            </Popover>
+                </div>
+                </Modal>
+            )}
 
             {showUpdate && updateText && (
                 <p className="hidden min-w-0 truncate text-[11px] text-info sm:block" data-testid="linked-file-update">{updateText}</p>

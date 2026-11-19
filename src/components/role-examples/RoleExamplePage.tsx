@@ -45,10 +45,14 @@ export function roleExampleMetadata(locale: Locale, slug: string): Metadata {
     return isDraft ? { ...base, robots: { index: false, follow: true } } : base;
 }
 
-/** The related blog post: a published version in the page's language, else in English. */
-async function relatedPost(entry: RoleExampleEntry) {
-    const versions = publishedVersions(await getAllBlogPostMeta()).filter((post) => post.article === entry.role.relatedArticle);
-    return versions.find((post) => post.locale === entry.locale) ?? versions.find((post) => post.locale === DEFAULT_LOCALE) ?? null;
+/** The related blog posts, the main one first: each a published version in the page's language, else in English. */
+async function relatedPosts(entry: RoleExampleEntry) {
+    const published = publishedVersions(await getAllBlogPostMeta());
+    return [entry.role.relatedArticle, ...(entry.role.moreArticles ?? [])].flatMap((article) => {
+        const versions = published.filter((post) => post.article === article);
+        const post = versions.find((candidate) => candidate.locale === entry.locale) ?? versions.find((candidate) => candidate.locale === DEFAULT_LOCALE);
+        return post ? [post] : [];
+    });
 }
 
 /** One role's example page in one language; the URL's language drives every label around it. */
@@ -57,7 +61,7 @@ export async function RoleExamplePage({ locale, slug }: { locale: Locale; slug: 
     if (!entry) notFound();
 
     const { role, version } = entry;
-    const [loaded, post] = await Promise.all([loadRoleExample(entry), relatedPost(entry)]);
+    const [loaded, posts] = await Promise.all([loadRoleExample(entry), relatedPosts(entry)]);
     const text = (key: string, params?: Record<string, string>) => translate(locale, key, params);
     const hasIndex = indexLocales().includes(entry.locale);
 
@@ -143,13 +147,13 @@ export async function RoleExamplePage({ locale, slug }: { locale: Locale; slug: 
                                         {text("roleExamples.relatedTemplate", { name: loaded.gallery.template.meta.name })}
                                     </Link>
                                 </p>
-                                {post ? (
-                                    <p>
+                                {posts.map((post) => (
+                                    <p key={post.path}>
                                         <Link href={post.path} className="text-accent underline underline-offset-2 hover:text-accent-soft">
                                             {text("roleExamples.relatedArticle", { title: post.title })}
                                         </Link>
                                     </p>
-                                ) : null}
+                                ))}
                             </nav>
                         </div>
                     </div>

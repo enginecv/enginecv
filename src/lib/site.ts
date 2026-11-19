@@ -28,6 +28,7 @@ export type PublicRoute = (typeof PUBLIC_ROUTES)[number];
 export const CRAWL_DISALLOWED_PATHS = [
     "/editor/",
     "/templates/",
+    "/letters/",
     "/internal/",
     "/api/",
     "/r/",

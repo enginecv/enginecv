@@ -1,0 +1,118 @@
+---
+title: "Cover Letters in EngineCV: How They Work"
+description: "A walkthrough of cover letters in EngineCV: how a letter follows its CV, what you can override, how tokens and saved paragraphs work, what marking a letter as sent does, and how to export and back up."
+slug: "cover-letters-in-enginecv"
+date: "2026-11-19"
+updated: "2026-11-19"
+author: "safet-imamovic"
+tags: [enginecv, cover letter, cover letter builder, features]
+sponsored: false
+adSlots: [after-first-paragraph, mid-article, end-of-article, sidebar-square]
+---
+
+EngineCV now has cover letters. They are not a text box attached to a CV. Each letter is its own document, stored on your device, linked to one of your CVs and designed to look like it.
+
+This article describes how they behave, so you know what to expect when you write one: what the letter takes from the CV, what it never touches, what changes when you mark a letter as sent, and how it all leaves the app. There is no AI writing and no server involved. The first release is about getting the mechanics right.
+
+<InlineCTA />
+
+## Where letters live
+
+Open the dashboard and you will find a Letters tab next to your CVs and templates. Letters are grouped under the CV they belong to, each group showing the CV's title and the number of letters in it. You can search by company, role or title.
+
+A letter needs a CV, because the CV supplies your details and your design. If you have none yet, the tab says so and offers to create one first. If you have one or more, you start a letter by choosing which CV it should follow.
+
+The relationship is fixed: a letter has exactly one CV at a time, and a CV can have as many letters as you like. The reasoning behind that rule is explained in [one CV, many cover letters](/blog/one-cv-many-cover-letters).
+
+## What a draft takes from the CV
+
+A new letter is a draft, and a draft follows its CV. These parts are read from the CV every time the letter is shown.
+
+- **The sender block:** your name and contact details.
+- **The signature name.**
+- **The design:** typography, accent colour and header style.
+- **The values behind tokens,** described below.
+
+If you correct a typo in your phone number in the CV, the letter shows the corrected number the next time you look at it, without any step in between. If the CV is linked to a file and the file changes, the letter follows that too, because it reads from the CV and not from the file.
+
+What the letter never takes from the CV is its text. Your recipient, company, role, date, salutation, paragraphs and closing belong to the letter. Editing the CV does not change any of them, and typing in the letter does not interrupt while the CV changes in another tab.
+
+## Overriding a field for one letter
+
+Sometimes a letter needs a detail that differs from the CV: a work address for one application, or a different email for a recruiter you know. You do not have to change the CV for that.
+
+Any sender field can be overridden for a single letter. The overridden field is marked as differing from the CV, keeps its value when the CV changes and can be reset with one action to follow the CV again. The fields you did not override keep following it. Overrides never change the CV.
+
+Overrides stay with the letter when you move or copy it, and you are told which ones were kept. That is deliberate: a value chosen for one application should not silently vanish, and should not silently reach letters under a different CV.
+
+## Photo, paper size and layout
+
+The CV's photo is off by default on a letter, since many employers do not want one and a letter is not a CV. A per-letter switch shows it in the header. While the letter is a draft it follows the CV's current photo.
+
+Paper size belongs to the letter, not the CV, because the CV does not store one. It is A4 by default and can be switched to US Letter.
+
+There are two layouts: a standard letter layout, and the German standard layout, which is described in a separate article about the [German Anschreiben](/blog/german-cover-letter-din-5008). A letter written in German starts with the German layout selected, and you can change it.
+
+## Language is its own setting
+
+A letter has its own language, which defaults to the language of the CV it is linked to. It does not depend on the language you use the app in. The language decides the date format and the starting salutation and closing: for example "Dear Hiring Manager," and "Kind regards," in English, "Sehr geehrte Damen und Herren," and "Mit freundlichen Grüßen" in German, and equivalents in French, Spanish and Bosnian. Other languages fall back to English.
+
+If you move a draft to a CV in another language, the sender block follows the new CV and the body stays exactly as you wrote it. You are not forced to change the letter's language.
+
+## The starting structure
+
+A new letter opens with a short structure that has a prompt for each paragraph, such as what to say first and what to say about the employer. It is meant to be filled in or deleted, and you can add, remove and reorder paragraphs freely.
+
+Inside a paragraph you have bold, italic, links and simple bulleted lists, the same small set the CV uses. Nothing else is offered: no headings, colours or tables. If you paste text from a web page or a word processor, it is reduced to that set so that the page keeps the look of your CV.
+
+## Tokens: values from the CV in your text
+
+You can write a token in a paragraph and have it resolve to the CV's current value. The available tokens are:
+
+- `{{name}}`: your name.
+- `{{role}}`: your current role.
+- `{{location}}`: your location.
+- `{{skills}}`: your first five skills, in the order they appear in the CV.
+
+You do not need to remember the syntax, because they can be inserted from a list. The preview shows each token with the value it resolves to. If a token has nothing to show, for example when the CV has no current role, it is flagged in the preview and listed before you export. A raw `{{role}}` never reaches an exported file.
+
+## Saved paragraphs
+
+Some sentences you will use again: a line about your availability, a note about relocation, a closing you like. Save a paragraph to your personal library, and insert it into any letter later.
+
+Inserting makes a copy. Changing a paragraph in the library does not alter letters that already used it, and editing it inside a letter does not change the library. You can rename, edit and delete library entries at any time.
+
+## Marking a letter as sent
+
+When the letter leaves, mark it as sent. EngineCV does not send anything, and it does not know whether you actually sent the letter, so this is a step you take yourself.
+
+Marking as sent stores a snapshot of what the letter showed at that moment: the sender details including any overrides, the token values, the design and the photo if it was on. From then on the letter shows those values whatever happens to the CV. You can restyle the CV, change your email or delete the CV, and the sent letter is unchanged.
+
+Before it freezes, you are warned if required sender details are missing. A sent letter is read-only. To change it you have two choices.
+
+- **Unfreeze it,** after a confirmation that says it will follow the CV again. It becomes a live draft.
+- **Duplicate it as a draft,** which gives you a live copy linked to the same CV and leaves the sent letter alone.
+
+## Deleting letters and CVs
+
+Deleting a letter asks for confirmation. For a sent letter the confirmation says it is a record of something already sent. After deletion you get a short window of about eight seconds to undo it, and the letter is restored exactly as it was. Once that window has passed, the deletion is final.
+
+Deleting a CV never deletes its letters. You are told how many letters are affected before anything is removed and you can cancel. Sent letters keep their snapshot and need no choice. For each draft, you choose to attach it to another CV or convert it to a frozen snapshot of its last state. Duplicating a CV leaves the letters with the original, and offers to copy them onto the new CV if you want that.
+
+## Exporting a letter
+
+A letter can be exported as PDF, Word, Markdown, plain text, HTML or LaTeX, using the same delivery path as CV export, including sharing on devices where that is offered. The PDF is made from the same pages you see in the preview, so what you see is what you get. PDF and Word keep bold, italic, links and lists, and keep the closing and signature together when a long letter runs onto a second page. Plain text drops the styling, shows list items as dashes and writes each link's address after its text.
+
+Drafts export with the live CV data, sent letters with their frozen data. If something looks unfinished, such as an empty email or a token with no value, the export dialog lists it and still lets you continue. For Word, the photo follows the same opt-in as the CV export, and you are told if a photo could not be included.
+
+## Privacy and backup
+
+Letters are stored in your browser on your device, like your CVs. They are not sent to any server, and they appear in the same "what is stored" overview and the same delete-all control as the rest of your data. The feature works offline.
+
+Because everything is local, the data export is your backup. It includes letters, their links to CVs, their sent snapshots and your saved paragraphs. When you import it, links are restored. If a letter points to a CV that is not in the file, you are told and the letter goes through the same choice as a CV deletion, so it is attached elsewhere or kept as a snapshot instead of being dropped. Existing letters are not overwritten without your choice. More about what is stored is on the [privacy page](/privacy).
+
+## Where to start
+
+Create or open a CV in the [dashboard](/dashboard), then start a letter from the Letters tab. For advice on what to put in it, read [how to write a cover letter that gets read](/blog/how-to-write-a-cover-letter).
+
+<InlineCTA />

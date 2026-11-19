@@ -3,7 +3,8 @@ import { isJsonResumeDocument } from "./agent/authoring/detect";
 import { jsonResumeToResume } from "./json-resume/to-resume";
 import { MAX_JSON_RESUME_BYTES } from "./json-resume/schema";
 import { clampResumeSettings, resumeSchema, type Resume } from "./schema";
-import { isDataExport, resumesFromDataExport } from "./storage-registry/export-file";
+import { parseLettersFromExport } from "./letters/import";
+import { isDataExport, lettersFromDataExport, resumesFromDataExport } from "./storage-registry/export-file";
 import type { ZodIssue } from "zod";
 
 const ENCRYPTED_JSON_ITERATIONS = 250000;
@@ -845,6 +846,8 @@ export async function importResumeFromJsonText(
             kind: "data-export" as const,
             resumes,
             skipped: resumesFromDataExport(parsedJson).length - resumes.length,
+            // Cover letters and saved paragraphs travel in the same file.
+            extras: parseLettersFromExport(lettersFromDataExport(parsedJson).letters, lettersFromDataExport(parsedJson).paragraphs),
         };
     }
 

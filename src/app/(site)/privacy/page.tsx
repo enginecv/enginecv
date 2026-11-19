@@ -19,10 +19,11 @@ export default function PrivacyPage() {
         >
             <LegalSection title="1. Your resumes stay on your device">
                 <p>
-                    Resumes, version history, templates, and preferences are stored in your browser on this device
-                    (IndexedDB and localStorage). EngineCV has no account system and keeps no server copy of your resumes.
-                    Editing, preview, version history, and exports to PDF, DOCX, Markdown, plain text, HTML, LaTeX, and JSON happen
-                    in your browser without sending your resume anywhere.
+                    Resumes, cover letters (and the paragraphs you save for them), version history, templates, and preferences
+                    are stored in your browser on this device (IndexedDB and localStorage). EngineCV has no account system and
+                    keeps no server copy of your resumes or letters. Editing, preview, version history, and exports to PDF, DOCX,
+                    Markdown, plain text, HTML, LaTeX, and JSON happen in your browser without sending your resume or letter
+                    anywhere.
                 </p>
                 <p>
                     If you clear browser storage, switch browsers, use private browsing, or reset the device profile, that
@@ -51,9 +52,19 @@ export default function PrivacyPage() {
                     EngineCV also keeps one anonymous counter: when an export finishes, your browser tells EngineCV that one
                     file of a given format (for example PDF) was exported, and which link or site brought you here (a
                     referral name, a <code>utm_source</code> value, or the referring site&apos;s host name; kept only in this
-                    tab). It carries no cookie, identifier, IP address, resume content, file name or name. It is not sent at
+                    tab). It also notes a few coarse facts: your country (from the network edge, never your IP address), the
+                    site language, the built-in template you used, the first page of your visit (the address only, never a
+                    document id), a role example page if you came from one, and whether you are on a phone or a computer. It
+                    carries no cookie, identifier, IP address, resume content, file name or name. It is not sent at
                     all if your browser sends Do Not Track or Global Privacy Control. It exists to show which channels lead to
                     finished CVs, not to follow anyone.
+                </p>
+                <p>
+                    The same counter notes a click on a marked &quot;Partner link&quot; on the Resources page: which link it
+                    was and the same source, nothing about you. Partner links are affiliate links: if you sign up or buy
+                    after following one, the partner may pay EngineCV a commission at no extra cost to you, and the partner
+                    then sets its own cookies on its own site under its own policy. Links without the label are unpaid and
+                    carry no tracking.
                 </p>
                 <p>
                     EngineCV uses no other analytics: no Google Analytics, no tracking pixels, and no tracking of what you

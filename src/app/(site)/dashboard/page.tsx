@@ -9,7 +9,7 @@ import { db } from "@/lib/db";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useResumeStore } from "@/lib/store";
 import {
-    FileText, Plus, Trash2, X, AlertTriangle, Search, Edit2, Check, Copy, Download, LayoutTemplate, Upload, Mail, ListFilter, Grid2X2, Grid3X3, LayoutGrid, Radiation, ShieldCheck, type LucideIcon,
+    ArrowLeft, FileText, Plus, Trash2, X, AlertTriangle, Search, Edit2, Check, Copy, Download, LayoutTemplate, Upload, Mail, ListFilter, Grid2X2, Grid3X3, LayoutGrid, Radiation, ShieldCheck, type LucideIcon,
 } from "lucide-react";
 import { exportTemplateToJson, importTemplateFromJsonText } from "@/lib/templates/template-io";
 import { templateDocumentSchema, type TemplateDocument } from "@/lib/templates/template-schema";
@@ -28,6 +28,13 @@ import { createEmptyResume, resumeSchema, type Resume } from "@/lib/schema";
 import { LiveResumeThumbnail } from "@/components/dashboard/LiveResumeThumbnail";
 import { DashboardCard, LastUpdatedTooltipContent } from "@/components/dashboard/DashboardCard";
 import { DashboardTemplateCard } from "@/components/dashboard/DashboardTemplateCard";
+import { LettersTab } from "@/components/dashboard/LettersTab";
+import { CopyLettersDialog } from "@/components/letters/CopyLettersDialog";
+import { DeleteCvDialog } from "@/components/letters/DeleteCvDialog";
+import type { DeletionDecision } from "@/lib/letters/deletion";
+import type { LetterDocument } from "@/lib/letters/schema";
+import { copyLettersToCv, deleteCvWithLetters, importDataExport, listLettersForCv } from "@/lib/letters/store";
+import type { DataExportExtras } from "@/lib/import/staging/types";
 import { CreateModal } from "@/components/dashboard/CreateModal";
 import { StartPanel } from "@/components/dashboard/StartPanel";
 import { PageSizeSelect, Pager, SortSelect } from "@/components/dashboard/ListControls";
@@ -70,7 +77,10 @@ const GRID_DENSITY_CLASS: Record<GridDensity, string> = {
     normal: "grid-cols-1 md:grid-cols-2 xl:grid-cols-3",
     compact: "grid-cols-1 md:grid-cols-3 xl:grid-cols-4",
 };
-type TemplateDashboardTab = "builtin" | "user";
+type TemplateDashboardTab = "all" | "builtin" | "user";
+
+/** How many templates each section of the templates overview shows, by grid density. */
+const TEMPLATE_OVERVIEW_COUNT: Record<GridDensity, number> = { large: 2, normal: 3, compact: 4 };
 type DashboardNavItem = {
     id: DashboardTab;
     label: string;
@@ -81,6 +91,59 @@ type DashboardNavItem = {
 const EMPTY_TEMPLATES: TemplateDocument[] = [];
 const DASHBOARD_CONTENT_CLASS = "mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8";
 const DASHBOARD_NAV_CLASS = "sticky top-0 z-30 border-b border-edge bg-surface-2 md:h-[68px] md:max-h-[68px]";
+
+/** One block of the templates overview: a title, a few cards, and a button to see the rest. */
+function TemplateOverviewSection({
+    title,
+    total,
+    onSeeAll,
+    testId,
+    children,
+}: {
+    title: string;
+    total: number;
+    onSeeAll: () => void;
+    testId: string;
+    children: ReactNode;
+}) {
+    const { t } = useTranslation();
+    return (
+        <section data-testid={testId} aria-label={title}>
+            <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold text-strong">
+                {title}
+                <span className="rounded-md bg-surface-1 px-1.5 py-0.5 text-[11px] font-semibold text-mid">{total}</span>
+            </h2>
+            {children}
+            {total > 0 && (
+                <div className="mt-5 flex justify-center">
+                    <button
+                        type="button"
+                        onClick={onSeeAll}
+                        data-testid={`${testId}-see-all`}
+                        className="rounded-xl border border-edge px-4 py-2 text-sm font-medium text-bright transition-colors hover:border-faint hover:text-strong"
+                    >
+                        {t("dashboard.seeAllTemplates", { count: total })}
+                    </button>
+                </div>
+            )}
+        </section>
+    );
+}
+
+function BackToAllTemplates({ onClick }: { onClick: () => void }) {
+    const { t } = useTranslation();
+    return (
+        <button
+            type="button"
+            onClick={onClick}
+            data-testid="dashboard-template-back"
+            className="mb-4 flex items-center gap-1.5 text-sm font-medium text-mid transition-colors hover:text-strong"
+        >
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+            {t("dashboard.allTemplates")}
+        </button>
+    );
+}
 
 // ---------------------------------------------
 // Template Filter Menu
@@ -103,6 +166,7 @@ function TemplateFilterMenu({
     const { t } = useTranslation();
     const [open, setOpen] = useState(false);
     const options: { id: TemplateDashboardTab; label: string; count: number }[] = [
+        { id: "all", label: t("dashboard.allTemplates"), count: builtinCount + userCount },
         { id: "builtin", label: t("dashboard.builtinTemplates"), count: builtinCount },
         { id: "user", label: t("dashboard.yourTemplates"), count: userCount },
     ];
@@ -859,6 +923,14 @@ function Dashboard() {
     const [startError, setStartError] = useState<string | null>(null);
     const [startFocusId, setStartFocusId] = useState<StartPathId | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+    // The letters linked to the CV being deleted; when there are any, a dialog decides what happens to them.
+    const [deleteLetters, setDeleteLetters] = useState<LetterDocument[]>([]);
+    const [deleteBusy, setDeleteBusy] = useState(false);
+    const [deleteFailed, setDeleteFailed] = useState(false);
+    // A CV that was just duplicated and has letters: the person may copy them onto the new one.
+    const [copyOffer, setCopyOffer] = useState<{ fromId: string; toId: string; count: number } | null>(null);
+    const [copyBusy, setCopyBusy] = useState(false);
+    const [copyFailed, setCopyFailed] = useState(false);
     const [importError, setImportError] = useState<string | null>(null);
     const [importErrorDetails, setImportErrorDetails] = useState<string | null>(null);
     const [importWarning, setImportWarning] = useState<string | null>(null);
@@ -970,11 +1042,14 @@ function Dashboard() {
     }, []);
 
     // A "Download my data" file: every CV in it becomes a new CV. Saved versions and templates stay in the file.
-    const saveDataExportResumes = useCallback(async (resumes: Resume[]) => {
-        const now = Date.now();
-        await db.resumes.bulkAdd(resumes.map((resume) => ({ ...resume, id: createId(), createdAt: now, updatedAt: now })));
+    const saveDataExportResumes = useCallback(async (resumes: Resume[], extras?: DataExportExtras) => {
+        // CVs, letters and saved paragraphs go in together, so a failure leaves nothing half imported.
+        const result = await importDataExport(resumes, extras);
         setImportWarningIsClamp(false);
-        setImportWarning(tn("dashboard.importedDataExport", resumes.length));
+        const cvText = tn("dashboard.importedDataExport", resumes.length);
+        const letterText = result.lettersAdded > 0 ? " " + tn("dashboard.importedLetters", result.lettersAdded) : "";
+        const orphanText = result.orphanedDrafts > 0 ? " " + tn("dashboard.importedLettersNoCv", result.orphanedDrafts) : "";
+        setImportWarning(cvText + letterText + orphanText);
     }, [setImportWarning, tn]);
 
     const handleSaveMeta = useCallback(async (resumeId: string, meta: Resume["meta"]): Promise<string | void> => {
@@ -1006,8 +1081,62 @@ function Dashboard() {
 
     const handleDuplicate = useCallback(async (sourceResume: Resume) => {
         const duplicateId = await duplicateResume(sourceResume, t("dashboard.copy"));
+        // The letters stay with the original. Offer to copy them when there are any.
+        const letters = sourceResume.id ? await listLettersForCv(sourceResume.id) : [];
+        if (letters.length > 0 && sourceResume.id) {
+            setCopyFailed(false);
+            setCopyOffer({ fromId: sourceResume.id, toId: duplicateId, count: letters.length });
+            return;
+        }
         router.push(`/editor/${duplicateId}`);
     }, [router, t]);
+
+    const finishCopyOffer = useCallback(async (copy: boolean) => {
+        if (!copyOffer) return;
+        if (copy) {
+            setCopyBusy(true);
+            setCopyFailed(false);
+            try {
+                await copyLettersToCv(copyOffer.fromId, copyOffer.toId);
+            } catch {
+                setCopyFailed(true);
+                setCopyBusy(false);
+                return;
+            }
+            setCopyBusy(false);
+        }
+        const target = copyOffer.toId;
+        setCopyOffer(null);
+        router.push(`/editor/${target}`);
+    }, [copyOffer, router]);
+
+    /** Asks about the CV's letters first (if it has any), then opens the right confirmation. */
+    const requestDeleteResume = useCallback(async (target: { id: string; name: string }) => {
+        setDeleteFailed(false);
+        setDeleteLetters(await listLettersForCv(target.id));
+        setDeleteTarget(target);
+    }, []);
+
+    const cancelDelete = useCallback(() => {
+        setDeleteTarget(null);
+        setDeleteLetters([]);
+        setDeleteFailed(false);
+    }, []);
+
+    const confirmDeleteWithLetters = useCallback(async (decisions: DeletionDecision[]) => {
+        if (!deleteTarget) return;
+        setDeleteBusy(true);
+        setDeleteFailed(false);
+        try {
+            await deleteCvWithLetters(deleteTarget.id, decisions);
+            cancelDelete();
+        } catch {
+            // Nothing was changed: the CV and every letter are as they were.
+            setDeleteFailed(true);
+        } finally {
+            setDeleteBusy(false);
+        }
+    }, [deleteTarget, cancelDelete]);
 
     const handleDownloadResume = useCallback((resume: Resume) => {
         exportToJson(resume, getResumeExportFilename(resume));
@@ -1015,11 +1144,14 @@ function Dashboard() {
 
     const handleDelete = useCallback(async () => {
         if (!deleteTarget) return;
-        await db.resumes.delete(deleteTarget.id);
-        // The file stays on disk; only the link goes with the CV.
-        await db.linkedFiles.delete(deleteTarget.id);
-        setDeleteTarget(null);
-    }, [deleteTarget, setDeleteTarget]);
+        try {
+            await deleteCvWithLetters(deleteTarget.id, []);
+            cancelDelete();
+        } catch {
+            // A draft appeared since the question was asked: show the letters dialog instead.
+            setDeleteLetters(await listLettersForCv(deleteTarget.id));
+        }
+    }, [deleteTarget, cancelDelete]);
 
     const resumeCount = resumes?.length ?? 0;
     const hasResumes = resumeCount > 0;
@@ -1057,6 +1189,7 @@ function Dashboard() {
         void db.resumes.count().then((count) => runStartLink(start, count > 0));
     }, [runStartLink]);
 
+    const letterCount = useLiveQuery(() => db.coverLetters.count(), []);
     const userTemplates = useLiveQuery(async () => {
         const all = await db.templates.toArray();
         return all.sort((a, b) => b.updatedAt - a.updatedAt);
@@ -1065,7 +1198,7 @@ function Dashboard() {
     const [templateDeleteTarget, setTemplateDeleteTarget] = useState<{ id: string; name: string } | null>(null);
     const [templateImportError, setTemplateImportError] = useState<string | null>(null);
     const [templateSearch, setTemplateSearch] = useState("");
-    const [activeTemplateDashboardTab, setActiveTemplateDashboardTab] = useState<TemplateDashboardTab>("builtin");
+    const [activeTemplateDashboardTab, setActiveTemplateDashboardTab] = useState<TemplateDashboardTab>("all");
 
     const templateSort = dashboardPreferences.templateSort;
     const setTemplateSort = useCallback((next: DashboardSort) => {
@@ -1179,7 +1312,7 @@ function Dashboard() {
 
     const dashboardTabs: DashboardNavItem[] = [
         { id: "resumes", label: t("dashboard.tabResumes"), icon: FileText, count: resumeCount },
-        { id: "letters", label: t("dashboard.tabCoverLetters"), icon: Mail, count: 0 },
+        { id: "letters", label: t("dashboard.tabCoverLetters"), icon: Mail, count: letterCount ?? 0 },
         { id: "templates", label: t("dashboard.tabTemplates"), icon: LayoutTemplate, count: userTemplates.length },
     ];
 
@@ -1449,7 +1582,7 @@ function Dashboard() {
                                                     onDuplicate={() => handleDuplicate(resume)}
                                                     onDownload={() => handleDownloadResume(resume)}
                                                     onDelete={() =>
-                                                        setDeleteTarget({
+                                                        void requestDeleteResume({
                                                             id: resume.id!,
                                                             name: resume.meta.title || resume.basics.name || t("dashboard.untitled"),
                                                         })
@@ -1482,13 +1615,7 @@ function Dashboard() {
                         {activeDashboardTab === "letters" && (
                             <>
                                 <div className={`${DASHBOARD_CONTENT_CLASS} pt-8`}>
-                                <div className="rounded-[1.25rem] border border-dashed border-edge p-12 flex flex-col items-center text-center gap-3 text-faint">
-                                    <Mail className="w-10 h-10" />
-                                    <p className="text-sm font-medium text-strong">{t("dashboard.comingSoon")}</p>
-                                    <p className="text-xs max-w-md">
-                                        {t("dashboard.coverLettersComingSoon")}
-                                    </p>
-                                </div>
+                                    <LettersTab onCreateCv={() => setShowCreateModal(true)} gridClass={GRID_DENSITY_CLASS[gridDensity]} density={gridDensity} onDensityChange={setGridDensity} />
                                 </div>
                             </>
                         )}
@@ -1652,7 +1779,75 @@ function Dashboard() {
                                         </div>
                                     )}
 
+                                    <TabsContent value="all">
+                                        <div className="space-y-12" data-testid="dashboard-template-overview">
+                                            <TemplateOverviewSection
+                                                testId="dashboard-overview-user"
+                                                title={t("dashboard.yourTemplates")}
+                                                total={filteredUserTemplates.length}
+                                                onSeeAll={() => setActiveTemplateDashboardTab("user")}
+                                            >
+                                                {filteredUserTemplates.length === 0 ? (
+                                                    <div className="flex flex-col items-center gap-2 rounded-[1.25rem] border border-dashed border-edge p-8 text-center text-faint">
+                                                        <LayoutTemplate className="h-7 w-7" />
+                                                        {templateSearch.trim() ? (
+                                                            <p className="text-sm">{t("dashboard.noSavedTemplatesMatch", { query: templateSearch })}</p>
+                                                        ) : (
+                                                            <>
+                                                                <p className="text-sm">{t("dashboard.noSavedTemplates")}</p>
+                                                                <p className="text-xs">{t("dashboard.noSavedTemplatesHint")}</p>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                ) : (
+                                                    <div className={`grid ${GRID_DENSITY_CLASS[gridDensity]} gap-5`}>
+                                                        {filteredUserTemplates.slice(0, TEMPLATE_OVERVIEW_COUNT[gridDensity]).map((template) => (
+                                                            <DashboardTemplateCard
+                                                                key={template.id}
+                                                                template={template}
+                                                                onDuplicate={() => handleDuplicateTemplate(template)}
+                                                                onDownload={() => handleDownloadTemplate(template)}
+                                                                onEdit={() => router.push(`/templates/${template.id}`)}
+                                                                onDelete={() =>
+                                                                    setTemplateDeleteTarget({
+                                                                        id: template.id,
+                                                                        name: template.meta.name || t("dashboard.untitledTemplate"),
+                                                                    })
+                                                                }
+                                                            />
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </TemplateOverviewSection>
+
+                                            <TemplateOverviewSection
+                                                testId="dashboard-overview-builtin"
+                                                title={t("dashboard.builtinTemplates")}
+                                                total={filteredBuiltinTemplates.length}
+                                                onSeeAll={() => setActiveTemplateDashboardTab("builtin")}
+                                            >
+                                                {filteredBuiltinTemplates.length === 0 ? (
+                                                    <div className="rounded-[1.25rem] border border-dashed border-edge p-8 text-center text-sm text-faint">
+                                                        {t("dashboard.noBuiltinTemplatesMatch", { query: templateSearch })}
+                                                    </div>
+                                                ) : (
+                                                    <div className={`grid ${GRID_DENSITY_CLASS[gridDensity]} gap-5`}>
+                                                        {filteredBuiltinTemplates.slice(0, TEMPLATE_OVERVIEW_COUNT[gridDensity]).map((template) => (
+                                                            <DashboardTemplateCard
+                                                                key={template.id}
+                                                                template={template}
+                                                                onDuplicate={() => handleDuplicateTemplate(template)}
+                                                                onDownload={() => handleDownloadTemplate(template)}
+                                                            />
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </TemplateOverviewSection>
+                                        </div>
+                                    </TabsContent>
+
                                     <TabsContent value="builtin">
+                                        <BackToAllTemplates onClick={() => setActiveTemplateDashboardTab("all")} />
                                         {filteredBuiltinTemplates.length === 0 ? (
                                             <div className="rounded-[1.25rem] border border-dashed border-edge p-10 text-center text-sm text-faint">
                                                 {t("dashboard.noBuiltinTemplatesMatch", { query: templateSearch })}
@@ -1681,6 +1876,7 @@ function Dashboard() {
                                     </TabsContent>
 
                                     <TabsContent value="user">
+                                        <BackToAllTemplates onClick={() => setActiveTemplateDashboardTab("all")} />
                                         {filteredUserTemplates.length === 0 ? (
                                             <div className="flex flex-col items-center gap-2 rounded-[1.25rem] border border-dashed border-edge p-10 text-center text-faint">
                                                 <LayoutTemplate className="h-8 w-8" />
@@ -1774,14 +1970,31 @@ function Dashboard() {
 
             {/* Delete confirmation */}
             <ConfirmModal
-                open={!!deleteTarget}
+                open={!!deleteTarget && deleteLetters.length === 0}
                 title={t("dashboard.deleteTitle")}
                 description={t("dashboard.deleteConfirm", { name: deleteTarget?.name ?? "" })}
                 confirmLabel={t("dashboard.deletePermanently")}
                 destructive
                 onConfirm={handleDelete}
-                onCancel={() => setDeleteTarget(null)}
+                onCancel={cancelDelete}
             />
+
+            {/* The CV has letters: nothing is deleted with it; each draft is moved or frozen first. */}
+            {deleteTarget && deleteLetters.length > 0 && (
+                <DeleteCvDialog
+                    cvName={deleteTarget.name}
+                    letters={deleteLetters}
+                    otherCvs={(resumes ?? []).filter((resume) => resume.id !== deleteTarget.id).map((resume) => ({ id: resume.id!, label: resume.meta.title || resume.basics.name || t("dashboard.untitled") }))}
+                    busy={deleteBusy}
+                    error={deleteFailed}
+                    onConfirm={(decisions) => void confirmDeleteWithLetters(decisions)}
+                    onCancel={cancelDelete}
+                />
+            )}
+
+            {copyOffer && (
+                <CopyLettersDialog count={copyOffer.count} busy={copyBusy} error={copyFailed} onCopy={() => void finishCopyOffer(true)} onSkip={() => void finishCopyOffer(false)} />
+            )}
 
             {/* Template delete confirmation */}
             <ConfirmModal

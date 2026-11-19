@@ -75,6 +75,20 @@ describe("published English example", () => {
         expect(screen.queryByTestId("role-example-draft-notice")).not.toBeInTheDocument();
     });
 
+    it("links the related article first and then each extra article that is published", async () => {
+        posts.push(post({ slug: "cv-vs-resume", article: "cv-vs-resume", title: "CV vs Resume" }));
+        try {
+            render(await RoleExamplePage({ locale: "en", slug: "nurse" }));
+            const links = screen.getAllByRole("link", { name: /Read next/ });
+            expect(links.map((link) => link.getAttribute("href"))).toEqual([
+                "/blog/cefr-language-levels-on-your-cv",
+                "/blog/cv-vs-resume",
+            ]);
+        } finally {
+            posts.pop();
+        }
+    });
+
     it("leaves no ad slot and no gap while ads are off", async () => {
         render(await RoleExamplePage({ locale: "en", slug: "nurse" }));
         expect(screen.queryByLabelText(translate("en", "ad.advertisement"))).not.toBeInTheDocument();

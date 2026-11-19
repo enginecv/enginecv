@@ -50,6 +50,7 @@ Current product capabilities include:
 - encrypted JSON backup/import using a user-supplied key
 - local persistence with IndexedDB
 - version history with preview, restore, and duplicate-as-new-resume flows
+- cover letters linked to a resume: the sender block and design follow the CV, a letter can be marked as sent to freeze it, and it exports to `PDF`, `DOCX`, and plain text (with a German DIN 5008 layout)
 - multilingual UI support
 
 ## Core Principles

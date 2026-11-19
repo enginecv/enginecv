@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import { AlertTriangle, AlignLeft, Check, Coffee, Copy, Download, FileCode, FileJson, FileText, FileType, Github, Globe, Loader2, Lock, Sigma, UserRound, X, type LucideIcon } from "lucide-react";
+import { AlignLeft, Check, Copy, FileCode, FileJson, FileText, FileType, Github, Globe, Loader2, Lock, Sigma, UserRound, Download, type LucideIcon } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
 import { ConversionLossSummary } from "@/components/import/ConversionLossSummary";
 import { resumeToJsonResume } from "@/lib/json-resume/from-resume";
@@ -22,8 +22,8 @@ import { PasswordField } from "@/components/ui/PasswordField";
 import { recordSuccessfulExport, useExportSupportPromptStore } from "@/lib/preferences/export-support";
 import { markPrintTipSeen } from "@/lib/preferences/onboarding";
 import { PrintPathTip } from "@/components/editor/PrintPathTip";
-import { getKofiUrl } from "@/lib/support";
 import { useDialogFocus } from "@/hooks/useDialogFocus";
+import { ExportDialogFrame, ExportNotice, ExportToggleRow } from "@/components/editor/export-dialog-parts";
 import { GithubReadmeDialog } from "@/components/editor/GithubReadmeDialog";
 import dynamic from "next/dynamic";
 
@@ -60,9 +60,6 @@ function isCopyableFormat(format: ResumeExportFormat): format is CopyableFormat 
     return (COPYABLE_FORMATS as readonly ResumeExportFormat[]).includes(format);
 }
 
-/** Columns in the format picker; keep in sync with the grid-cols class below. */
-const FORMAT_GRID_COLUMNS = 4;
-
 const DEFAULT_EXPORT_PREFS: ExportPrefs = {
     format: "pdf",
     pdfIncludeSidecar: false,
@@ -80,7 +77,7 @@ export const EXPORT_FORMAT_ICONS: Record<ResumeExportFormat, LucideIcon> = {
     html: Globe,
 };
 
-function isMobilePdfExportEnvironment() {
+export function isMobilePdfExportEnvironment() {
     if (typeof window === "undefined" || typeof navigator === "undefined") return false;
 
     const navigatorWithUaData = navigator as Navigator & { userAgentData?: { mobile?: boolean } };
@@ -322,51 +319,11 @@ export function ExportDialog({ open, onClose, resume, paperSize, onNeedPreview }
 
     const selectedFormatConfig = formatCards.find((format) => format.id === selectedFormat) ?? formatCards[0];
 
-    /** Compact switch row — the dialog's only affordance for a boolean option. */
-    const renderToggleRow = (
-        checked: boolean,
-        onToggle: () => void,
-        Icon: typeof Lock,
-        title: string,
-        description: string,
-        testId?: string,
-    ) => (
-        <button
-            type="button"
-            onClick={onToggle}
-            role="switch"
-            aria-checked={checked}
-            data-testid={testId}
-            className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left transition-colors hover:bg-surface-2"
-        >
-            <span
-                className={`relative h-4 w-7 shrink-0 rounded-full transition-colors ${checked ? "bg-accent" : "bg-edge"}`}
-            >
-                <span
-                    className={`absolute top-0.5 h-3 w-3 rounded-full bg-surface-1 transition-all ${checked ? "left-3.5" : "left-0.5"}`}
-                />
-            </span>
-            <Icon className={`h-3.5 w-3.5 shrink-0 ${checked ? "text-accent" : "text-faint"}`} />
-            <span className="min-w-0">
-                <span className="block text-sm text-strong">{title}</span>
-                <span className="block text-xs leading-relaxed text-faint">{description}</span>
-            </span>
-        </button>
+    const renderToggleRow = (checked: boolean, onToggle: () => void, Icon: LucideIcon, title: string, description: string, testId?: string) => (
+        <ExportToggleRow checked={checked} onToggle={onToggle} icon={Icon} title={title} description={description} testId={testId} />
     );
 
-    /** Inline amber notice, used for the encryption and mobile-PDF warnings. */
-    const renderNotice = (title: string, body: string, testId?: string) => (
-        <div
-            data-testid={testId}
-            className="flex items-start gap-2.5 rounded-lg border border-yellow-500/20 bg-yellow-500/5 px-3 py-2.5"
-        >
-            <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-warning" />
-            <div className="min-w-0">
-                <p className="text-xs font-medium text-strong">{title}</p>
-                <p className="mt-0.5 text-xs leading-relaxed text-mid">{body}</p>
-            </div>
-        </div>
-    );
+    const renderNotice = (title: string, body: string, testId?: string) => <ExportNotice title={title} body={body} testId={testId} />;
 
     const renderEncryptionOptions = (title: string, description: string) => (
         <>
@@ -500,69 +457,20 @@ export function ExportDialog({ open, onClose, resume, paperSize, onNeedPreview }
         (selectedFormat === "pdf" && mobilePdfUnsupported) ||
         (shouldEncryptPayload(selectedFormat) && (!encryptionKey || !confirmEncryptionKey));
 
-    return createPortal(
-        <div className="fixed inset-0 z-[200] flex items-start justify-center p-4 pt-[10vh]">
-            <div className="absolute inset-0 bg-surface-2/80 backdrop-blur-md animate-in fade-in duration-200" onClick={onClose} />
-
-            <div
-                ref={dialogRef}
-                role="dialog"
-                aria-modal="true"
-                aria-labelledby="export-dialog-title"
-                className="relative flex max-h-[80vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-edge bg-surface-1 shadow-2xl animate-in zoom-in-95 fade-in slide-in-from-top-2 duration-200"
-            >
-                <div className="shrink-0 px-5 pt-5">
-                    <button
-                        type="button"
-                        onClick={onClose}
-                        aria-label={t("dashboard.cancel")}
-                        className="absolute right-4 top-4 text-faint transition-colors hover:text-strong"
-                    >
-                        <X className="h-4 w-4" />
-                    </button>
-
-                    <h2 id="export-dialog-title" className="text-base font-semibold tracking-tight text-strong">
-                        {t("export.title")}
-                    </h2>
-                    <p className="mt-1 text-xs leading-relaxed text-mid">{t("export.subtitle")}</p>
-
-                    <div className="mt-4 grid grid-cols-4 gap-1 rounded-xl border border-edge bg-surface-2 p-1">
-                        {formatCards.map((format, index) => {
-                            const active = selectedFormat === format.id;
-                            // The last card fills the cells left in its row (7 cards: 4 + 3, so it spans 2).
-                            const leftover = formatCards.length % FORMAT_GRID_COLUMNS;
-                            const span = index === formatCards.length - 1 && leftover !== 0 ? FORMAT_GRID_COLUMNS - leftover + 1 : 1;
-                            return (
-                                <button
-                                    key={format.id}
-                                    type="button"
-                                    style={span > 1 ? { gridColumn: `span ${span}` } : undefined}
-                                    onClick={() => selectFormat(format.id)}
-                                    data-testid={`export-format-${format.id}`}
-                                    disabled={exporting}
-                                    aria-pressed={active}
-                                    className={`flex flex-col items-center gap-1 rounded-lg px-2 py-2 text-[11px] font-medium transition-colors disabled:cursor-wait disabled:opacity-50 ${
-                                        active
-                                            ? "bg-surface-4 text-strong"
-                                            : "text-faint hover:bg-surface-4/50 hover:text-bright"
-                                    }`}
-                                >
-                                    <format.icon className={`h-4 w-4 ${active ? "text-accent" : ""}`} />
-                                    <span className="flex items-center gap-1">
-                                        {format.label}
-                                        {format.lossy && (
-                                            <span role="img" aria-label={t("conversion.marker")} title={t("conversion.marker")} data-testid={`export-format-lossy-${format.id}`}>
-                                                <AlertTriangle className="h-3 w-3 text-accent" aria-hidden="true" />
-                                            </span>
-                                        )}
-                                    </span>
-                                </button>
-                            );
-                        })}
-                    </div>
-                </div>
-
-                <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+    return (
+        <ExportDialogFrame
+            dialogRef={dialogRef}
+            onClose={onClose}
+            formatCards={formatCards}
+            selectedFormat={selectedFormat}
+            onSelectFormat={selectFormat}
+            exporting={exporting}
+            exportingFormat={exportingFormat}
+            confirmLabel={selectedFormatConfig.label}
+            confirmDisabled={exportDisabled}
+            onConfirm={() => handleExport(selectedFormat)}
+            top={
+                <>
                     <button
                         type="button"
                         onClick={() => setReadmeOpen(true)}
@@ -578,83 +486,44 @@ export function ExportDialog({ open, onClose, resume, paperSize, onNeedPreview }
                     </button>
 
                     <CopyForAiPanel resume={resume} />
+                </>
+            }
+        >
+            <p className="px-2 text-sm text-strong">{selectedFormatConfig.description}</p>
 
-                    <p className="px-2 text-sm text-strong">{selectedFormatConfig.description}</p>
-
-                    <div className="mt-3">
-                        {selectedFormat === "json" ? renderJsonOptions()
-                            : selectedFormat === "jsonresume" ? renderJsonResumeOptions()
-                            : selectedFormat === "pdf" ? renderPdfOptions()
-                            : selectedFormat === "docx" ? renderDocxOptions()
-                            : isCopyableFormat(selectedFormat) ? renderCopyOptions(selectedFormat)
-                            : renderDefaultOptions()}
-                    </div>
-
-                    {selectedFormat === "tex" && (
-                        <div className="mt-3">
-                            {renderNotice(t("export.latexNoteTitle"), t("export.latexNote"), "export-latex-note")}
-                        </div>
-                    )}
-
-                    {exportNotices.includes("docxPhotoSkipped") && (
-                        <div className="mt-3">
-                            {renderNotice(t("export.docxPhotoSkippedTitle"), t("export.docxPhotoSkipped"), "export-docx-photo-skipped")}
-                        </div>
-                    )}
-
-                    {exportNotices.includes("htmlFontFallback") && (
-                        <div className="mt-3">
-                            {renderNotice(t("export.htmlFontFallbackTitle"), t("export.htmlFontFallback", { fonts: fallbackFonts.join(", ") }), "export-html-font-fallback")}
-                        </div>
-                    )}
-
-                    {exportError && (
-                        <p className="mt-3 rounded-lg border border-red-500/20 bg-red-500/5 px-3 py-2 text-xs text-danger-soft">
-                            {exportError}
-                        </p>
-                    )}
-
-                    <div className="mt-5 flex justify-center">
-                    </div>
-                </div>
-
-                <div className="flex shrink-0 flex-col gap-3 border-t border-edge px-5 py-3 sm:flex-row sm:items-center sm:justify-between">
-                    <a
-                        href={getKofiUrl("export-dialog")}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="inline-flex h-8 items-center gap-2 self-start rounded-lg px-2.5 text-xs text-faint transition-colors hover:bg-surface-4 hover:text-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
-                    >
-                        <Coffee className="h-3.5 w-3.5" aria-hidden="true" />
-                        {t("landing.support.cta")}
-                    </a>
-                    <div className="flex items-center justify-end gap-2">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="flex h-8 items-center rounded-lg px-2.5 text-xs text-mid transition-colors hover:bg-surface-4 hover:text-strong"
-                        >
-                            {t("dashboard.cancel")}
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => handleExport(selectedFormat)}
-                            disabled={exportDisabled}
-                            data-testid="export-confirm-button"
-                            className="flex h-8 items-center gap-2 rounded-lg border border-accent/30 bg-accent/10 px-2.5 text-xs font-medium text-accent transition-colors hover:border-accent/50 hover:bg-accent/15 disabled:cursor-wait disabled:opacity-40"
-                        >
-                            {exporting && exportingFormat === selectedFormat ? (
-                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                            ) : (
-                                <Download className="h-3.5 w-3.5" />
-                            )}
-                            {t("export.exportFormat", { format: selectedFormatConfig.label })}
-                        </button>
-                    </div>
-                </div>
+            <div className="mt-3">
+                {selectedFormat === "json" ? renderJsonOptions()
+                    : selectedFormat === "jsonresume" ? renderJsonResumeOptions()
+                    : selectedFormat === "pdf" ? renderPdfOptions()
+                    : selectedFormat === "docx" ? renderDocxOptions()
+                    : isCopyableFormat(selectedFormat) ? renderCopyOptions(selectedFormat)
+                    : renderDefaultOptions()}
             </div>
-        </div>,
-        document.body
+
+            {selectedFormat === "tex" && (
+                <div className="mt-3">
+                    {renderNotice(t("export.latexNoteTitle"), t("export.latexNote"), "export-latex-note")}
+                </div>
+            )}
+
+            {exportNotices.includes("docxPhotoSkipped") && (
+                <div className="mt-3">
+                    {renderNotice(t("export.docxPhotoSkippedTitle"), t("export.docxPhotoSkipped"), "export-docx-photo-skipped")}
+                </div>
+            )}
+
+            {exportNotices.includes("htmlFontFallback") && (
+                <div className="mt-3">
+                    {renderNotice(t("export.htmlFontFallbackTitle"), t("export.htmlFontFallback", { fonts: fallbackFonts.join(", ") }), "export-html-font-fallback")}
+                </div>
+            )}
+
+            {exportError && (
+                <p className="mt-3 rounded-lg border border-red-500/20 bg-red-500/5 px-3 py-2 text-xs text-danger-soft">
+                    {exportError}
+                </p>
+            )}
+        </ExportDialogFrame>
     );
 }
 

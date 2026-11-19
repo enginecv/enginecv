@@ -4,6 +4,7 @@ import { ProductStory } from "@/components/landing/ProductStory";
 import { ExportFormatsSection } from "@/components/landing/ExportFormatsSection";
 import { FreeToolsSection } from "@/components/landing/FreeToolsSection";
 import { JsonResumeSection } from "@/components/landing/JsonResumeSection";
+import { PopularGuidesSection } from "@/components/landing/PopularGuidesSection";
 import { LinkedFileSection } from "@/components/landing/LinkedFileSection";
 import { PrivacySection } from "@/components/landing/PrivacySection";
 import { OpenSourceSection } from "@/components/landing/OpenSourceSection";
@@ -32,6 +33,7 @@ export function LandingPage({ locale }: { locale: Locale }) {
           <LinkedFileSection />
           <JsonResumeSection />
           <FreeToolsSection />
+          <PopularGuidesSection locale={locale} />
           <PrivacySection />
           <OpenSourceSection />
           <FAQ />

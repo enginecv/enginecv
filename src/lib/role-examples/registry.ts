@@ -56,6 +56,8 @@ export interface RoleExample {
     template: GallerySlug;
     /** Blog `article` id of a related post (must have a published version). */
     relatedArticle: string;
+    /** Further blog `article` ids to link after the related one; each must have a published version. */
+    moreArticles?: readonly string[];
     versions: Partial<Record<RoleExampleLocale, RoleExampleVersion>>;
     /** CV content; loaded on demand so no role ships with the dashboard bundle. */
     loadContent: () => Promise<ExampleContent>;
@@ -68,6 +70,7 @@ export const ROLE_EXAMPLES: readonly RoleExample[] = [
         field: "tech",
         template: "developer",
         relatedArticle: "best-cv-formats-for-ats-systems",
+        moreArticles: ["cv-vs-resume"],
         versions: {
             en: {
                 slug: "software-developer",
@@ -102,6 +105,7 @@ export const ROLE_EXAMPLES: readonly RoleExample[] = [
         field: "care",
         template: "lebenslauf",
         relatedArticle: "cefr-language-levels",
+        moreArticles: ["cv-vs-resume"],
         versions: {
             en: {
                 slug: "nurse",
@@ -136,6 +140,7 @@ export const ROLE_EXAMPLES: readonly RoleExample[] = [
         field: "tech",
         template: "modern",
         relatedArticle: "how-to-write-a-resume-in-2026",
+        moreArticles: ["resume-with-no-experience"],
         versions: {
             en: {
                 slug: "frontend-developer",
@@ -220,6 +225,7 @@ export const ROLE_EXAMPLES: readonly RoleExample[] = [
         field: "tech",
         template: "sidebar",
         relatedArticle: "how-to-write-a-resume-in-2026",
+        moreArticles: ["cv-vs-resume"],
         versions: {
             en: {
                 slug: "data-analyst",
@@ -248,6 +254,7 @@ export const ROLE_EXAMPLES: readonly RoleExample[] = [
         field: "tech",
         template: "timeline",
         relatedArticle: "common-resume-mistakes",
+        moreArticles: ["resume-with-no-experience"],
         versions: {
             en: {
                 slug: "qa-tester",
@@ -276,6 +283,7 @@ export const ROLE_EXAMPLES: readonly RoleExample[] = [
         field: "tech",
         template: "ats-plain",
         relatedArticle: "cefr-language-levels",
+        moreArticles: ["resume-with-no-experience"],
         versions: {
             en: {
                 slug: "it-support",

@@ -3,15 +3,10 @@
 import { templateDisplayMeta } from "@/lib/templates/template-display";
 import { useTranslation } from "@/lib/i18n";
 import Link from "next/link";
-import { useMemo, useState, type CSSProperties } from "react";
+import { useState } from "react";
+import { isBuiltinTemplateId } from "@/lib/templates/enginecv-templates";
+import { LiveTemplatePreview } from "./LiveTemplatePreview";
 import type { TemplateDocument } from "@/lib/templates/template-schema";
-
-const SAMPLE_SECTIONS = [
-    { label: "Experience", lines: [100, 86, 64, 72] },
-    { label: "Education", lines: [100, 78] },
-    { label: "Projects", lines: [92, 74, 58] },
-    { label: "Skills", lines: [100, 72, 56] },
-];
 
 // Widths of the WebP variants written by scripts/generate-template-previews.ts.
 const TEMPLATE_PREVIEW_WIDTHS = [480, 960] as const;
@@ -111,8 +106,6 @@ function TemplatePreviewBody({
     const isHero = variant === "hero";
     const s = template.settings;
     const bg = s.colors.background || "#ffffff";
-    const text = s.colors.text || "#111827";
-    const bodyFont = s.typography.fontFamily || "Inter";
     const [snapshotFailed, setSnapshotFailed] = useState(false);
 
     const wrapperClass = cx(
@@ -130,7 +123,9 @@ function TemplatePreviewBody({
             ? "(min-width: 640px) 250px, 220px"
             : "280px";
 
-    if (!snapshotFailed) {
+    // Built-in templates ship a pre-rendered image. Templates the person made have none,
+    // so they are drawn live, the same way the editor draws them.
+    if (isBuiltinTemplateId(template.id) && !snapshotFailed) {
         return (
             <div className={wrapperClass} style={{ backgroundColor: bg }}>
                 {/* Pre-sized WebP with the full PNG as fallback. The previews skip the
@@ -158,170 +153,8 @@ function TemplatePreviewBody({
     }
 
     return (
-        <SkeletonBody template={template} variant={variant} wrapperClass={wrapperClass} bg={bg} text={text} bodyFont={bodyFont} />
-    );
-}
-
-function SkeletonBody({
-    template,
-    variant,
-    wrapperClass,
-    bg,
-    text,
-    bodyFont,
-}: {
-    template: TemplateDocument;
-    variant: "hero" | "catalog" | "compact";
-    wrapperClass: string;
-    bg: string;
-    text: string;
-    bodyFont: string;
-}) {
-    const s = template.settings;
-    const accent = s.colors.accent || "#ffaa8d";
-    const headingFont = s.headings.fontFamily || bodyFont;
-    const headerFont = s.header.fontFamily || bodyFont;
-    const headerTextTransform = s.header.textTransform;
-    const headingsCap = s.headings.capitalization;
-    const headingBorder = s.headings.border;
-    const isTwoCol = s.layout.columns === "two";
-    const isHero = variant === "hero";
-
-    const headingBorderStyle = useMemo<CSSProperties>(() => {
-        const style: CSSProperties = {};
-        const color = s.headings.borderColor || headingBorder.color || accent;
-        const width = headingBorder.width || 1;
-        const css = `${width}px ${headingBorder.style} ${color}`;
-        if (headingBorder.top) style.borderTop = css;
-        if (headingBorder.bottom) style.borderBottom = css;
-        if (headingBorder.left) style.borderLeft = css;
-        if (headingBorder.right) style.borderRight = css;
-        return style;
-    }, [accent, headingBorder, s.headings.borderColor]);
-
-    return (
-        <div
-            className={wrapperClass}
-            style={{ backgroundColor: bg, color: text, fontFamily: bodyFont }}
-        >
-            <div className={cx("flex h-full flex-col", isHero ? "p-5 sm:p-6" : "p-4")}>
-                <div className={cx(isHero ? "mb-5" : "mb-3")}>
-                    <div
-                        style={{
-                            fontFamily: headerFont,
-                            fontSize: isHero ? 21 : 14,
-                            fontWeight: Number(s.header.fontWeight) || 700,
-                            fontStyle: s.header.fontStyle,
-                            textTransform: headerTextTransform === "none" ? undefined : (headerTextTransform as CSSProperties["textTransform"]),
-                            lineHeight: 1.05,
-                        }}
-                    >
-                        John Doe
-                    </div>
-                    <div style={{ fontSize: isHero ? 10 : 7, opacity: 0.58, marginTop: isHero ? 5 : 2 }}>
-                        Senior Product Designer
-                    </div>
-                </div>
-
-                <div className={isTwoCol ? "flex min-h-0 flex-1 gap-3" : "min-h-0 flex-1 space-y-3"}>
-                    {isTwoCol && (
-                        <div
-                            className={cx("space-y-3", isHero ? "p-3" : "p-2")}
-                            style={{
-                                width: `${s.layout.leftColumnWidth}%`,
-                                backgroundColor: `${accent}12`,
-                                borderRadius: 6,
-                            }}
-                        >
-                            {SAMPLE_SECTIONS.slice(0, 2).map((section) => (
-                                <SectionBlock
-                                    key={section.label}
-                                    label={section.label}
-                                    lines={section.lines}
-                                    accent={accent}
-                                    text={text}
-                                    headingFont={headingFont}
-                                    headingsCap={headingsCap}
-                                    headingBorderStyle={headingBorderStyle}
-                                    letterSpacing={s.headings.letterSpacing}
-                                    isHero={isHero}
-                                />
-                            ))}
-                        </div>
-                    )}
-                    <div className={cx("min-w-0 flex-1", isHero ? "space-y-4" : "space-y-3")}>
-                        {(isTwoCol ? SAMPLE_SECTIONS.slice(2) : SAMPLE_SECTIONS).map((section) => (
-                            <SectionBlock
-                                key={section.label}
-                                label={section.label}
-                                lines={section.lines}
-                                accent={accent}
-                                text={text}
-                                headingFont={headingFont}
-                                headingsCap={headingsCap}
-                                headingBorderStyle={headingBorderStyle}
-                                letterSpacing={s.headings.letterSpacing}
-                                isHero={isHero}
-                            />
-                        ))}
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-}
-
-function SectionBlock({
-    label,
-    lines,
-    accent,
-    text,
-    headingFont,
-    headingsCap,
-    headingBorderStyle,
-    letterSpacing,
-    isHero,
-}: {
-    label: string;
-    lines: number[];
-    accent: string;
-    text: string;
-    headingFont: string;
-    headingsCap: "uppercase" | "capitalize";
-    headingBorderStyle: CSSProperties;
-    letterSpacing: number;
-    isHero: boolean;
-}) {
-    return (
-        <div>
-            <div
-                style={{
-                    fontFamily: headingFont,
-                    fontSize: isHero ? 10 : 8,
-                    fontWeight: 700,
-                    color: accent,
-                    textTransform: headingsCap === "uppercase" ? "uppercase" : "capitalize",
-                    letterSpacing: `${Math.max(0, letterSpacing) * 0.5}px`,
-                    paddingBottom: isHero ? 3 : 2,
-                    marginBottom: isHero ? 7 : 4,
-                    ...headingBorderStyle,
-                }}
-            >
-                {label}
-            </div>
-            <div className={cx(isHero ? "space-y-1.5" : "space-y-1")}>
-                {lines.map((width, i) => (
-                    <div
-                        key={i}
-                        style={{
-                            height: isHero ? 4 : 3,
-                            width: `${width}%`,
-                            borderRadius: 999,
-                            backgroundColor: `${text}20`,
-                        }}
-                    />
-                ))}
-            </div>
+        <div className={wrapperClass} style={{ backgroundColor: bg }} data-testid="template-live-preview">
+            <LiveTemplatePreview template={template} />
         </div>
     );
 }
