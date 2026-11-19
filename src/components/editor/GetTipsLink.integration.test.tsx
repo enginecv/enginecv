@@ -19,7 +19,7 @@ describe("GetTipsLink", () => {
 
         render(<GetTipsLink sectionId={published!.sectionId!} className="bg-surface-4" />);
 
-        const link = screen.getByRole("link", { name: "Get Tips" });
+        const link = screen.getByRole("link", { name: /Get Tips/ });
         expect(link).toHaveAttribute("href", `/guides/${published!.slug}`);
         expect(link).toHaveAttribute("target", "_blank");
         expect(link.getAttribute("rel")).toContain("noopener");
