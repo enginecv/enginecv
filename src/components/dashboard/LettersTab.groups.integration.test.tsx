@@ -67,23 +67,56 @@ describe("LettersTab groups and actions", () => {
         expect(push).toHaveBeenCalledWith("/editor/cv-a");
     });
 
-    it("folds a long group to two rows behind a Show all button, unless searching", async () => {
+    it("shows two rows of a long group, and opens the whole group on its own pages behind Show all", async () => {
         await db.resumes.put(makeCv({ id: "cv-a", title: "Design CV" }));
-        await db.coverLetters.bulkPut(Array.from({ length: 8 }, (_, index) => makeLetter({ id: `m${index}`, cvId: "cv-a", company: `Firm ${index}`, updatedAt: index })));
+        await db.coverLetters.bulkPut(Array.from({ length: 20 }, (_, index) => makeLetter({ id: `m${index}`, cvId: "cv-a", company: `Firm ${index}`, updatedAt: index })));
         render(<LettersTab onCreateCv={vi.fn()} />);
         const group = await screen.findByTestId("letters-group-cv-a");
         expect(within(group).getAllByTestId("letter-card")).toHaveLength(6); // two rows of three
-        const toggle = within(group).getByTestId("letters-group-toggle");
-        expect(toggle).toHaveTextContent("Show all 8 cover letters for this CV");
-
-        fireEvent.click(toggle);
-        expect(within(group).getAllByTestId("letter-card")).toHaveLength(8);
         fireEvent.click(within(group).getByTestId("letters-group-toggle"));
-        expect(within(group).getAllByTestId("letter-card")).toHaveLength(6);
 
+        const open = await screen.findByTestId("letters-group-cv-a");
+        expect(screen.getByTestId("letters-filter")).toHaveTextContent("Design CV");
+        expect(within(open).getAllByTestId("letter-card")).toHaveLength(18); // one page, never all 20
+        expect(screen.queryByTestId("letters-groups-pager")).toBeNull();
+
+        fireEvent.click(screen.getByTestId("letters-focus-pager-next"));
+        expect(within(screen.getByTestId("letters-group-cv-a")).getAllByTestId("letter-card")).toHaveLength(2);
+
+        fireEvent.click(screen.getByTestId("letters-filter-clear"));
+        expect(within(await screen.findByTestId("letters-group-cv-a")).getAllByTestId("letter-card")).toHaveLength(6);
+    });
+
+    it("keeps the cap while searching, so a broad search cannot render hundreds of cards", async () => {
+        await db.resumes.put(makeCv({ id: "cv-a", title: "Design CV" }));
+        await db.coverLetters.bulkPut(Array.from({ length: 12 }, (_, index) => makeLetter({ id: `m${index}`, cvId: "cv-a", company: `Firm ${index}`, updatedAt: index })));
+        render(<LettersTab onCreateCv={vi.fn()} />);
+        await screen.findByTestId("letters-group-cv-a");
         fireEvent.change(screen.getByTestId("letters-search"), { target: { value: "Firm" } });
-        expect(within(screen.getByTestId("letters-group-cv-a")).getAllByTestId("letter-card")).toHaveLength(8); // search results are never hidden
-        expect(screen.queryByTestId("letters-group-toggle")).toBeNull();
+        expect(within(screen.getByTestId("letters-group-cv-a")).getAllByTestId("letter-card")).toHaveLength(6);
+        expect(screen.getByTestId("letters-group-toggle")).toHaveTextContent("Show all 12");
+    });
+
+    it("pages the CV groups, five at a time, drawing only that page's CV previews", async () => {
+        await db.resumes.bulkPut(Array.from({ length: 7 }, (_, index) => makeCv({ id: `cv-${index}`, title: `CV ${String(index).padStart(2, "0")}` })));
+        await db.coverLetters.bulkPut(Array.from({ length: 7 }, (_, index) => makeLetter({ id: `l${index}`, cvId: `cv-${index}`, company: `Co ${index}` })));
+        render(<LettersTab onCreateCv={vi.fn()} />);
+        await screen.findByTestId("letters-group-cv-0");
+        expect(screen.getAllByTestId(/^letters-group-cv-/)).toHaveLength(5);
+        expect(screen.getAllByTestId("letter-group-thumb")).toHaveLength(5);
+        expect(screen.getByTestId("letters-groups-pager-status")).toHaveTextContent("1");
+
+        fireEvent.click(screen.getByTestId("letters-groups-pager-next"));
+        expect(await screen.findByTestId("letters-group-cv-5")).toBeInTheDocument();
+        expect(screen.getAllByTestId(/^letters-group-cv-/)).toHaveLength(2);
+        expect(screen.queryByTestId("letters-group-cv-0")).toBeNull();
+    });
+
+    it("links each CV preview to its letters with a link icon between them", async () => {
+        await seed();
+        render(<LettersTab onCreateCv={vi.fn()} />);
+        const design = await screen.findByTestId("letters-group-cv-a");
+        expect(within(design).getByTestId("letter-group-link")).toBeInTheDocument();
     });
 
     it("puts letters whose CV is gone in their own group instead of hiding them", async () => {

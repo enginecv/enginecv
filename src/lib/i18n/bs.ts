@@ -1985,6 +1985,7 @@ export const bs: Translations = {
   "form.height": "Visina",
   "datePicker.formatOrPresent": "{format} ili {present}",
   "datePicker.openCalendar": "Otvori kalendar",
+  "datePicker.today": "Danas",
   "datePicker.typeHint": "Unesite {format} ili odaberite iz kalendara.",
   "country.showInPreview": "Prikaži u pregledu",
   "country.flag": "Zastava",
