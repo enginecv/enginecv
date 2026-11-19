@@ -57,11 +57,14 @@ describe("LettersTab groups and actions", () => {
         expect(screen.queryByTestId("letters-filter")).toBeNull();
     });
 
-    it("shows a small preview of the CV in each group header", async () => {
+    it("shows a preview of the CV in each group header that opens the CV", async () => {
         await seed();
         render(<LettersTab onCreateCv={vi.fn()} />);
         const design = await screen.findByTestId("letters-group-cv-a");
-        expect(within(design).getByTestId("letter-group-thumb")).toBeInTheDocument();
+        const thumb = within(design).getByTestId("letter-group-thumb");
+        expect(thumb).toHaveAccessibleName(/Design CV/);
+        fireEvent.click(thumb);
+        expect(push).toHaveBeenCalledWith("/editor/cv-a");
     });
 
     it("puts letters whose CV is gone in their own group instead of hiding them", async () => {
