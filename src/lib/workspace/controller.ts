@@ -14,6 +14,7 @@ import { safeStem } from "./names";
 import { parseCv } from "@/lib/letters/store";
 import type { ChangeSourceKind, DocState } from "./types";
 import { listLinkedCvs, moveLinkedCvs } from "./migrate-links";
+import { BROWSER_TOOLS_EVENT, syncBrowserTools } from "./browser-tools";
 import { excludeDocument, includeDocument, mirrorDocuments, retireDocument, type IncludeChoice, type RetireChoice } from "./lifecycle";
 import { clearWorkspace, getWorkspace, setDocState, updateWorkspace } from "./workspace-store";
 
@@ -180,6 +181,7 @@ function startLeader() {
 
 /** Called once when the app starts in a browser: restores a connected workspace, or says why there is none. */
 export async function initWorkspace(): Promise<void> {
+    startBrowserTools();
     if (!isWorkspaceSupported()) {
         set({ ...initial, phase: "unsupported" });
         return;
@@ -408,4 +410,16 @@ export async function moveLinkedIntoWorkspace(resumeIds?: readonly string[]): Pr
     runtime?.refreshIndexSoon();
     await refreshCounts();
     return { moved: result.moved.length, failed: result.failed.length };
+}
+
+let browserToolsListening = false;
+
+/** Registers the optional in-browser assistant tools when supported and turned on (see browser-tools.ts). Harmless anywhere else. */
+export function startBrowserTools(): void {
+    const sync = () => void syncBrowserTools({ getAdapter: () => adapter });
+    sync();
+    if (!browserToolsListening && typeof window !== "undefined") {
+        browserToolsListening = true;
+        window.addEventListener(BROWSER_TOOLS_EVENT, sync);
+    }
 }

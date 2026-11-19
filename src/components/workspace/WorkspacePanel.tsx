@@ -8,6 +8,7 @@ import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { useDialogFocus } from "@/hooks/useDialogFocus";
 import { useTranslation } from "@/lib/i18n";
 import { analyzeFolderHandle, applyHeldChange, chooseDuplicate, connectFolder, disconnectWorkspace, ignoreFile, keepAppVersion, recreateDocumentFile, relinkDocumentTo, moveLinkedIntoWorkspace, resumePermission, setHideContact, setPaused, useWorkspaceStore } from "@/lib/workspace/controller";
+import { isBrowserToolsEnabled, isBrowserToolsSupported, setBrowserToolsEnabled } from "@/lib/workspace/browser-tools";
 import { pickWorkspaceFolder } from "@/lib/workspace/directory-adapter";
 import type { PlanItem } from "@/lib/workspace/first-sync";
 import type { SetupAnalysis } from "@/lib/workspace/setup";
@@ -34,6 +35,9 @@ export function WorkspacePanel({ onClose, initialActivityDocId }: { onClose: () 
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [confirmDisconnect, setConfirmDisconnect] = useState(false);
+    // Experimental: only offered where the browser has the assistant API at all.
+    const toolsSupported = typeof window !== "undefined" && isBrowserToolsSupported();
+    const [toolsOn, setToolsOn] = useState(() => isBrowserToolsEnabled());
     const [reviewing, setReviewing] = useState<string | null>(null);
     const [showConflicts, setShowConflicts] = useState(false);
     const rows = useLiveQuery(() => db.workspaceDocs.toArray(), [], []);
@@ -191,6 +195,16 @@ export function WorkspacePanel({ onClose, initialActivityDocId }: { onClose: () 
                         </div>
                     )}
                 </div>
+
+                {toolsSupported && (
+                    <label className="mt-4 flex cursor-pointer items-start gap-3 rounded-xl border border-edge bg-surface-1 p-3" data-testid="workspace-browser-tools">
+                        <input type="checkbox" checked={toolsOn} onChange={(event) => { setToolsOn(event.target.checked); setBrowserToolsEnabled(event.target.checked); }} data-testid="workspace-browser-tools-toggle" className="mt-1" />
+                        <span className="min-w-0">
+                            <span className="block text-sm font-medium text-strong">{t("workspace.tools.label")} <span className="rounded bg-accent/15 px-1.5 py-0.5 text-[10px] font-bold uppercase text-accent">{t("workspace.tools.experimental")}</span></span>
+                            <span className="block text-xs text-mid">{t("workspace.tools.hint")}</span>
+                        </span>
+                    </label>
+                )}
 
                 <div className="mt-5 flex justify-end">
                     <button type="button" onClick={onClose} data-testid="workspace-close" className="rounded-xl border border-edge bg-surface-4 px-4 py-2 text-sm font-bold text-mid hover:border-faint hover:text-strong">{t("common.close")}</button>

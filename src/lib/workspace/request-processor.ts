@@ -73,6 +73,11 @@ async function answer(deps: ProcessorDeps, request: { id: string; docId: string 
     }
 }
 
+/** Runs one valid request: finds the document, makes the export, writes it into `exports/` and answers. Exported so in-browser tools use the same path. */
+export async function handleExportRequest(deps: ProcessorDeps, request: ExportRequest, written?: Set<string>): Promise<void> {
+    return handle(deps, request, written ?? (await appWrittenExports(deps.adapter)));
+}
+
 async function handle(deps: ProcessorDeps, request: ExportRequest, written: Set<string>): Promise<void> {
     const rows = await listDocRows();
     const row = resolveTarget(request.target, rows);

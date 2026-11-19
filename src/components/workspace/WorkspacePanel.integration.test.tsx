@@ -192,4 +192,29 @@ describe("WorkspacePanel", () => {
             expect(await folder.readExternal("cvs/Master CV.cv.json")).not.toBeNull();
         });
     });
+
+    describe("assistant tools in the browser (experimental)", () => {
+        afterEach(() => {
+            localStorage.removeItem("enginecv.browserTools");
+            delete (navigator as unknown as { modelContext?: unknown }).modelContext;
+        });
+
+        it("shows nothing where the browser has no such API", async () => {
+            await mount();
+            await screen.findByTestId("workspace-choose");
+            expect(screen.queryByTestId("workspace-browser-tools")).toBeNull();
+        });
+
+        it("offers an off-by-default switch where it is supported, and remembers it", async () => {
+            (navigator as unknown as { modelContext: unknown }).modelContext = { registerTool: () => undefined, unregisterTool: () => undefined };
+            await mount();
+            const box = await screen.findByTestId("workspace-browser-tools-toggle");
+            expect(box).not.toBeChecked();
+            expect(screen.getByTestId("workspace-browser-tools")).toHaveTextContent(/Experimental/);
+            fireEvent.click(box);
+            expect(localStorage.getItem("enginecv.browserTools")).toBe("1");
+            fireEvent.click(box);
+            expect(localStorage.getItem("enginecv.browserTools")).toBeNull();
+        });
+    });
 });

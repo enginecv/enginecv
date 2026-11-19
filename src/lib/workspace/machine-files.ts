@@ -13,7 +13,7 @@ import {
 } from "./agent-files";
 import { readAppDocuments } from "./apply-stored";
 import type { DirectoryAdapter } from "./directory-adapter";
-import { buildIndex, indexText, type IndexDocState } from "./index-file";
+import { buildIndex, indexText, type IndexDocState, type WorkspaceIndex } from "./index-file";
 import { cvTitle } from "./titles";
 import { getWorkspace, listDocRows } from "./workspace-store";
 
@@ -73,8 +73,8 @@ export async function ensureMachineFiles(adapter: DirectoryAdapter, options: { h
     return result;
 }
 
-/** `.enginecv/index.json` from the documents as they are now. Returns true when the file changed. */
-export async function refreshIndex(adapter: DirectoryAdapter): Promise<boolean> {
+/** The index as an object: the same summary the file holds, for the file and for in-browser tools. */
+export async function computeIndex(): Promise<WorkspaceIndex> {
     const docs = await readAppDocuments();
     const rows = new Map((await listDocRows()).map((row) => [row.docId, row]));
     const states = new Map<string, IndexDocState>([...rows].map(([id, row]) => [id, { state: row.state, reason: row.reason }]));
@@ -90,7 +90,12 @@ export async function refreshIndex(adapter: DirectoryAdapter): Promise<boolean> 
 
     // The time is the newest document change, so an unchanged workspace gives an identical file and nothing is rewritten.
     const updated = Math.max(0, ...cvs.map((cv) => cv.updatedAt), ...letters.map((letter) => letter.updatedAt));
-    const text = indexText(buildIndex({ cvs, letters, states, now: updated }));
+    return buildIndex({ cvs, letters, states, now: updated });
+}
+
+/** `.enginecv/index.json` from the documents as they are now. Returns true when the file changed. */
+export async function refreshIndex(adapter: DirectoryAdapter): Promise<boolean> {
+    const text = indexText(await computeIndex());
     if ((await adapter.readText(MACHINE_DIR, "index.json")) === text) return false;
     await adapter.writeText(MACHINE_DIR, "index.json", text);
     return true;
