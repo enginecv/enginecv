@@ -766,6 +766,8 @@ export const fr: Translations = {
   "dashboard.letters.updated": "Mise à jour le {date}",
   "dashboard.letters.pickCv": "Pour quel CV est cette lettre ?",
   "dashboard.letters.pickCvHint": "La lettre reprend votre nom, vos coordonnées et le design de ce CV et le suit quand il change.",
+  "dashboard.letters.searchCvs": "Rechercher dans vos CV",
+  "dashboard.letters.noCvMatch": "Aucun CV ne correspond à \"{query}\".",
   "dashboard.letters.create": "Créer la lettre",
   "dashboard.letters.createError": "Impossible de créer la lettre. Réessayez.",
   "dashboard.letters.noCvs": "Une lettre de motivation a besoin d'un CV",

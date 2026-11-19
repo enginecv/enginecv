@@ -766,6 +766,8 @@ export const bs: Translations = {
   "dashboard.letters.updated": "Ažurirano {date}",
   "dashboard.letters.pickCv": "Za koji životopis je ovo pismo?",
   "dashboard.letters.pickCvHint": "Pismo preuzima vaše ime, kontakt podatke i dizajn iz ovog životopisa i prati ga kad se promijeni.",
+  "dashboard.letters.searchCvs": "Pretraži životopise",
+  "dashboard.letters.noCvMatch": "Nijedan životopis ne odgovara \"{query}\".",
   "dashboard.letters.create": "Napravi pismo",
   "dashboard.letters.createError": "Pismo nije moguće napraviti. Pokušajte ponovo.",
   "dashboard.letters.noCvs": "Pismo zahtijeva životopis",

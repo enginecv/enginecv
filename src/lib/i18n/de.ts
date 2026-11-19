@@ -766,6 +766,8 @@ export const de: Translations = {
   "dashboard.letters.updated": "Aktualisiert am {date}",
   "dashboard.letters.pickCv": "Für welchen Lebenslauf ist dieses Anschreiben?",
   "dashboard.letters.pickCvHint": "Das Anschreiben übernimmt Namen, Kontaktdaten und Design aus diesem Lebenslauf und folgt Änderungen.",
+  "dashboard.letters.searchCvs": "Lebensläufe durchsuchen",
+  "dashboard.letters.noCvMatch": "Kein Lebenslauf passt zu \"{query}\".",
   "dashboard.letters.create": "Anschreiben erstellen",
   "dashboard.letters.createError": "Das Anschreiben konnte nicht erstellt werden. Versuche es erneut.",
   "dashboard.letters.noCvs": "Ein Anschreiben braucht einen Lebenslauf",
