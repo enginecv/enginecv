@@ -35,7 +35,7 @@ import { CopyLettersDialog } from "@/components/letters/CopyLettersDialog";
 import { DeleteCvDialog } from "@/components/letters/DeleteCvDialog";
 import type { DeletionDecision } from "@/lib/letters/deletion";
 import type { LetterDocument } from "@/lib/letters/schema";
-import { copyLettersToCv, deleteCvWithLetters, importDataExport, listLettersForCv } from "@/lib/letters/store";
+import { copyLettersToCv, createLetterRecord, deleteCvWithLetters, importDataExport, listLettersForCv } from "@/lib/letters/store";
 import type { DataExportExtras } from "@/lib/import/staging/types";
 import { CreateModal } from "@/components/dashboard/CreateModal";
 import { StartPanel } from "@/components/dashboard/StartPanel";
@@ -369,6 +369,9 @@ function ResumeCard({
     onDelete,
     onDuplicate,
     onDownload,
+    letterCount = 0,
+    onShowLetters,
+    onWriteLetter,
 }: {
     resume: Resume;
     /** Resolves to a message when the save was refused (a linked file could not be renamed). */
@@ -378,6 +381,10 @@ function ResumeCard({
     onDelete: () => void;
     onDuplicate: () => void;
     onDownload: () => void;
+    /** Cover letters that follow this CV. */
+    letterCount?: number;
+    onShowLetters: () => void;
+    onWriteLetter: () => void;
 }) {
     const { t } = useTranslation();
     const [isEditingMeta, setIsEditingMeta] = useState(false);
@@ -486,9 +493,23 @@ function ResumeCard({
             openLabel={openLabel}
             onOpen={onOpen}
             linkedFileName={linkedFileName}
+            meta={letterCount > 0 ? (
+                <button
+                    type="button"
+                    onClick={onShowLetters}
+                    data-testid="dashboard-resume-letters"
+                    title={t("dashboard.letterChipLabel", { count: letterCount })}
+                    aria-label={t("dashboard.letterChipLabel", { count: letterCount })}
+                    className="inline-flex items-center gap-1 rounded-lg border border-edge bg-surface-1/50 px-2 py-0.5 text-[11px] font-medium text-mid transition-colors hover:border-accent/40 hover:text-accent"
+                >
+                    <Mail className="h-3 w-3" aria-hidden="true" />
+                    {letterCount}
+                </button>
+            ) : undefined}
             errorMessage={saveError}
             actions={[
                 { label: t("dashboard.editMeta"), icon: Edit2, onClick: startEditingMeta },
+                { label: t("dashboard.writeLetter"), icon: Mail, onClick: onWriteLetter },
                 { label: t("dashboard.duplicateResume"), icon: Copy, onClick: onDuplicate },
                 { label: t("templates.actions.download"), icon: Download, onClick: onDownload },
                 { label: t("dashboard.deleteResume"), icon: Trash2, onClick: onDelete, variant: "danger" },
@@ -1049,6 +1070,15 @@ function Dashboard() {
     }, [runStartLink]);
 
     const letterCount = useLiveQuery(() => db.coverLetters.count(), []);
+    const letterCountsByCv = useLiveQuery(async () => {
+        const counts: Record<string, number> = {};
+        await db.coverLetters.each((letter) => {
+            if (letter.cvId) counts[letter.cvId] = (counts[letter.cvId] ?? 0) + 1;
+        });
+        return counts;
+    }, []);
+    /** The CV whose letters the Letters tab is limited to, set from a CV card. */
+    const [letterCvFilter, setLetterCvFilter] = useState<string | null>(null);
     const userTemplates = useLiveQuery(async () => {
         const all = await db.templates.toArray();
         return all.sort((a, b) => b.updatedAt - a.updatedAt);
@@ -1162,11 +1192,27 @@ function Dashboard() {
 
     const setActiveDashboardTab = (tab: DashboardTab) => {
         setStartLinkActive(false);
+        if (tab !== "letters") setLetterCvFilter(null);
         updateClientPreferenceSection("dashboard", { activeTab: tab });
         const next = urlAfterDashboardTabSelect(window.location, tab);
         if (!next) return;
         setDismissedTabPin(new URLSearchParams(window.location.search).get("tab"));
         window.history.replaceState(window.history.state, "", next);
+    };
+
+    const showLettersFor = (cvId: string) => {
+        setLetterCvFilter(cvId);
+        setActiveDashboardTab("letters");
+    };
+
+    const handleWriteLetter = async (cvId: string) => {
+        try {
+            const letter = await createLetterRecord(cvId);
+            router.push(`/letters/${letter.id}`);
+        } catch (cause) {
+            console.error("[EngineCV] Could not create a cover letter.", cause);
+            setImportError(t("dashboard.letters.createError"));
+        }
     };
 
     const dashboardTabs: DashboardNavItem[] = [
@@ -1435,6 +1481,9 @@ function Dashboard() {
                                                     onOpen={() => router.push(`/editor/${resume.id}`)}
                                                     onDuplicate={() => handleDuplicate(resume)}
                                                     onDownload={() => handleDownloadResume(resume)}
+                                                    letterCount={letterCountsByCv?.[resume.id!] ?? 0}
+                                                    onShowLetters={() => showLettersFor(resume.id!)}
+                                                    onWriteLetter={() => void handleWriteLetter(resume.id!)}
                                                     onDelete={() =>
                                                         void requestDeleteResume({
                                                             id: resume.id!,
@@ -1472,6 +1521,8 @@ function Dashboard() {
                                 gridClass={GRID_DENSITY_CLASS[gridDensity]}
                                 density={gridDensity}
                                 onDensityChange={setGridDensity}
+                                cvFilter={letterCvFilter}
+                                onClearCvFilter={() => setLetterCvFilter(null)}
                                 navLead={<SidebarTrigger className="h-10 w-10 shrink-0 rounded-xl md:hidden" />}
                                 navTrail={<><ThemeToggle /><LanguageSwitcher compact /></>}
                             />

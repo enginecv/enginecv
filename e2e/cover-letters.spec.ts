@@ -396,3 +396,21 @@ test("paragraphs are a list: start with one, add more, reorder and remove", asyn
     await page.getByTestId("letter-paragraph-remove-1").click();
     await expect(page.getByTestId(/^letter-paragraph-card-\d+$/)).toHaveCount(2);
 });
+
+test("a CV card starts a letter, shows how many it has and opens them filtered", async ({ page }) => {
+    await createBlankResume(page);
+    await page.goto("/dashboard");
+    await expect(page.getByTestId("dashboard-resume-letters")).toHaveCount(0);
+
+    await page.getByRole("button", { name: "Write a cover letter for this CV" }).first().click();
+    await expect(page).toHaveURL(/\/letters\/[^/]+$/);
+
+    await page.goto("/dashboard");
+    const chip = page.getByTestId("dashboard-resume-letters").first();
+    await expect(chip).toHaveText("1");
+    await chip.click();
+    await expect(page.getByTestId("letters-filter")).toBeVisible();
+    await expect(page.getByTestId("letter-card")).toHaveCount(1);
+    await page.getByTestId("letters-filter-clear").click();
+    await expect(page.getByTestId("letters-filter")).toHaveCount(0);
+});

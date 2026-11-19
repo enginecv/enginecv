@@ -12,8 +12,10 @@ import { useDialogFocus } from "@/hooks/useDialogFocus";
 import { db } from "@/lib/db";
 import { useTranslation } from "@/lib/i18n";
 import type { LetterDocument } from "@/lib/letters/schema";
+import type { Resume } from "@/lib/schema";
 import { createLetterRecord, deleteLetter, duplicateLetter, listLetters, repointLetter, restoreLetter } from "@/lib/letters/store";
 import { LetterCard, letterDisplayTitle } from "./LetterCard";
+import { LiveResumeThumbnail } from "./LiveResumeThumbnail";
 import { NavSearch } from "./NavSearch";
 import { DASHBOARD_CONTENT_CLASS, DASHBOARD_NAV_CLASS } from "./layout";
 
@@ -24,6 +26,7 @@ type CvOption = CvChoice;
 
 interface LetterGroup {
     cvId: string | null;
+    resume?: Resume;
     title: string;
     letters: LetterDocument[];
 }
@@ -59,12 +62,15 @@ const DENSITY_LABEL_KEY = { large: "palette.optionLarge", normal: "palette.optio
  * The Cover Letters tab: letters grouped by the CV they follow, with search, density,
  * and per-letter actions. A letter needs a CV, so with none the person is sent to create one.
  */
-export function LettersTab({ onCreateCv, gridClass = "grid-cols-1 md:grid-cols-2 xl:grid-cols-3", density = "normal", onDensityChange, navLead, navTrail }: {
+export function LettersTab({ onCreateCv, gridClass = "grid-cols-1 md:grid-cols-2 xl:grid-cols-3", density = "normal", onDensityChange, navLead, navTrail, cvFilter = null, onClearCvFilter }: {
     onCreateCv: () => void;
     /** Tailwind grid-column classes for the card grid (shared with the other tabs). */
     gridClass?: string;
     density?: Density;
     onDensityChange?: (density: Density) => void;
+    /** Limit the list to the letters of one CV (set from a CV card). */
+    cvFilter?: string | null;
+    onClearCvFilter?: () => void;
     /** Left end of the toolbar (the sidebar trigger on narrow screens). */
     navLead?: ReactNode;
     /** Right end of the toolbar (theme and language controls). */
@@ -93,10 +99,12 @@ export function LettersTab({ onCreateCv, gridClass = "grid-cols-1 md:grid-cols-2
     const groups = useMemo<LetterGroup[]>(() => {
         if (!letters || !cvs) return [];
         const needle = query.trim().toLowerCase();
+        const inScope = cvFilter ? letters.filter((letter) => letter.cvId === cvFilter) : letters;
         const matches = needle
-            ? letters.filter((letter) => [letter.title, letter.company, letter.role, letter.recipient.name].some((field) => field.toLowerCase().includes(needle)))
-            : letters;
+            ? inScope.filter((letter) => [letter.title, letter.company, letter.role, letter.recipient.name].some((field) => field.toLowerCase().includes(needle)))
+            : inScope;
         const byId = new Map(cvs.map((cv) => [cv.id, cv.label]));
+        const resumeById = new Map(cvs.map((cv) => [cv.id, cv.resume]));
         const grouped = new Map<string | null, LetterDocument[]>();
         for (const letter of matches) {
             const key = letter.cvId && byId.has(letter.cvId) ? letter.cvId : null;
@@ -104,12 +112,12 @@ export function LettersTab({ onCreateCv, gridClass = "grid-cols-1 md:grid-cols-2
         }
         const result: LetterGroup[] = [...grouped.entries()]
             .filter(([key]) => key !== null)
-            .map(([key, items]) => ({ cvId: key, title: byId.get(key as string) ?? "", letters: items }))
+            .map(([key, items]) => ({ cvId: key, title: byId.get(key as string) ?? "", resume: resumeById.get(key as string), letters: items }))
             .sort((a, b) => a.title.localeCompare(b.title));
         const orphans = grouped.get(null);
         if (orphans) result.push({ cvId: null, title: t("dashboard.letters.noCvGroup"), letters: orphans });
         return result;
-    }, [letters, cvs, query, t]);
+    }, [letters, cvs, query, cvFilter, t]);
 
     const run = async (action: () => Promise<void>) => {
         setBusy(true);
@@ -228,6 +236,13 @@ export function LettersTab({ onCreateCv, gridClass = "grid-cols-1 md:grid-cols-2
 
     return frame(
         <div className="space-y-6" data-testid="letters-tab">
+            {cvFilter && (
+                <div className="flex items-center gap-2 text-sm text-mid" data-testid="letters-filter">
+                    <span>{t("dashboard.letters.filteredBy", { cv: cvs.find((cv) => cv.id === cvFilter)?.label ?? "" })}</span>
+                    <button type="button" onClick={onClearCvFilter} data-testid="letters-filter-clear" className="rounded-lg border border-edge bg-surface-4 px-2 py-1 text-xs font-medium text-strong transition-colors hover:border-faint">{t("dashboard.letters.clearFilter")}</button>
+                </div>
+            )}
+
             {error && <p role="alert" className="text-sm text-danger" data-testid="letters-error">{error}</p>}
 
             {letters.length === 0 ? (
@@ -244,6 +259,11 @@ export function LettersTab({ onCreateCv, gridClass = "grid-cols-1 md:grid-cols-2
                 groups.map((group) => (
                     <section key={group.cvId ?? "none"} data-testid={`letters-group-${group.cvId ?? "none"}`} aria-label={group.title} className="space-y-3">
                         <h3 className="flex items-center gap-2 text-sm font-semibold text-strong">
+                            {group.resume && (
+                                <span className="pointer-events-none h-10 w-7 shrink-0 overflow-hidden rounded border border-edge bg-white" aria-hidden="true" data-testid="letter-group-thumb">
+                                    <LiveResumeThumbnail resume={group.resume} />
+                                </span>
+                            )}
                             {group.title}
                             <span className="rounded-md bg-surface-1 px-1.5 py-0.5 text-[11px] font-semibold text-mid" data-testid="letters-group-count">{group.letters.length}</span>
                         </h3>
