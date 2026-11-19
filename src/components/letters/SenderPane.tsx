@@ -39,7 +39,7 @@ export function SenderPane({ sender, cvSender, overridden, onChange, readOnly = 
         });
 
     return (
-        <PaneSection title={t("letters.section.sender")} testId="letter-sender-pane">
+        <PaneSection title={t("letters.section.sender")} testId="letter-sender-pane" tips="sender">
             <p className="text-xs text-mid">{t("letters.sender.hint")}</p>
             {SENDER_KEYS.map((key) => {
                 const differs = overridden.includes(key);

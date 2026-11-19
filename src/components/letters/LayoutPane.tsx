@@ -29,7 +29,7 @@ export function LayoutPane({ letter, onChange, readOnly = false }: {
     };
 
     return (
-        <PaneSection title={t("letters.section.page")} testId="letter-layout-pane">
+        <PaneSection title={t("letters.section.page")} testId="letter-layout-pane" tips="page">
             <SelectField id="letter-layout" label={t("letters.layout.label")} value={letter.layout} disabled={readOnly} testId="letter-layout" onChange={(value) => chooseLayout(value as LetterDocument["layout"])}
                 hint={notice ? <p role="status" className="text-xs text-accent" data-testid="letter-layout-notice">{notice}</p> : undefined}>
                 {LETTER_LAYOUTS.map((layout) => <option key={layout} value={layout}>{t(`letters.layout.${layout}`)}</option>)}

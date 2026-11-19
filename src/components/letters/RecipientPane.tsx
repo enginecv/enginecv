@@ -12,7 +12,7 @@ export function RecipientPane({ letter, onChange, readOnly = false }: {
 }) {
     const { t } = useTranslation();
     return (
-        <PaneSection title={t("letters.section.recipient")} testId="letter-recipient-pane">
+        <PaneSection title={t("letters.section.recipient")} testId="letter-recipient-pane" tips="recipient">
             <TextField label={t("letters.recipient.name")} value={letter.recipient.name} disabled={readOnly} testId="letter-recipient-name"
                 onChange={(name) => onChange((current) => ({ ...current, recipient: { ...current.recipient, name } }))} />
             <TextAreaField label={t("letters.recipient.address")} value={letter.recipient.address} disabled={readOnly} testId="letter-recipient-address"
