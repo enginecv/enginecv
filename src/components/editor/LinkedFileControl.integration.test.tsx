@@ -228,4 +228,25 @@ describe("LinkedFileControl: opened from the checklist", () => {
         act(() => { window.dispatchEvent(new Event("enginecv:open-linked-file")); });
         expect(await screen.findByTestId("linked-file-panel")).toBeInTheDocument();
     });
+
+    it("tells the person to use a workspace folder instead, whatever the link state", async () => {
+        installPickers(new FakeDisk());
+        render(<LinkedFileControl resumeId="cv-1" />);
+        await openPanel();
+        expect(screen.getByTestId("linked-file-deprecated")).toHaveTextContent(/workspace folder instead/i);
+        expect(screen.getByTestId("linked-file-create")).toBeInTheDocument(); // the old link still works for now
+    });
+
+    it("refuses to link a CV that is part of a workspace folder, and says why", async () => {
+        const { newDocRow, putDocRow } = await import("@/lib/workspace/workspace-store");
+        await putDocRow(newDocRow({ docId: "cv-1", kind: "cv", fileName: "My CV.cv.json", included: true }, 1));
+        installPickers(new FakeDisk());
+        render(<LinkedFileControl resumeId="cv-1" />);
+        await openPanel();
+        fireEvent.click(screen.getByTestId("linked-file-create"));
+        expect(await screen.findByTestId("linked-file-message")).toHaveTextContent(/part of your workspace folder/);
+        expect(window.showSaveFilePicker).not.toHaveBeenCalled();
+        const { db } = await import("@/lib/db");
+        await db.workspaceDocs.clear();
+    });
 });

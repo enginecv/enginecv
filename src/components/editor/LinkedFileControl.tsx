@@ -117,7 +117,9 @@ export function LinkedFileControl({ resumeId }: { resumeId: string }) {
         if (result.reason === "cancelled") return;
         setMessage(result.reason === "linked-elsewhere"
             ? t("linkedFile.error.linkedElsewhere", { name: result.ownerTitle })
-            : t("linkedFile.error.linkFailed"));
+            : result.reason === "in-workspace"
+                ? t("linkedFile.error.inWorkspace")
+                : t("linkedFile.error.linkFailed"));
     };
 
     const run = async (mode: "createNew" | "useExisting", relink = false) => {
@@ -209,6 +211,7 @@ export function LinkedFileControl({ resumeId }: { resumeId: string }) {
             {open && !dialog && (
                 <Modal wide title={t("linkedFile.title")} closeLabel={t("linkedFile.close")} onClose={() => setOpen(false)}>
                 <div className="mt-4 space-y-4" data-testid="linked-file-panel">
+                    <p className="rounded-lg border border-edge bg-surface-1 px-3 py-2 text-xs leading-relaxed text-mid" data-testid="linked-file-deprecated">{t("linkedFile.deprecated")}</p>
 
                     {status === "unsupported" && (
                         <p className="text-xs leading-relaxed text-mid" data-testid="linked-file-unsupported">{t("linkedFile.unsupported")}</p>

@@ -13,6 +13,7 @@ import { MACHINE_DIR } from "./agent-files";
 import { safeStem } from "./names";
 import { parseCv } from "@/lib/letters/store";
 import type { ChangeSourceKind, DocState } from "./types";
+import { listLinkedCvs, moveLinkedCvs } from "./migrate-links";
 import { excludeDocument, includeDocument, mirrorDocuments, retireDocument, type IncludeChoice, type RetireChoice } from "./lifecycle";
 import { clearWorkspace, getWorkspace, setDocState, updateWorkspace } from "./workspace-store";
 
@@ -396,4 +397,15 @@ export async function setHideContact(hide: boolean): Promise<void> {
         set({ rewriting: null });
         await refreshCounts();
     }
+}
+
+/** Moves CVs that are still linked to a single file into the folder. The old files are left untouched; any that could not be moved stay linked. */
+export async function moveLinkedIntoWorkspace(resumeIds?: readonly string[]): Promise<{ moved: number; failed: number }> {
+    if (!adapter) return { moved: 0, failed: 0 };
+    const ids = resumeIds ?? (await listLinkedCvs()).map((cv) => cv.resumeId);
+    const result = await moveLinkedCvs(adapter, ids, { hideContact: useWorkspaceStore.getState().hideContact });
+    for (const id of result.moved) await runtime?.reload(id);
+    runtime?.refreshIndexSoon();
+    await refreshCounts();
+    return { moved: result.moved.length, failed: result.failed.length };
 }

@@ -43,6 +43,8 @@ export interface PlanItem {
     choice: PlanChoice;
     /** Choices the dialog offers for this row. */
     choices: PlanChoice[];
+    /** The CV still has a per-CV file link: any choice but "skip" moves it into the folder, "skip" keeps it linked. */
+    linked?: boolean;
 }
 
 export interface PlanInput {

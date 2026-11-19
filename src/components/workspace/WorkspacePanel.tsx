@@ -7,13 +7,14 @@ import { db } from "@/lib/db";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { useDialogFocus } from "@/hooks/useDialogFocus";
 import { useTranslation } from "@/lib/i18n";
-import { analyzeFolderHandle, applyHeldChange, chooseDuplicate, connectFolder, disconnectWorkspace, ignoreFile, keepAppVersion, recreateDocumentFile, relinkDocumentTo, resumePermission, setHideContact, setPaused, useWorkspaceStore } from "@/lib/workspace/controller";
+import { analyzeFolderHandle, applyHeldChange, chooseDuplicate, connectFolder, disconnectWorkspace, ignoreFile, keepAppVersion, recreateDocumentFile, relinkDocumentTo, moveLinkedIntoWorkspace, resumePermission, setHideContact, setPaused, useWorkspaceStore } from "@/lib/workspace/controller";
 import { pickWorkspaceFolder } from "@/lib/workspace/directory-adapter";
 import type { PlanItem } from "@/lib/workspace/first-sync";
 import type { SetupAnalysis } from "@/lib/workspace/setup";
 import { ConflictsDialog } from "./ConflictsDialog";
 import { DocStateChip } from "./DocStateChip";
 import { FirstSyncDialog } from "./FirstSyncDialog";
+import { MigrationPrompt } from "./MigrationPrompt";
 import { ReviewDialog } from "./ReviewDialog";
 import { SetupWarning } from "./SetupWarning";
 
@@ -45,6 +46,10 @@ export function WorkspacePanel({ onClose }: { onClose: () => void }) {
     const detached = rows.filter((row) => row.state === "detached" && row.included).map((row) => ({ row, title: titleOf(row.docId) }));
     const attentionCount = detached.length + state.attention.duplicates.length + state.attention.unmatched.length + state.attention.conflictCopies.length;
     const attention = rows.filter((row) => row.included && row.state !== "in-sync" && row.state !== "paused");
+    const linkedCount = useLiveQuery(() => db.linkedFiles.count(), [], 0);
+    const [migrationLater, setMigrationLater] = useState(false);
+    const [migrating, setMigrating] = useState(false);
+    const [migrationFailed, setMigrationFailed] = useState(0);
     const reviewRow = rows.find((row) => row.docId === reviewing);
 
     useEffect(() => {
@@ -135,6 +140,16 @@ export function WorkspacePanel({ onClose }: { onClose: () => void }) {
                                 {state.paused && <p className="text-xs text-accent" data-testid="workspace-paused">{t("workspace.panel.paused")}</p>}
                                 {!state.isLeader && <p className="text-xs text-faint" data-testid="workspace-other-tab">{t("workspace.panel.otherTab")}</p>}
                             </div>
+                            {linkedCount > 0 && !migrationLater && (
+                                <MigrationPrompt
+                                    count={linkedCount}
+                                    variant="banner"
+                                    busy={migrating}
+                                    failed={migrationFailed}
+                                    onLater={() => setMigrationLater(true)}
+                                    onMove={() => { setMigrating(true); void moveLinkedIntoWorkspace().then((result) => setMigrationFailed(result.failed)).finally(() => setMigrating(false)); }}
+                                />
+                            )}
                             <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-edge bg-surface-1 p-3">
                                 <input type="checkbox" checked={state.hideContact} disabled={!!state.rewriting} onChange={(event) => void setHideContact(event.target.checked)} data-testid="workspace-hide-contact" className="mt-1" />
                                 <span className="min-w-0">

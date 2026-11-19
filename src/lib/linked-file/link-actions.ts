@@ -26,6 +26,8 @@ export interface LinkOptions {
 export type LinkResult =
     | { ok: true }
     | { ok: false; reason: "cancelled" }
+    /** The CV is part of a workspace folder; a CV is never both. */
+    | { ok: false; reason: "in-workspace" }
     | { ok: false; reason: "linked-elsewhere"; ownerResumeId: string; ownerTitle: string }
     | { ok: false; reason: "failed"; detail?: string };
 
@@ -47,6 +49,10 @@ export async function linkFile(resumeId: string, mode: "createNew" | "useExistin
     const confirmPrivacy = options.confirmPrivacy ?? (async () => true);
     const pickNew = options.pickNew ?? pickNewFile;
     const pickExisting = options.pickExisting ?? pickExistingFile;
+
+    // A CV in a workspace folder cannot also be linked to a single file.
+    const workspaceRow = await db.workspaceDocs.get(resumeId);
+    if (workspaceRow?.included) return { ok: false, reason: "in-workspace" };
 
     try {
         if (!(await confirmPrivacy())) return { ok: false, reason: "cancelled" };
