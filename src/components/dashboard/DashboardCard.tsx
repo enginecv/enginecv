@@ -86,7 +86,7 @@ export function DashboardCard({
                                     <h2 className="truncate text-base font-semibold tracking-tight text-strong group-hover:text-accent transition-colors">
                                         {title}
                                     </h2>
-                                    {docId && <div className="mt-1 empty:hidden"><DocStateBadge docId={docId} /></div>}
+                                    {docId && <div className="mt-1 empty:hidden"><DocStateBadge docId={docId} interactive /></div>}
                                     {linkedFileName && (
                                         <p className="mt-1 flex items-center gap-1 truncate text-[11px] text-faint" data-testid="dashboard-linked-file" title={linkedFileName}>
                                             <Link2 className="h-3 w-3 shrink-0" aria-hidden="true" />

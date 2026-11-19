@@ -47,6 +47,7 @@ export const REASON_CODES = [
     "format-unavailable",
     "export-failed",
     "exported",
+    "undone",
 ] as const;
 export type ReasonCode = (typeof REASON_CODES)[number];
 
@@ -109,6 +110,8 @@ export interface WorkspaceActivityRecord {
     reason: { code: ReasonCode; detail?: string };
     restoreId: number | null;
     restoreKind: DocKind | null;
+    /** The change was undone from the activity list. */
+    undone?: boolean;
 }
 
 export type LetterHistoryTrigger = "autosave" | "file-sync" | "manual";

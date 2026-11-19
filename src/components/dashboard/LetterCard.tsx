@@ -47,7 +47,7 @@ export function LetterCard({ letter, onOpen, actions, needsCv = false }: { lette
                 </div>
                 <div className="min-w-0">
                     <h3 className="truncate text-base font-semibold text-strong">{title}</h3>
-                    <div className="mt-1 empty:hidden"><DocStateBadge docId={letter.id} /></div>
+                    <div className="mt-1 empty:hidden"><DocStateBadge docId={letter.id} interactive /></div>
                     {detail && <p className="mt-1 truncate text-sm text-mid">{detail}</p>}
                 </div>
                 <p className="mt-auto text-xs text-faint">{t("dashboard.letters.updated", { date: new Date(letter.updatedAt).toLocaleDateString() })}</p>

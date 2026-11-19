@@ -30,6 +30,7 @@ import { DashboardCard, LastUpdatedTooltipContent } from "@/components/dashboard
 import { DashboardTemplateCard } from "@/components/dashboard/DashboardTemplateCard";
 import { LettersTab } from "@/components/dashboard/LettersTab";
 import { NavSearch } from "@/components/dashboard/NavSearch";
+import { OPEN_WORKSPACE_ACTIVITY_EVENT } from "@/components/workspace/DocStateChip";
 import { DeleteDocumentDialog } from "@/components/workspace/DeleteDocumentDialog";
 import { useWorkspaceMembership } from "@/components/workspace/useWorkspaceMembership";
 import { useHasWorkspaceFile } from "@/components/workspace/useHasWorkspaceFile";
@@ -820,6 +821,15 @@ function Dashboard() {
 
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [showWorkspace, setShowWorkspace] = useState(false);
+    const [activityDocId, setActivityDocId] = useState<string | null>(null);
+    useEffect(() => {
+        const open = (event: Event) => {
+            setActivityDocId((event as CustomEvent<{ docId?: string }>).detail?.docId ?? null);
+            setShowWorkspace(true);
+        };
+        window.addEventListener(OPEN_WORKSPACE_ACTIVITY_EVENT, open);
+        return () => window.removeEventListener(OPEN_WORKSPACE_ACTIVITY_EVENT, open);
+    }, []);
 
     // Restores a connected workspace folder (or says why there is none) once the dashboard is up.
     useEffect(() => {
@@ -1318,9 +1328,9 @@ function Dashboard() {
                 activeTab={activeDashboardTab}
                 onSelectTab={setActiveDashboardTab}
                 onCreateResume={() => setShowCreateModal(true)}
-                onOpenWorkspace={() => setShowWorkspace(true)}
+                onOpenWorkspace={() => { setActivityDocId(null); setShowWorkspace(true); }}
             />
-            {showWorkspace && <WorkspacePanel onClose={() => setShowWorkspace(false)} />}
+            {showWorkspace && <WorkspacePanel initialActivityDocId={activityDocId} onClose={() => { setShowWorkspace(false); setActivityDocId(null); }} />}
 
             <SidebarInset className="relative bg-surface-2">
                 <div className="w-full pb-8">

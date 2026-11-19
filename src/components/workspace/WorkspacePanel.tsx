@@ -1,6 +1,6 @@
 "use client";
 
-import { FolderSync, Loader2, Pause, Play, Unlink } from "lucide-react";
+import { FolderSync, History, Loader2, Pause, Play, Unlink } from "lucide-react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useEffect, useState } from "react";
 import { db } from "@/lib/db";
@@ -14,6 +14,7 @@ import type { SetupAnalysis } from "@/lib/workspace/setup";
 import { ConflictsDialog } from "./ConflictsDialog";
 import { DocStateChip } from "./DocStateChip";
 import { FirstSyncDialog } from "./FirstSyncDialog";
+import { ActivityList } from "./ActivityList";
 import { MigrationPrompt } from "./MigrationPrompt";
 import { ReviewDialog } from "./ReviewDialog";
 import { SetupWarning } from "./SetupWarning";
@@ -24,7 +25,7 @@ type Step = { kind: "idle" } | { kind: "warning" } | { kind: "review"; handle: F
  * The workspace folder panel: connect a folder (warning, pick, review), see its state, pause, resume
  * after the browser asks for permission again, and disconnect. Disconnecting changes nothing on disk.
  */
-export function WorkspacePanel({ onClose }: { onClose: () => void }) {
+export function WorkspacePanel({ onClose, initialActivityDocId }: { onClose: () => void; /** Open the activity list for this document straight away (a chip on a card was clicked). */ initialActivityDocId?: string | null }) {
     const { t } = useTranslation();
     const ref = useDialogFocus<HTMLDivElement>(true, onClose);
     const state = useWorkspaceStore();
@@ -47,6 +48,7 @@ export function WorkspacePanel({ onClose }: { onClose: () => void }) {
     const attentionCount = detached.length + state.attention.duplicates.length + state.attention.unmatched.length + state.attention.conflictCopies.length;
     const attention = rows.filter((row) => row.included && row.state !== "in-sync" && row.state !== "paused");
     const linkedCount = useLiveQuery(() => db.linkedFiles.count(), [], 0);
+    const [activity, setActivity] = useState<{ docId: string | null } | null>(initialActivityDocId ? { docId: initialActivityDocId } : null);
     const [migrationLater, setMigrationLater] = useState(false);
     const [migrating, setMigrating] = useState(false);
     const [migrationFailed, setMigrationFailed] = useState(0);
@@ -177,6 +179,10 @@ export function WorkspacePanel({ onClose }: { onClose: () => void }) {
                                     {state.paused ? <Play className="h-4 w-4" aria-hidden="true" /> : <Pause className="h-4 w-4" aria-hidden="true" />}
                                     {state.paused ? t("workspace.panel.resume") : t("workspace.panel.pause")}
                                 </button>
+                                <button type="button" onClick={() => setActivity({ docId: null })} data-testid="workspace-open-activity" className={button}>
+                                    <History className="h-4 w-4" aria-hidden="true" />
+                                    {t("workspace.activity.open")}
+                                </button>
                                 <button type="button" onClick={() => setConfirmDisconnect(true)} data-testid="workspace-disconnect" className={button}>
                                     <Unlink className="h-4 w-4" aria-hidden="true" />
                                     {t("workspace.panel.disconnect")}
@@ -201,6 +207,7 @@ export function WorkspacePanel({ onClose }: { onClose: () => void }) {
             )}
             {step.kind === "review" && <FirstSyncDialog plan={step.analysis.plan} leftOut={step.analysis.skipped.length} busy={busy} onApply={(plan) => void apply(plan)} onCancel={() => setStep({ kind: "idle" })} />}
 
+            {activity && <ActivityList docId={activity.docId} titleOf={titleOf} onClose={() => setActivity(null)} />}
             {reviewRow?.pendingReview && (
                 <ReviewDialog
                     docTitle={titleOf(reviewRow.docId)}
