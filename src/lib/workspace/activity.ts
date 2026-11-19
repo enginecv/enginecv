@@ -58,8 +58,8 @@ export async function appendLog(adapter: DirectoryAdapter, line: LogLine): Promi
 const resultName = (docId: string) => `${docId}.refused.json`;
 
 /** Tells an agent why a file was refused, in one small file it can read: code, place in the file, path. */
-export async function writeRefusal(adapter: DirectoryAdapter, input: { docId: string; file: string | null; code: ReasonCode; line?: number; column?: number; now?: number }): Promise<void> {
-    const body = { doc: input.docId, file: input.file, refused: true, code: input.code, ...(input.line ? { line: input.line } : {}), ...(input.column ? { column: input.column } : {}), at: new Date(input.now ?? Date.now()).toISOString() };
+export async function writeRefusal(adapter: DirectoryAdapter, input: { docId: string; file: string | null; code: ReasonCode; line?: number; column?: number; detail?: string; now?: number }): Promise<void> {
+    const body = { doc: input.docId, file: input.file, refused: true, code: input.code, ...(input.line ? { line: input.line } : {}), ...(input.column ? { column: input.column } : {}), ...(input.detail ? { field: input.detail } : {}), at: new Date(input.now ?? Date.now()).toISOString() };
     await adapter.writeText(RESULTS_DIR, resultName(input.docId), `${JSON.stringify(body)}\n`);
 }
 

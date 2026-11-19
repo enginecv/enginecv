@@ -135,6 +135,7 @@ export async function mirrorNow(): Promise<void> {
     try {
         const result = await mirrorDocuments(adapter, { hideContact: useWorkspaceStore.getState().hideContact });
         await runtime?.refreshTitles().catch(() => undefined);
+        runtime?.refreshIndexSoon();
         for (const docId of [...result.created, ...result.renamed]) await runtime?.reload(docId);
         await refreshCounts();
     } catch {

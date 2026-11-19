@@ -8,7 +8,7 @@ import {
     SECTION_ENTRY_SPECS,
     type EntrySpec,
 } from "./schema";
-import { SKILL_URL } from "./skill-urls";
+import { FOLDER_AGENTS_URL, FOLDER_REFERENCE_URL, SKILL_URL } from "./skill-urls";
 
 /**
  * The EngineCV agent skill: guidance a local AI agent reads before it edits a
@@ -169,6 +169,13 @@ export function buildLlmsTxt(): string {
         `- [SKILL.md](${SKILL_URL}): the full skill: format, how to, rules.`,
         `- [AGENTS snippet](https://enginecv.app/agent/enginecv/AGENTS-snippet.md): the short version for AGENTS.md, CLAUDE.md or rules files.`,
         `- [JSON Schema](${AUTHORING_SCHEMA_URL}): the machine-readable schema of the \`${AUTHORING_FORMAT}\` format.`,
+        "",
+        "## Workspace folder (preferred)",
+        "",
+        "If the user has an EngineCV workspace folder (it contains `.enginecv/index.json` and `AGENTS.md`), work there instead: read `AGENTS.md`, then `.enginecv/index.json`, then only the file you need. The folder holds CVs, letters and exports, and EngineCV answers export requests. The same guidance, for reading before you have the folder:",
+        "",
+        `- [AGENTS.md](${FOLDER_AGENTS_URL}): the short rules.`,
+        `- Reference files in ${FOLDER_REFERENCE_URL}/: \`cv-format.md\`, \`letter-format.md\`, \`exports.md\`, \`recipes.md\`.`,
         "",
     ].join("\n");
 }

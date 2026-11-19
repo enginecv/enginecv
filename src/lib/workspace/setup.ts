@@ -9,7 +9,7 @@ import { applyFileToStoredCv, applyFileToStoredLetter, importCvFromText, importL
 import { createCvCodec } from "./codecs/cv";
 import type { DirectoryAdapter } from "./directory-adapter";
 import { planFirstSync, type AppDocumentInfo, type FolderFileInfo, type PlanItem } from "./first-sync";
-import { buildIndex, indexText } from "./index-file";
+import { ensureMachineFiles, refreshIndex } from "./machine-files";
 import { safeStem, uniqueFileName, keysOf, nameKey } from "./names";
 import { classifyListing } from "./scan";
 import { MAX_FILE_BYTES, type DocKind, type WorkspaceDocRecord } from "./types";
@@ -40,8 +40,8 @@ export interface SetupAnalysis {
     skipped: string[];
 }
 
-export const cvTitle = (cv: Resume) => cv.meta.title || cv.basics.name || "CV";
-export const letterTitle = (letter: LetterDocument) => letter.title || [letter.company, letter.role].filter(Boolean).join(" - ") || "Letter";
+export { cvTitle, letterTitle } from "./titles";
+import { cvTitle, letterTitle } from "./titles";
 
 export function appText(doc: Resume | LetterDocument, kind: DocKind, options: SetupOptions, titles: Map<string, string>): string {
     return kind === "cv"
@@ -213,13 +213,8 @@ export async function runSetup(input: {
     // Documents the plan did not mention (created during setup) are left for the controller's first scan.
     await db.workspaceDocs.bulkPut([...rows.values()]);
 
-    const cvInputs = input.docs.cvs.map((cv) => ({ id: cv.id ?? "", fileName: rows.get(cv.id ?? "")?.fileName ?? "", title: cvTitle(cv), language: cv.settings.language || "en", updatedAt: cv.updatedAt, entries: sectionCounts(cv) })).filter((cv) => rows.get(cv.id)?.included && cv.fileName);
-    const letterInputs = input.docs.letters.map((letter) => ({ id: letter.id, fileName: rows.get(letter.id)?.fileName ?? "", cvId: letter.cvId, company: letter.company, role: letter.role, status: (letter.status === "draft" ? "draft" : "sent") as "draft" | "sent", updatedAt: letter.updatedAt })).filter((letter) => rows.get(letter.id)?.included && letter.fileName);
-    await adapter.writeText(MACHINE_DIR, "index.json", indexText(buildIndex({ cvs: cvInputs, letters: letterInputs, states: new Map(), now })));
-    await adapter.writeText(MACHINE_DIR, "workspace.json", workspaceJson({ id: `ws-${now.toString(36)}`, createdAt: now, appVersion: options.appVersion ?? "dev", hideContact: options.hideContact }));
-    await adapter.writeText(MACHINE_DIR, ".gitignore", machineGitignore());
-    await writeIfNotEdited(adapter, "", README_FILE, readmeMarkdown());
-    await writeIfNotEdited(adapter, "", AGENTS_FILE, agentsMarkdown());
-    await writeIfNotEdited(adapter, REFERENCE_DIR, EXPORTS_REFERENCE_FILE, exportsReference());
+    // Instructions, references, the index and the marker files are the same ones the controller keeps fresh later.
+    await ensureMachineFiles(adapter, { hideContact: options.hideContact, appVersion: options.appVersion, now });
+    await refreshIndex(adapter);
     return result;
 }

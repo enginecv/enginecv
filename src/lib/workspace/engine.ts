@@ -30,7 +30,7 @@ export type StartMode = "adopt" | "load" | "reconcile" | "paused";
 /** The state an engine reports: `LinkedFileState` with a reason code that can name any refusal. */
 export interface EngineState extends Omit<LinkedFileState, "error" | "status"> {
     status: LinkedFileState["status"] | "review";
-    error: { code: ReasonCode; line?: number; column?: number } | null;
+    error: { code: ReasonCode; line?: number; column?: number; detail?: string } | null;
     /** A complete file that would remove too much, held until the person decides. */
     review: PendingReview | null;
     /** Hash of the text last written or applied, so the caller can remember it across sessions. */
@@ -96,7 +96,7 @@ const sameStamp = (a: FileStamp | null, b: FileStamp | null) =>
 type ReadOutcome =
     | { kind: "applied" | "unchanged" | "held" }
     | { kind: "review"; review: PendingReview }
-    | { kind: "error"; code: ReasonCode; line?: number; column?: number };
+    | { kind: "error"; code: ReasonCode; line?: number; column?: number; detail?: string };
 
 export function createDocumentSyncEngine<TDoc>(deps: DocumentEngineDeps<TDoc>): DocumentSyncEngine {
     const { codec } = deps;
@@ -192,7 +192,7 @@ export function createDocumentSyncEngine<TDoc>(deps: DocumentEngineDeps<TDoc>): 
     /** Validates `text`; a valid document is applied as one revertible update. */
     async function processText(text: string, options: { force?: boolean; skipGuard?: boolean } = {}): Promise<ReadOutcome> {
         const parsed = codec.parse(text, { now: now(), hideContact: deps.hideContact?.() ?? false });
-        if (!parsed.ok) return { kind: "error", code: parsed.reason.code, line: parsed.reason.line, column: parsed.reason.column };
+        if (!parsed.ok) return { kind: "error", code: parsed.reason.code, line: parsed.reason.line, column: parsed.reason.column, detail: parsed.reason.detail };
 
         const hash = hashText(text);
         if (!options.force && held && held.hash === hash) return { kind: "held" };
@@ -202,7 +202,7 @@ export function createDocumentSyncEngine<TDoc>(deps: DocumentEngineDeps<TDoc>): 
         await deps.flushLocal?.();
         const before = deps.getDoc();
         const allowed = codec.canApplyExternal(before);
-        if (!allowed.ok) return { kind: "error", code: allowed.reason.code, line: allowed.reason.line, column: allowed.reason.column };
+        if (!allowed.ok) return { kind: "error", code: allowed.reason.code, line: allowed.reason.line, column: allowed.reason.column, detail: allowed.reason.detail };
 
         if (!options.skipGuard && deps.guard) {
             const review = deps.guard(before, parsed.doc);
@@ -238,7 +238,7 @@ export function createDocumentSyncEngine<TDoc>(deps: DocumentEngineDeps<TDoc>): 
             return;
         }
         if (outcome.kind === "error") {
-            emit({ status: "error", error: { code: outcome.code, line: outcome.line, column: outcome.column }, review: null });
+            emit({ status: "error", error: { code: outcome.code, line: outcome.line, column: outcome.column, detail: outcome.detail }, review: null });
         } else {
             held = null;
             settleInSync();

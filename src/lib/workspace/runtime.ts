@@ -17,6 +17,8 @@ import { createDocumentSyncEngine, type DocumentSyncEngine, type EngineState } f
 import { checkShrink, pendingReviewFor, removedEntryTitles } from "./shrink-guard";
 import { importUnclaimed } from "./discover";
 import { processRequests } from "./request-processor";
+import { MACHINE_DIR } from "./agent-files";
+import { ensureMachineFiles, refreshIndex } from "./machine-files";
 import { REQUESTS_DIR } from "./requests";
 import type { DocKind, DocReason, DocState, PendingReview, WorkspaceDocRecord } from "./types";
 import { listDocRows, patchDocRow as patchDocRowRaw, setDocState as setDocStateRaw } from "./workspace-store";
@@ -52,6 +54,8 @@ export interface RuntimeOptions {
     /** Tests pass a change source that never polls. */
     createSource?: (onPossibleChange: () => void) => ChangeSource;
     isVisible?: () => boolean;
+    /** Tests that do not exercise the agent files can switch them off. */
+    machineFiles?: boolean;
     /** Tests that do not exercise export requests can switch them off. */
     requests?: boolean;
     /** Tests replace the exporter (it needs a real layout engine for HTML). */
@@ -70,6 +74,8 @@ export interface WorkspaceRuntime {
     keepMine(docId: string): Promise<void>;
     /** Writes every included document's file again (the privacy option changed), a few at a time so the page stays responsive. */
     rewriteAll(onProgress?: (done: number, total: number) => void): Promise<void>;
+    /** Asks for the index to be rewritten soon (a document came, went or changed). */
+    refreshIndexSoon(): void;
     /** Re-reads CV titles (a CV was renamed), so letter files keep an accurate hint. */
     refreshTitles(): Promise<void>;
     /** Rebuilds one document's engine from its row (after a relink or a resolved conflict). */
@@ -91,7 +97,7 @@ function docStateOf(state: EngineState): { state: DocState; reason: DocReason | 
         case "review":
             return { state: "review", reason: { code: "shrink-guard" } };
         case "error":
-            return { state: "blocked", reason: state.error ? { code: state.error.code, line: state.error.line, column: state.error.column } : { code: "invalid-json" } };
+            return { state: "blocked", reason: state.error ? { code: state.error.code, line: state.error.line, column: state.error.column, detail: state.error.detail } : { code: "invalid-json" } };
         case "busy":
             return { state: "busy", reason: { code: state.storageFull ? "storage-full" : "file-busy" } };
         case "broken":
@@ -154,6 +160,7 @@ export function createWorkspaceRuntime(options: RuntimeOptions): WorkspaceRuntim
             await setDocState(docId, "detached", { code: "file-missing" });
             options.events?.onState?.(docId, "detached", { code: "file-missing" });
             await recordActivity({ docId, kind: "refused", code: "file-missing" });
+            await writeRefusal(options.adapter, { docId, file: row ? `${row.kind === "cv" ? "cvs" : "letters"}/${row.fileName}` : null, code: "file-missing" }).catch(() => undefined);
             await appendLog(options.adapter, { at: Date.now(), doc: docId, outcome: "info", code: "file-missing" }).catch(() => undefined);
         }
         for (const duplicate of result.duplicates) {
@@ -163,6 +170,7 @@ export function createWorkspaceRuntime(options: RuntimeOptions): WorkspaceRuntim
             await setDocState(duplicate.docId, "blocked", { code: "duplicate-id", detail: String(duplicate.files.length) });
             options.events?.onState?.(duplicate.docId, "blocked", { code: "duplicate-id" });
             await recordActivity({ docId: duplicate.docId, kind: "refused", code: "duplicate-id", detail: String(duplicate.files.length) });
+            await writeRefusal(options.adapter, { docId: duplicate.docId, file: duplicate.files[0] ? `${duplicate.kind === "cv" ? "cvs" : "letters"}/${duplicate.files[0]}` : null, code: "duplicate-id", detail: `${duplicate.files.length} files` }).catch(() => undefined);
             await appendLog(options.adapter, { at: Date.now(), doc: duplicate.docId, outcome: "refused", code: "duplicate-id" }).catch(() => undefined);
         }
         // A file that came back, or a duplicate that was resolved, brings its document back to life.
@@ -197,6 +205,32 @@ export function createWorkspaceRuntime(options: RuntimeOptions): WorkspaceRuntim
         const letter = await db.coverLetters.get(docId);
         const missing = !!letter && letter.status === "draft" && !!letter.cvId && (await db.resumes.where("id").equals(letter.cvId).count()) === 0;
         await patchDocRow(docId, { reason: missing ? { code: "unknown-cv" } : null });
+    }
+
+    // The index and the instruction files stay current: made again when missing, the index rewritten a moment after anything changed.
+    const INDEX_DELAY_MS = 2000;
+    const ENSURE_EVERY_MS = 10_000;
+    let indexTimer: ReturnType<typeof setTimeout> | null = null;
+    let lastEnsure = 0;
+    async function refreshMachineFiles(options2: { ensure: boolean; index: boolean }) {
+        if (!running || options.machineFiles === false) return;
+        try {
+            if (options2.ensure) {
+                lastEnsure = Date.now();
+                await ensureMachineFiles(options.adapter, { hideContact: options.hideContact() });
+            }
+            if (options2.index) await refreshIndex(options.adapter);
+        } catch {
+            // A folder problem is the controller's to report; the next change tries again.
+        }
+    }
+    function refreshIndexSoon() {
+        if (!running || options.machineFiles === false) return;
+        if (indexTimer) clearTimeout(indexTimer);
+        indexTimer = setTimeout(() => {
+            indexTimer = null;
+            void refreshMachineFiles({ ensure: false, index: true });
+        }, INDEX_DELAY_MS);
     }
 
     let handlingRequests = false;
@@ -275,21 +309,23 @@ export function createWorkspaceRuntime(options: RuntimeOptions): WorkspaceRuntim
                     knownHash = patch.syncedHash;
                     void patchDocRow(row.docId, { lastHash: patch.syncedHash });
                 }
+                if (patch.status === "in-sync" || patch.lastUpdate) refreshIndexSoon();
                 if (patch.status === undefined) return;
                 if (patch.status === "broken") options.events?.onFolderProblem?.();
                 const next = docStateOf({ ...({} as EngineState), status: patch.status, error: patch.error ?? null, storageFull: patch.storageFull } as EngineState);
                 void setDocState(row.docId, next.state, next.reason);
+                refreshIndexSoon();
                 if (row.kind === "letter" && next.state === "in-sync") void markUnknownCv(row.docId);
                 options.events?.onState?.(row.docId, next.state, next.reason);
                 if (next.state === "review" && patch.review) {
                     void patchDocRow(row.docId, { pendingReview: patch.review });
                     void recordActivity({ docId: row.docId, kind: "review", code: "shrink-guard", detail: `${patch.review.keptCount} of ${patch.review.previousCount} kept` });
                     void appendLog(options.adapter, { at: Date.now(), doc: row.docId, file: fileLabel, outcome: "review", code: "shrink-guard" }).catch(() => undefined);
-                    void writeRefusal(options.adapter, { docId: row.docId, file: fileLabel, code: "shrink-guard" }).catch(() => undefined);
+                    void writeRefusal(options.adapter, { docId: row.docId, file: fileLabel, code: "shrink-guard", detail: `${patch.review.keptCount} of ${patch.review.previousCount} kept` }).catch(() => undefined);
                 } else if (next.state === "blocked" && next.reason) {
-                    void recordActivity({ docId: row.docId, kind: "refused", code: next.reason.code });
-                    void appendLog(options.adapter, { at: Date.now(), doc: row.docId, file: fileLabel, outcome: "refused", code: next.reason.code, line: next.reason.line, column: next.reason.column }).catch(() => undefined);
-                    void writeRefusal(options.adapter, { docId: row.docId, file: fileLabel, code: next.reason.code, line: next.reason.line, column: next.reason.column }).catch(() => undefined);
+                    void recordActivity({ docId: row.docId, kind: "refused", code: next.reason.code, detail: next.reason.detail });
+                    void appendLog(options.adapter, { at: Date.now(), doc: row.docId, file: fileLabel, outcome: "refused", code: next.reason.code, line: next.reason.line, column: next.reason.column, detail: next.reason.detail }).catch(() => undefined);
+                    void writeRefusal(options.adapter, { docId: row.docId, file: fileLabel, code: next.reason.code, line: next.reason.line, column: next.reason.column, detail: next.reason.detail }).catch(() => undefined);
                 } else if (next.state === "in-sync") {
                     void patchDocRow(row.docId, { pendingReview: null });
                     void clearRefusal(options.adapter, row.docId).catch(() => undefined);
@@ -307,6 +343,7 @@ export function createWorkspaceRuntime(options: RuntimeOptions): WorkspaceRuntim
             if (running) return;
             running = true;
             await refreshCvTitles().catch(() => undefined);
+            await refreshMachineFiles({ ensure: true, index: true });
             const rows = await listDocRows();
             for (const row of rows) await attach(row);
             await reconcileFolder().catch(() => undefined);
@@ -319,6 +356,8 @@ export function createWorkspaceRuntime(options: RuntimeOptions): WorkspaceRuntim
         },
         stop() {
             running = false;
+            if (indexTimer) clearTimeout(indexTimer);
+            indexTimer = null;
             source?.stop();
             source = null;
             for (const entry of engines.values()) {
@@ -338,6 +377,12 @@ export function createWorkspaceRuntime(options: RuntimeOptions): WorkspaceRuntim
             }
             await Promise.all([...engines.values()].map((entry) => entry.engine.checkNow()));
             await handleRequests();
+            // Cheap and only now and then: a deleted instruction file or index comes back without anything else changing.
+            if (Date.now() - lastEnsure > ENSURE_EVERY_MS) {
+                lastEnsure = Date.now();
+                const indexMissing = !(await options.adapter.exists(MACHINE_DIR, "index.json").catch(() => true));
+                void refreshMachineFiles({ ensure: true, index: indexMissing });
+            }
         },
         get changeSource() {
             return source;
@@ -352,6 +397,7 @@ export function createWorkspaceRuntime(options: RuntimeOptions): WorkspaceRuntim
                 onProgress?.(done, all.length);
             });
         },
+        refreshIndexSoon,
         refreshTitles: refreshCvTitles,
         reload: async (docId) => {
             detach(docId);

@@ -5,3 +5,10 @@
 - [SKILL.md](https://enginecv.app/agent/enginecv/SKILL.md): the full skill: format, how to, rules.
 - [AGENTS snippet](https://enginecv.app/agent/enginecv/AGENTS-snippet.md): the short version for AGENTS.md, CLAUDE.md or rules files.
 - [JSON Schema](https://enginecv.app/schema/authoring/v1.json): the machine-readable schema of the `enginecv.authoring/v1` format.
+
+## Workspace folder (preferred)
+
+If the user has an EngineCV workspace folder (it contains `.enginecv/index.json` and `AGENTS.md`), work there instead: read `AGENTS.md`, then `.enginecv/index.json`, then only the file you need. The folder holds CVs, letters and exports, and EngineCV answers export requests. The same guidance, for reading before you have the folder:
+
+- [AGENTS.md](https://enginecv.app/agent/enginecv/folder/AGENTS.md): the short rules.
+- Reference files in https://enginecv.app/agent/enginecv/folder/reference/: `cv-format.md`, `letter-format.md`, `exports.md`, `recipes.md`.
