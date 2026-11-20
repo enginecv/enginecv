@@ -15,7 +15,7 @@ export const de: Translations = {
   // Pricing Page
 
   // Landing Page
-  "landing.hero.description1": "Erstelle, gestalte und exportiere professionelle Lebensläufe kostenlos. Kein Konto nötig, keine versteckten Bezahlschranken, und deine Daten bleiben unter deiner Kontrolle.",
+  "landing.hero.description1": "Erstelle, gestalte und exportiere professionelle Lebensläufe kostenlos. Kein Konto nötig, keine versteckten Paywalls, und deine Daten bleiben unter deiner Kontrolle.",
   "landing.hero.workbenchKicker": "Lokale Lebenslauf-Werkbank",
   "landing.workbench.localStatus": "Lokal gespeichert",
   "landing.workbench.contentTab": "Inhalt",
@@ -48,10 +48,10 @@ export const de: Translations = {
 
   "landing.howItWorks.subtitle": "Erstellen, bearbeiten, prüfen und exportieren – direkt im Browser.",
   "landing.howItWorks.step1Title": "Lokal starten",
-  "landing.howItWorks.step1Desc": "Erstelle Lebensläufe auf deinem Gerät, ohne Konto, ohne Paywall und ohne Cloud-Zwang. Halte sie in diesem Browser oder in einer Datei auf deinem Computer.",
+  "landing.howItWorks.step1Desc": "Erstelle Lebensläufe auf deinem Gerät, ohne Konto, ohne Paywall und ohne Cloud-Zwang. Behalte sie in diesem Browser oder in einer Datei auf deinem Computer.",
   "landing.howItWorks.step2Title": "Mit Live-Vorschau bearbeiten",
   "landing.howItWorks.step2Desc": "Aktualisiere Inhalte, ordne Abschnitte neu und feinjustiere das Layout, während die Vorschau sofort aktualisiert wird.",
-  "landing.howItWorks.step3Title": "Exportieren und iterieren",
+  "landing.howItWorks.step3Title": "Exportieren und wiederholen",
   "landing.howItWorks.step3Desc": "Bewahre den lokalen Verlauf, dupliziere Versionen und exportiere portable Dateien, wann immer du sie brauchst.",
 
   "landing.features.title": "Was heute funktioniert",
@@ -137,7 +137,7 @@ export const de: Translations = {
   "landing.faq.q4": "Kann ich meinen Lebenslauf exportieren?",
   "landing.faq.a4": "Ja. Exportiere {formats} oder verschlüsseltes JSON und importiere die portablen Daten später wieder.",
   "landing.faq.q5": "Kann ein KI-Agent meinen Lebenslauf bearbeiten?",
-  "landing.faq.a5": "Ja, auf deinem eigenen Computer. In Chrome oder Edge kannst du einen Arbeitsordner verbinden; ein lokaler Agent wie Claude Code oder Codex bearbeitet die Dateien darin und EngineCV folgt, prüft jede Änderung und legt einen Wiederherstellungspunkt an. EngineCV lädt nichts hoch, aber der Agent kann die Dateien an seinen eigenen Modellanbieter senden, nutze also einen, dem du vertraust.",
+  "landing.faq.a5": "Ja, auf deinem eigenen Computer. In Chrome oder Edge kannst du einen Arbeitsordner verbinden; ein lokaler Agent wie Claude Code oder Codex bearbeitet die Dateien darin und EngineCV folgt und prüft jede Änderung und legt einen Wiederherstellungspunkt an. EngineCV lädt nichts hoch, aber der Agent kann die Dateien an seinen eigenen Modellanbieter senden, nutze also einen, dem du vertraust.",
 
   "landing.cta.title": "Erstelle noch heute deinen Lebenslauf",
   "landing.cta.noSignup": "Kein Konto erforderlich. Starte lokal und exportiere jederzeit.",
@@ -3001,7 +3001,7 @@ export const de: Translations = {
   "contact.privacy": "Datenschutzhinweise lesen",
   "supporters.title": "Unterstützer",
   "supporters.thanks": "Vielen Dank",
-  "supporters.intro": "EngineCV ist kostenlos, ohne Konto und Bezahlschranke, und wird von einer Person entwickelt. Unterstützer helfen über Ko-fi bei Hosting und Entwicklung.",
+  "supporters.intro": "EngineCV ist kostenlos, ohne Konto und Paywall, und wird von einer Person entwickelt. Unterstützer helfen über Ko-fi bei Hosting und Entwicklung.",
   "supporters.support": "EngineCV auf Ko-fi unterstützen",
   "supporters.empty": "Hier steht noch niemand. Werde erster Unterstützer und sag mir auf Ko-fi, wenn dein Name hier erscheinen soll.",
   "supporters.monthly": "Monatlich",
@@ -3346,5 +3346,5 @@ export const de: Translations = {
   "diagram.export.tag.password": "Passwort-Option",
   "diagram.export.tag.contentOnly": "Nur Inhalt",
   "landing.exports.title": "Ein Lebenslauf, {count} Wege nach draußen",
-  "landing.exports.subtitle": "Wähle das Format, das dazu passt, wohin dein Lebenslauf geht. Für den Export wird nichts hochgeladen.",
+  "landing.exports.subtitle": "Wähle das Format, das am besten zu deinem Ziel passt.",
 };
