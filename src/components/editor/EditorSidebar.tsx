@@ -3644,7 +3644,7 @@ export function EditorSidebar({ onMobilePreview }: EditorSidebarProps = {}) {
     );
 
     // If active section is 'basics', render the form without tabs visible
-    if (activeTab !== "json" && activeSection === "basics") {
+    if (activeTab === "content" && activeSection === "basics") {
         return (
             <div className="flex h-full min-h-0 flex-col text-strong">
                 <div className="min-h-0 flex-1">
@@ -3655,7 +3655,7 @@ export function EditorSidebar({ onMobilePreview }: EditorSidebarProps = {}) {
         );
     }
 
-    if (activeTab !== "json" && activeSection) {
+    if (activeTab === "content" && activeSection) {
         return (
             <div className="flex h-full min-h-0 flex-col text-strong">
                 <div className="min-h-0 flex-1">
