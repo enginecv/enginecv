@@ -1,13 +1,13 @@
 "use client";
 
-import { FolderSync, History, Loader2, Pause, Play, Unlink } from "lucide-react";
+import { FolderOpen, FolderSync, History, Loader2, Pause, Play, Unlink } from "lucide-react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useEffect, useState } from "react";
 import { db } from "@/lib/db";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { useDialogFocus } from "@/hooks/useDialogFocus";
 import { useTranslation } from "@/lib/i18n";
-import { analyzeFolderHandle, applyHeldChange, chooseDuplicate, connectFolder, disconnectWorkspace, ignoreFile, keepAppVersion, recreateDocumentFile, relinkDocumentTo, resumePermission, setHideContact as applyHideContact, setNotifications, setPaused, useWorkspaceStore } from "@/lib/workspace/controller";
+import { analyzeFolderHandle, applyHeldChange, chooseDuplicate, connectFolder, disconnectWorkspace, ignoreFile, keepAppVersion, recreateDocumentFile, relinkDocumentTo, resumePermission, setHideContact as applyHideContact, setNotifications, setPaused, showFolderLocation, useWorkspaceStore } from "@/lib/workspace/controller";
 import { isBrowserToolsEnabled, isBrowserToolsSupported, setBrowserToolsEnabled } from "@/lib/workspace/browser-tools";
 import { pickWorkspaceFolder } from "@/lib/workspace/directory-adapter";
 import type { PlanItem } from "@/lib/workspace/first-sync";
@@ -31,6 +31,7 @@ export function WorkspacePanel({ onClose, initialActivityDocId }: { onClose: () 
     const state = useWorkspaceStore();
     const [step, setStep] = useState<Step>({ kind: "idle" });
     const [hideContact, setHideContact] = useState(false);
+    const [folderNote, setFolderNote] = useState<string | null>(null);
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [confirmDisconnect, setConfirmDisconnect] = useState(false);
@@ -135,7 +136,18 @@ export function WorkspacePanel({ onClose, initialActivityDocId }: { onClose: () 
                     {state.phase === "connected" && (
                         <div className="space-y-3">
                             <div className="rounded-xl border border-edge bg-surface-1 p-3 text-sm">
-                                <p className="font-medium text-strong" data-testid="workspace-folder-name">{t("workspace.panel.connected", { folder: state.folderName ?? "" })}</p>
+                                <div className="flex items-start justify-between gap-3">
+                                    <div className="min-w-0">
+                                        <p className="font-medium text-strong" data-testid="workspace-folder-name">{t("workspace.panel.connected", { folder: state.folderName ?? "" })}</p>
+                                        <p className="mt-0.5 break-all font-[family-name:var(--font-geist-mono)] text-xs text-mid" data-testid="workspace-folder-title">{state.folderName}</p>
+                                    </div>
+                                    <button type="button" onClick={() => { setFolderNote(null); void showFolderLocation().then((result) => { if (result !== "shown") setFolderNote(t("workspace.panel.showFolderFailed", { folder: state.folderName ?? "" })); }); }} data-testid="workspace-show-folder" className={button}>
+                                        <FolderOpen className="h-4 w-4" aria-hidden="true" />
+                                        {t("workspace.panel.showFolder")}
+                                    </button>
+                                </div>
+                                <p className="mt-2 text-xs text-faint">{t("workspace.panel.showFolderHint", { folder: state.folderName ?? "" })}</p>
+                                {folderNote && <p role="status" className="mt-1 text-xs text-accent" data-testid="workspace-folder-note">{folderNote}</p>}
                                 <p className="text-mid" data-testid="workspace-doc-count">{t("workspace.panel.documents", { count: state.docCount })}</p>
                                 <p className="text-xs text-faint">{t(state.changeSource === "observer" ? "workspace.panel.changeSourceObserver" : "workspace.panel.changeSourcePoll")}</p>
                                 {state.paused && <p className="text-xs text-accent" data-testid="workspace-paused">{t("workspace.panel.paused")}</p>}

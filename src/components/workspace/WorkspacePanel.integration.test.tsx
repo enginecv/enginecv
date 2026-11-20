@@ -83,6 +83,28 @@ describe("WorkspacePanel", () => {
         expect(await folder.readExternal("cvs/Master CV.cv.json")).not.toContain("amina@example.com");
     });
 
+    it("shows the folder name and opens a folder window inside it so the person can see where it is", async () => {
+        await mount();
+        fireEvent.click(await screen.findByTestId("workspace-choose"));
+        fireEvent.click(await screen.findByTestId("workspace-warning-continue"));
+        fireEvent.click(await screen.findByTestId("workspace-first-sync-apply"));
+        await screen.findByTestId("workspace-phase-connected");
+        expect(screen.getByTestId("workspace-folder-title")).toHaveTextContent("applications");
+
+        const picker = vi.fn(async () => STAND_IN);
+        (window as unknown as { showDirectoryPicker: unknown }).showDirectoryPicker = picker;
+        fireEvent.click(screen.getByTestId("workspace-show-folder"));
+        await waitFor(() => expect(picker).toHaveBeenCalledTimes(1));
+        expect(picker).toHaveBeenCalledWith(expect.objectContaining({ mode: "read", startIn: expect.anything() }));
+        expect(screen.queryByTestId("workspace-folder-note")).toBeNull();
+
+        // A browser that refuses says so, and names the folder so it can still be found.
+        picker.mockRejectedValueOnce(Object.assign(new Error("no"), { name: "SecurityError" }));
+        fireEvent.click(screen.getByTestId("workspace-show-folder"));
+        expect(await screen.findByTestId("workspace-folder-note")).toHaveTextContent("applications");
+        delete (window as unknown as { showDirectoryPicker?: unknown }).showDirectoryPicker;
+    });
+
     it("turns leaving contact details out on and off after connecting", async () => {
         await mount();
         fireEvent.click(await screen.findByTestId("workspace-choose"));

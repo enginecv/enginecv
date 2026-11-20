@@ -142,6 +142,21 @@ function notify(docId: string | null, build: (title: string, docKind: DocKind | 
     })().catch(() => undefined);
 }
 
+/**
+ * Shows where the folder is. A browser cannot open Explorer or Finder, so this opens a folder picker that starts
+ * inside the folder; the person sees the location and its contents, and whatever they pick is ignored.
+ */
+export async function showFolderLocation(): Promise<"shown" | "unsupported" | "failed"> {
+    if (!rootHandle || typeof window === "undefined" || typeof window.showDirectoryPicker !== "function") return "unsupported";
+    try {
+        await window.showDirectoryPicker({ id: "enginecv-show-folder", mode: "read", startIn: rootHandle });
+        return "shown";
+    } catch (error) {
+        // Closing the window is the normal way out.
+        return (error as { name?: string }).name === "AbortError" ? "shown" : "failed";
+    }
+}
+
 /** Turns notifications on or off for this folder. */
 export async function setNotifications(on: boolean): Promise<void> {
     set({ notify: on });
