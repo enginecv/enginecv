@@ -71,6 +71,7 @@ export const STORAGE_REGISTRY = [
     { ...active, id: "ls.preferences", location: "local-storage", name: "enginecv-preferences", legalBasis: "functional", owner: "enginecv", retention: "until-deleted", jsReadable: true, removable: "yes", timestampField: "updatedAt" },
     { ...active, id: "ls.consent", location: "local-storage", name: "enginecv-consent", legalBasis: "necessary", owner: "enginecv", retention: "until-deleted", jsReadable: true, removable: "yes", timestampField: "decidedAt" },
     { ...active, id: "ls.readmeCredit", location: "local-storage", name: "enginecv-readme-credit", legalBasis: "functional", owner: "enginecv", retention: "until-deleted", jsReadable: true, removable: "yes" },
+    { ...active, id: "ls.browserTools", location: "local-storage", name: "enginecv.browserTools", legalBasis: "functional", owner: "enginecv", retention: "until-deleted", jsReadable: true, removable: "yes" },
     { ...active, id: "ls.localeSuggestionDismissed", location: "local-storage", name: "enginecv-locale-suggestion-dismissed", legalBasis: "functional", owner: "enginecv", retention: "until-deleted", jsReadable: true, removable: "yes" },
     { ...active, id: "ss.source", location: "session-storage", name: "enginecv:source", legalBasis: "functional", owner: "enginecv", retention: "session", jsReadable: true, removable: "yes" },
     { ...active, id: "ss.landing", location: "session-storage", name: "enginecv:landing", legalBasis: "functional", owner: "enginecv", retention: "session", jsReadable: true, removable: "yes" },

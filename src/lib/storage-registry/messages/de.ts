@@ -13,6 +13,7 @@ export const de: Record<string, string> = {
     "storage.purpose.ls.preferences": "Ihre Einstellungen: Design, Sprache, Dashboard, Editor und Export.",
     "storage.purpose.ls.consent": "Ihre Antwort auf die Werbefrage und wann Sie sie gegeben haben.",
     "storage.purpose.ls.readmeCredit": "Ob der GitHub-README-Export eine kleine Zeile „made with EngineCV“ hinzufügt.",
+    "storage.purpose.ls.browserTools": "Ob du die experimentellen Assistenten-Werkzeuge im Browser eingeschaltet hast (standardmäßig aus).",
     "storage.purpose.ls.localeSuggestionDismissed": "Dass Sie den Hinweis „diese Seite gibt es in Ihrer Sprache“ geschlossen haben.",
     "storage.purpose.ss.source": "Welcher Link oder welche Seite Sie hergeführt hat, nur in diesem Tab gespeichert. Wird mit dem anonymen Export-Zähler gesendet.",
     "storage.purpose.ss.landing": "Die erste Seite, die Sie in diesem Tab geöffnet haben (nur die Adresse, nie eine Dokument-ID), nur in diesem Tab gespeichert. Wird mit dem anonymen Export-Zähler gesendet.",

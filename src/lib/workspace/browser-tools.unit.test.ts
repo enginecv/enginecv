@@ -6,7 +6,7 @@ import { makeLetter, makeSentLetter, resetLetterTables } from "../../../test/set
 import { createMemoryDirectory } from "../../../test/setup/memory-directory";
 import { MANGLES, cutOff, editFile, makeWorkspaceCv, withoutSection } from "../../../test/setup/workspace-fixtures";
 import { BROWSER_TOOLS_KEY, browserTools, detectModelContext, setBrowserToolsEnabled, syncBrowserTools, type ModelContextLike, type ModelContextTool } from "./browser-tools";
-import { createDirectoryAdapter } from "./directory-adapter";
+import { createDirectoryAdapter, type DirectoryAdapter } from "./directory-adapter";
 
 function fakeContext() {
     const tools = new Map<string, ModelContextTool>();
@@ -16,7 +16,7 @@ function fakeContext() {
     };
     return { context, tools };
 }
-const noFolder = { getAdapter: () => null };
+const noFolder: { getAdapter: () => DirectoryAdapter | null } = { getAdapter: () => null };
 const call = async (name: string, input: Record<string, unknown>, deps = noFolder) => (await browserTools(deps).find((tool) => tool.name === name)!.execute(input)) as Record<string, unknown>;
 const GUT = ["experience", "education", "projects", "courses", "certificates", "organisations", "awards", "publications", "references", "custom", "skills", "languages"];
 

@@ -13,6 +13,7 @@ export const bs: Record<string, string> = {
     "storage.purpose.ls.preferences": "Vaše postavke: tema, jezik, kontrolna tabla, uređivač i izvoz.",
     "storage.purpose.ls.consent": "Vaš odgovor na pitanje o reklamama i kada ste ga dali.",
     "storage.purpose.ls.readmeCredit": "Da li izvoz GitHub README-a dodaje mali red „made with EngineCV“.",
+    "storage.purpose.ls.browserTools": "Da li ste uključili eksperimentalne alate asistenta u pregledniku (isključeno prema zadanim postavkama).",
     "storage.purpose.ls.localeSuggestionDismissed": "Da ste zatvorili napomenu „ova stranica postoji na vašem jeziku“.",
     "storage.purpose.ss.source": "Koji te je link ili stranica doveo ovdje, sačuvano samo u ovom tabu. Šalje se s anonimnim brojačem izvoza.",
     "storage.purpose.ss.landing": "Prva stranica koju si otvorio u ovom tabu (samo adresa, nikad ID dokumenta), sačuvana samo u ovom tabu. Šalje se s anonimnim brojačem izvoza.",

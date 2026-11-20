@@ -13,6 +13,7 @@ export const es: Record<string, string> = {
     "storage.purpose.ls.preferences": "Tus ajustes: tema, idioma, panel, editor y exportación.",
     "storage.purpose.ls.consent": "Tu respuesta a la pregunta sobre anuncios y cuándo la diste.",
     "storage.purpose.ls.readmeCredit": "Si la exportación README de GitHub añade una pequeña línea «made with EngineCV».",
+    "storage.purpose.ls.browserTools": "Si activaste las herramientas experimentales de asistente en el navegador (desactivadas por defecto).",
     "storage.purpose.ls.localeSuggestionDismissed": "Que cerraste el aviso «esta página está disponible en tu idioma».",
     "storage.purpose.ss.source": "Qué enlace o sitio te trajo aquí, guardado solo en esta pestaña. Se envía con el contador anónimo de exportaciones.",
     "storage.purpose.ss.landing": "La primera página que abriste en esta pestaña (solo la dirección, nunca un identificador de documento), guardada solo en esta pestaña. Se envía con el contador anónimo de exportaciones.",
