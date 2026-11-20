@@ -1,8 +1,11 @@
 import { projectSchema, type Project, type Resume } from "@/lib/schema";
 import { slugId } from "./ids";
-import type { LanguageBreakdown, NormalizedRepository } from "./provider";
+import type { LanguageBreakdown, NormalizedRepository, RepoDetails } from "./provider";
 
 const STAR_HIGHLIGHT_THRESHOLD = 10;
+const FORK_HIGHLIGHT_THRESHOLD = 5;
+/** A description shorter than this is replaced by the README's first paragraph when there is one. */
+const THIN_DESCRIPTION = 30;
 const RECENT_PUSH_MONTHS = 3;
 // GitHub repository names: letters, digits, '.', '-', '_'; at most 100 characters.
 const REPO_NAME_PATTERN = /^[\w.-]{1,100}$/;
@@ -87,21 +90,33 @@ interface RepoToProjectOptions {
     referenceDate: Date;
     projectId: string;
     repoLinkId: string;
+    /** README summary and recognised stack, when the person asked for them. */
+    details?: RepoDetails;
 }
 
 /** One repository as a resume project; shared by new-CV import and add-to-existing-CV. */
 export function repoToProject(repo: NormalizedRepository, options: RepoToProjectOptions): Project {
+    const details = options.details;
+    const description = repo.description.trim().length >= THIN_DESCRIPTION || !details?.summary ? repo.description : details.summary;
+    const highlights = [
+        ...(repo.stars >= STAR_HIGHLIGHT_THRESHOLD ? [`★ ${repo.stars} on GitHub`] : []),
+        ...((repo.forks ?? 0) >= FORK_HIGHLIGHT_THRESHOLD ? [`${repo.forks} forks`] : []),
+        ...(repo.license ? [`License: ${repo.license}`] : []),
+    ];
+    const skills = [...repoSkillNames(repo, options.languages)];
+    for (const tech of details?.stack ?? []) if (!skills.includes(tech)) skills.push(tech);
     return projectSchema.parse({
         id: options.projectId,
         name: repo.name,
         subtitle: "",
-        description: repo.description,
-        highlights: repo.stars >= STAR_HIGHLIGHT_THRESHOLD ? [`★ ${repo.stars} on GitHub`] : [],
+        description,
+        highlights,
         keywords: repo.topics,
-        skills: repoSkillNames(repo, options.languages),
+        skills,
         start: toYearMonth(repo.createdAt),
         end: isWithinRecentPushWindow(repo.pushedAt, options.referenceDate) ? "" : toYearMonth(repo.pushedAt),
-        url: repo.url,
+        // A project's own site or live demo is the better link; the repository stays attached below.
+        url: repo.homepage || repo.url,
         urlIcon: "auto",
         repos: repo.url ? [{ id: options.repoLinkId, url: repo.url, platform: "github", label: "" }] : [],
         visibility: repo.isPrivate ? "private" : "public",

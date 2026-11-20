@@ -196,6 +196,10 @@ export function GithubImportPanel({
     const [selectedNames, setSelectedNames] = useState<Set<string>>(new Set());
     const [selectedOrganizationLogins, setSelectedOrganizationLogins] = useState<Set<string>>(new Set());
     const [dialogError, setDialogError] = useState<ImportDialogError | null>(null);
+    // Optional extras, all off until asked for: each reads more public data from GitHub.
+    const [extraReadme, setExtraReadme] = useState(false);
+    const [extraDetails, setExtraDetails] = useState(false);
+    const [extraContributions, setExtraContributions] = useState(false);
 
     const reset = useCallback(() => {
         requestIdRef.current += 1;
@@ -357,9 +361,18 @@ export function GithubImportPanel({
         try {
             const languages = await importProvider.fetchLanguages(username, selectedRepoNames);
             const avatarDataUrl = await fetchAvatarDataUrl(profile.avatarUrl);
+            // Each extra degrades to nothing on its own: the import never fails because a README could not be read.
+            const [profileReadme, repoDetails, contributions] = await Promise.all([
+                extraReadme && importProvider.fetchProfileReadme ? importProvider.fetchProfileReadme(username) : Promise.resolve(""),
+                extraDetails && importProvider.fetchRepoDetails && selectedRepos.length > 0
+                    ? importProvider.fetchRepoDetails(username, selectedRepos.map((repo) => ({ name: repo.name, primaryLanguage: repo.primaryLanguage })))
+                    : Promise.resolve(undefined),
+                extraContributions && importProvider.fetchContributions ? importProvider.fetchContributions(username) : Promise.resolve(undefined),
+            ]);
             const mapped = mapToResume(profile, repos, selectedRepoNames, languages, avatarDataUrl, {
                 organizations,
                 selectedOrganizationLogins,
+                extras: { profileReadme, repoDetails, contributions },
             });
             const parsed = resumeSchema.parse(mapped);
             const id = await persistResume(parsed);
@@ -377,6 +390,9 @@ export function GithubImportPanel({
         selectedNames,
         selectedOrganizationLogins,
         organizations,
+        extraReadme,
+        extraDetails,
+        extraContributions,
         username,
     ]);
 
@@ -560,6 +576,34 @@ export function GithubImportPanel({
                             selectedLogins={selectedOrganizationLogins}
                             onToggle={toggleOrganization}
                         />
+                    </CollapsibleImportSection>
+                    <CollapsibleImportSection
+                        title={t("githubImport.extrasTitle")}
+                        subtitle={t("githubImport.extrasSubtitle")}
+                        defaultOpen={false}
+                        testId="github-import-extras-section"
+                    >
+                        <div className="space-y-2">
+                            {([
+                                { id: "readme", checked: extraReadme, set: setExtraReadme, label: t("githubImport.extra.readme"), hint: t("githubImport.extra.readmeHint", { username }) },
+                                { id: "details", checked: extraDetails, set: setExtraDetails, label: t("githubImport.extra.details"), hint: t("githubImport.extra.detailsHint") },
+                                { id: "contributions", checked: extraContributions, set: setExtraContributions, label: t("githubImport.extra.contributions"), hint: t("githubImport.extra.contributionsHint") },
+                            ] as const).map((extra) => (
+                                <label key={extra.id} className="flex cursor-pointer items-start gap-3 rounded-lg border border-edge bg-surface-1 p-3">
+                                    <input
+                                        type="checkbox"
+                                        checked={extra.checked}
+                                        onChange={(event) => extra.set(event.target.checked)}
+                                        data-testid={`github-import-extra-${extra.id}`}
+                                        className="mt-1"
+                                    />
+                                    <span className="min-w-0">
+                                        <span className="block text-sm font-medium text-strong">{extra.label}</span>
+                                        <span className="block text-xs leading-5 text-dim">{extra.hint}</span>
+                                    </span>
+                                </label>
+                            ))}
+                        </div>
                     </CollapsibleImportSection>
                     {!hasSelectedImportData && (
                         <p

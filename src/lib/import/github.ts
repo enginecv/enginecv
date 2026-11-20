@@ -1,4 +1,5 @@
 import { canonicalizeGithubInput } from "./canonicalize";
+import { groupContributions, manifestsFor, profileReadmeToSummary, readmeToSummary, stackFromManifest } from "./github-extras";
 import {
     ImportError,
     normalizedOrganizationSchema,
@@ -6,10 +7,12 @@ import {
     normalizedRepositorySchema,
     profileSuggestionSchema,
     type ImportProvider,
+    type Contribution,
     type LanguageBreakdown,
     type NormalizedOrganization,
     type NormalizedRepository,
     type ProfileSuggestion,
+    type RepoDetails,
     type RepositoryFetchResult,
 } from "./provider";
 
@@ -21,8 +24,15 @@ const MAX_LANGUAGE_LOOKUPS = 10;
 const LANGUAGE_CONCURRENCY = 4;
 const SUGGESTIONS_PER_SEARCH = 5;
 
-/** Hard ceiling: 1 profile + 2 repo pages + 1 org lookup + 10 language lookups. */
-export const GITHUB_MAX_REQUESTS = 14;
+/** Hard ceiling: 1 profile + 2 repo pages + 1 org lookup + 10 language lookups + 1 contributions search. */
+export const GITHUB_MAX_REQUESTS = 15;
+
+const RAW_BASE = "https://raw.githubusercontent.com";
+/** Files read from raw.githubusercontent.com (not the API, so not part of its rate limit) per import. */
+export const RAW_MAX_REQUESTS = 80;
+const RAW_MAX_BYTES = 300_000;
+const RAW_CONCURRENCY = 4;
+const MAX_DETAIL_REPOS = 15;
 
 interface RawProfile {
     login?: string;
@@ -33,6 +43,12 @@ interface RawProfile {
     location?: string | null;
     avatar_url?: string | null;
     html_url?: string | null;
+    email?: string | null;
+    twitter_username?: string | null;
+    created_at?: string | null;
+    public_repos?: number;
+    followers?: number;
+    hireable?: boolean | null;
 }
 
 interface RawRepo {
@@ -47,6 +63,9 @@ interface RawRepo {
     created_at?: string | null;
     pushed_at?: string | null;
     html_url?: string | null;
+    homepage?: string | null;
+    license?: { spdx_id?: string | null } | null;
+    forks_count?: number;
 }
 
 interface RawOrganization {
@@ -86,12 +105,15 @@ function classifyResponse(response: Response): ImportError {
 export interface GithubProvider extends ImportProvider {
     /** Number of api.github.com requests issued by this provider instance. */
     requestCount(): number;
+    /** Files read from raw.githubusercontent.com by this provider instance. */
+    rawRequestCount(): number;
     /** One public repository by owner and name. Throws ImportError. */
     fetchRepository(owner: string, name: string): Promise<NormalizedRepository>;
 }
 
 export function createGithubProvider(fetchImpl: typeof fetch = fetch): GithubProvider {
     let requests = 0;
+    let rawRequests = 0;
 
     async function request(path: string): Promise<Response> {
         if (requests >= GITHUB_MAX_REQUESTS) {
@@ -115,6 +137,22 @@ export function createGithubProvider(fetchImpl: typeof fetch = fetch): GithubPro
         return response;
     }
 
+    /** One file from a public repository, or null when it is missing, too large or cannot be read. Never throws. */
+    async function rawFile(owner: string, repo: string, path: string): Promise<string | null> {
+        if (rawRequests >= RAW_MAX_REQUESTS) return null;
+        rawRequests += 1;
+        try {
+            const response = await fetchImpl(`${RAW_BASE}/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/HEAD/${path}`, { signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS) });
+            if (!response.ok) return null;
+            const size = Number(response.headers.get("content-length") ?? 0);
+            if (size > RAW_MAX_BYTES) return null;
+            const text = await response.text();
+            return text.length > RAW_MAX_BYTES ? null : text;
+        } catch {
+            return null;
+        }
+    }
+
     function normalizeRepo(raw: RawRepo): NormalizedRepository {
         return normalizedRepositorySchema.parse({
             name: raw.name ?? "",
@@ -128,6 +166,9 @@ export function createGithubProvider(fetchImpl: typeof fetch = fetch): GithubPro
             isArchived: raw.archived ?? false,
             isPrivate: raw.private ?? false,
             url: raw.html_url ?? "",
+            homepage: normalizeWebsite(raw.homepage),
+            license: raw.license?.spdx_id && raw.license.spdx_id !== "NOASSERTION" ? raw.license.spdx_id : "",
+            forks: raw.forks_count ?? 0,
         });
     }
 
@@ -149,6 +190,8 @@ export function createGithubProvider(fetchImpl: typeof fetch = fetch): GithubPro
 
         requestCount: () => requests,
 
+        rawRequestCount: () => rawRequests,
+
         async fetchProfile(username) {
             const response = await request(`/users/${encodeURIComponent(username)}`);
             const raw = (await response.json()) as RawProfile;
@@ -162,6 +205,12 @@ export function createGithubProvider(fetchImpl: typeof fetch = fetch): GithubPro
                 company: raw.company ?? "",
                 avatarUrl: raw.avatar_url ?? "",
                 profileUrl: raw.html_url ?? `https://github.com/${username}`,
+                email: raw.email ?? "",
+                twitter: raw.twitter_username ?? "",
+                createdAt: raw.created_at ?? "",
+                publicRepos: raw.public_repos ?? 0,
+                followers: raw.followers ?? 0,
+                hireable: raw.hireable ?? false,
             });
         },
 
@@ -234,6 +283,44 @@ export function createGithubProvider(fetchImpl: typeof fetch = fetch): GithubPro
             );
 
             return result;
+        },
+
+        async fetchProfileReadme(username): Promise<string> {
+            const text = (await rawFile(username, username, "README.md")) ?? (await rawFile(username, username, "readme.md"));
+            return text ? profileReadmeToSummary(text) : "";
+        },
+
+        async fetchRepoDetails(username, repos): Promise<Map<string, RepoDetails>> {
+            const targets = repos.slice(0, MAX_DETAIL_REPOS);
+            const result = new Map<string, RepoDetails>();
+            let cursor = 0;
+            async function worker() {
+                while (cursor < targets.length) {
+                    const target = targets[cursor];
+                    cursor += 1;
+                    const readme = (await rawFile(username, target.name, "README.md")) ?? (await rawFile(username, target.name, "readme.md"));
+                    const stack: string[] = [];
+                    for (const manifest of manifestsFor(target.primaryLanguage)) {
+                        const text = await rawFile(username, target.name, manifest.file);
+                        if (text) for (const tech of stackFromManifest(manifest.kind, text)) if (!stack.includes(tech)) stack.push(tech);
+                    }
+                    const summary = readme ? readmeToSummary(readme) : "";
+                    if (summary || stack.length > 0) result.set(target.name, { summary, stack: stack.slice(0, 8) });
+                }
+            }
+            await Promise.all(Array.from({ length: Math.min(RAW_CONCURRENCY, targets.length) }, worker));
+            return result;
+        },
+
+        async fetchContributions(username): Promise<Contribution[]> {
+            try {
+                const query = encodeURIComponent(`author:${username} type:pr is:merged -user:${username}`);
+                const response = await request(`/search/issues?q=${query}&per_page=100&sort=updated&order=desc`);
+                const raw = (await response.json()) as { items?: Array<{ repository_url?: string; title?: string; html_url?: string }> };
+                return groupContributions(raw.items ?? []);
+            } catch {
+                return [];
+            }
         },
 
         async searchUsers(query): Promise<ProfileSuggestion[]> {

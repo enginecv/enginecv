@@ -124,6 +124,55 @@ describe("GitHub as a source in the hub", () => {
         expect(screen.queryByTestId("import-hub-batch")).not.toBeInTheDocument();
     });
 
+    it("reads nothing extra unless asked, and reads and uses it when asked", async () => {
+        const user = userEvent.setup();
+        const extras = {
+            fetchProfileReadme: vi.fn(async () => "I build tools for writers."),
+            fetchRepoDetails: vi.fn(async () => new Map([["engine-cv", { summary: "A local-first resume builder that runs in your browser.", stack: ["React"] }]])),
+            fetchContributions: vi.fn(async () => [{ repo: "vercel/next.js", url: "https://github.com/vercel/next.js", mergedPrs: 2, titles: ["Fix loader"] }]),
+        };
+
+        // Off by default: the plain import never touches them.
+        open(provider(extras));
+        await lookUp(user);
+        await screen.findByTestId("github-import-repo-picker");
+        await user.click(screen.getByRole("button", { name: /More from GitHub/ }));
+        for (const id of ["readme", "details", "contributions"]) expect(screen.getByTestId(`github-import-extra-${id}`)).not.toBeChecked();
+        await user.click(screen.getByTestId("github-import-confirm"));
+        await screen.findByTestId("import-hub-batch");
+        expect(extras.fetchProfileReadme).not.toHaveBeenCalled();
+        expect(extras.fetchRepoDetails).not.toHaveBeenCalled();
+        expect(extras.fetchContributions).not.toHaveBeenCalled();
+        cleanup();
+
+        // Turned on: each is read, and the result reaches the review step.
+        open(provider(extras));
+        await lookUp(user);
+        await screen.findByTestId("github-import-repo-picker");
+        await user.click(screen.getByRole("button", { name: /More from GitHub/ }));
+        await user.click(screen.getByTestId("github-import-extra-readme"));
+        await user.click(screen.getByTestId("github-import-extra-details"));
+        await user.click(screen.getByTestId("github-import-extra-contributions"));
+        await user.click(screen.getByTestId("github-import-confirm"));
+        await screen.findByTestId("import-hub-batch");
+        expect(extras.fetchProfileReadme).toHaveBeenCalledWith("octocat");
+        expect(extras.fetchRepoDetails).toHaveBeenCalledTimes(1);
+        expect(extras.fetchContributions).toHaveBeenCalledWith("octocat");
+        await user.click(screen.getByTestId("import-hub-review"));
+        expect(document.body.textContent).toContain("vercel/next.js");
+    });
+
+    it("still imports when an extra cannot be read", async () => {
+        const user = userEvent.setup();
+        open(provider({ fetchProfileReadme: vi.fn(async () => ""), fetchRepoDetails: vi.fn(async () => new Map()), fetchContributions: vi.fn(async () => []) }));
+        await lookUp(user);
+        await screen.findByTestId("github-import-repo-picker");
+        await user.click(screen.getByRole("button", { name: /More from GitHub/ }));
+        for (const id of ["readme", "details", "contributions"]) await user.click(screen.getByTestId(`github-import-extra-${id}`));
+        await user.click(screen.getByTestId("github-import-confirm"));
+        expect(await screen.findByTestId("import-hub-batch")).toHaveTextContent("The Octocat");
+    });
+
     it("shows the lookup only on the GitHub tab", async () => {
         const user = userEvent.setup();
         open(provider());

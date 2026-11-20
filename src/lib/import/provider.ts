@@ -9,6 +9,14 @@ export const normalizedProfileSchema = z.object({
     company: z.string().default(""),
     avatarUrl: z.string().default(""),
     profileUrl: z.string().default(""),
+    /** Public email, only when the person made it public on GitHub. */
+    email: z.string().optional(),
+    twitter: z.string().optional(),
+    /** When the account was made (ISO), "" when unknown. */
+    createdAt: z.string().optional(),
+    publicRepos: z.number().int().nonnegative().optional(),
+    followers: z.number().int().nonnegative().optional(),
+    hireable: z.boolean().optional(),
 });
 
 export const normalizedRepositorySchema = z.object({
@@ -23,6 +31,11 @@ export const normalizedRepositorySchema = z.object({
     isArchived: z.boolean().default(false),
     isPrivate: z.boolean().default(false),
     url: z.string().default(""),
+    /** The project's own website or live demo, when it has one. */
+    homepage: z.string().optional(),
+    /** SPDX id such as "MIT", "" when none. */
+    license: z.string().optional(),
+    forks: z.number().int().nonnegative().optional(),
 });
 
 export const normalizedOrganizationSchema = z.object({
@@ -70,6 +83,24 @@ export interface RepositoryFetchResult {
 /** Per-repo language byte counts, keyed by repository name. */
 export type LanguageBreakdown = Map<string, Record<string, number>>;
 
+/** What the README and dependency files of one repository say, read without the API. */
+export interface RepoDetails {
+    /** First meaningful paragraph of the README, plain text. */
+    summary: string;
+    /** Technologies recognised from dependency files, display names. */
+    stack: string[];
+}
+
+/** Merged pull requests the person made to projects they do not own. */
+export interface Contribution {
+    /** "owner/name". */
+    repo: string;
+    url: string;
+    mergedPrs: number;
+    /** A few pull request titles, newest first. */
+    titles: string[];
+}
+
 export interface ImportProvider {
     name: string;
     /** Pure. Returns the canonical username, or null for input that can never be valid. */
@@ -92,4 +123,10 @@ export interface ImportProvider {
      * the suggestion flow. Throws ImportError.
      */
     searchUsers?(query: string): Promise<ProfileSuggestion[]>;
+    /** The profile README (`user/user`), plain text; "" when there is none or it cannot be read. Never throws. */
+    fetchProfileReadme?(username: string): Promise<string>;
+    /** README summaries and recognised stacks for the named repositories. Failures leave a repo out. Never throws. */
+    fetchRepoDetails?(username: string, repos: Array<{ name: string; primaryLanguage: string }>): Promise<Map<string, RepoDetails>>;
+    /** Merged pull requests to other people's projects, most active first. Never throws. */
+    fetchContributions?(username: string): Promise<Contribution[]>;
 }

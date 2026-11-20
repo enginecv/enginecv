@@ -88,7 +88,10 @@ export default function PrivacyPage() {
                         <strong>GitHub import.</strong> When you create a CV from a GitHub profile, or add GitHub repositories as
                         projects to an existing CV, your browser asks GitHub&apos;s public API (<code>api.github.com</code>) and{" "}
                         <code>avatars.githubusercontent.com</code> for the profile or repository, its public repositories,
-                        languages, and avatar. These requests go directly from your device to GitHub; no EngineCV server sits in
+                        languages, and avatar. If you also tick the optional extras on the GitHub tab, your browser reads your
+                        profile README and the README and dependency files (such as <code>package.json</code>) of the repositories
+                        you picked from <code>raw.githubusercontent.com</code>, and makes one more search request to the API for
+                        your merged pull requests. These requests go directly from your device to GitHub; no EngineCV server sits in
                         between or sees them. GitHub receives the username or repository name, your IP address, and browser
                         details. EngineCV never signs you in to GitHub and sends no GitHub token or cookie, so only public data
                         is read and private repositories are never included, even if you are signed in to GitHub in the same

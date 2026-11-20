@@ -300,3 +300,52 @@ describe("mapToResume", () => {
         expect(languageSkills(resume)[0].name).toBe("Ada");
     });
 });
+
+describe("mapToResume with the extra GitHub data", () => {
+    const rich: NormalizedRepository = { ...repos[0], homepage: "https://engine.example", license: "MIT", forks: 12, description: "" };
+
+    it("uses a project's own site as its link, adds license and forks as highlights, and keeps the repository attached", () => {
+        const resume = mapToResume(profile, [rich], ["engine-cv"], new Map(), "", { referenceDate });
+        const project = resume.projects[0];
+        expect(project.url).toBe("https://engine.example");
+        expect(project.repos[0].url).toBe("https://github.com/octocat/engine-cv");
+        expect(project.highlights.map((entry) => (typeof entry === "string" ? entry : (entry as { text?: string }).text ?? ""))).toEqual(expect.arrayContaining(["★ 42 on GitHub", "12 forks", "License: MIT"]));
+    });
+
+    it("fills a thin description from the README and adds recognised technologies as skills and a tools group", () => {
+        const details = new Map([["engine-cv", { summary: "A local-first resume builder that runs in the browser.", stack: ["React", "TypeScript"] }]]);
+        const resume = mapToResume(profile, [rich], ["engine-cv"], new Map(), "", { referenceDate, extras: { repoDetails: details } });
+        expect(resume.projects[0].description).toBe("A local-first resume builder that runs in the browser.");
+        expect(resume.projects[0].skills).toEqual(expect.arrayContaining(["TypeScript", "React"]));
+        expect(resume.skillGroups.find((group) => group.name === "Frameworks and Tools")?.skills.map((skill) => skill.name)).toEqual(["React", "TypeScript"]);
+        expect(resume.settings.contentSections).toContain("skills");
+    });
+
+    it("keeps a real repository description over the README", () => {
+        const details = new Map([["engine-cv", { summary: "Something from the README.", stack: [] }]]);
+        const resume = mapToResume(profile, [{ ...rich, description: "A description the owner wrote on purpose." }], ["engine-cv"], new Map(), "", { referenceDate, extras: { repoDetails: details } });
+        expect(resume.projects[0].description).toBe("A description the owner wrote on purpose.");
+    });
+
+    it("uses the profile README as the summary, a public email, and the handle as a link", () => {
+        const resume = mapToResume({ ...profile, email: "octo@example.com", twitter: "octocat" }, [], [], new Map(), "", { referenceDate, extras: { profileReadme: "I build tools for writers." } });
+        expect(resume.basics.summary).toBe("I build tools for writers.");
+        expect(resume.basics.email).toBe("octo@example.com");
+        expect(resume.basics.customLinks[0]).toMatchObject({ url: "https://x.com/octocat", label: "@octocat" });
+        // Without the extras the bio is kept, and a bad email or handle is dropped rather than failing the import.
+        const plain = mapToResume({ ...profile, email: "not an email", twitter: "bad handle!" }, [], [], new Map(), "", { referenceDate });
+        expect(plain.basics.summary).toBe("Building open-source tools.");
+        expect(plain.basics.email).toBe("");
+        expect(plain.basics.customLinks).toHaveLength(0);
+    });
+
+    it("lists contributions to other projects as projects marked as contributions, after the person's own", () => {
+        const resume = mapToResume(profile, [rich], ["engine-cv"], new Map(), "", { referenceDate, extras: { contributions: [{ repo: "vercel/next.js", url: "https://github.com/vercel/next.js", mergedPrs: 3, titles: ["Fix loader", "Docs"] }] } });
+        expect(resume.projects.map((project) => project.name)).toEqual(["engine-cv", "vercel/next.js"]);
+        const contribution = resume.projects[1];
+        expect(contribution).toMatchObject({ subtitle: "Open-source contribution · 3 merged pull requests", url: "https://github.com/vercel/next.js", keywords: ["open source"] });
+        expect(contribution.description).toContain("- Fix loader");
+        expect(resume.settings.contentSections).toContain("projects");
+        expect(mapToResume(profile, [rich], ["engine-cv"], new Map(), "", { referenceDate }).projects).toHaveLength(1);
+    });
+});
