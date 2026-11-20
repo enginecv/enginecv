@@ -123,6 +123,22 @@ export default function PrivacyPage() {
 
             <LegalSection title="5. Linked files and AI agents">
                 <p>
+                    In Chromium browsers you can also connect a <strong>workspace folder</strong>. EngineCV then writes your CVs
+                    and cover letters into that folder as plain files (including your contact details unless you turn on
+                    &quot;leave contact details out&quot;), plus a few instruction and index files for AI agents and a small
+                    activity log, and it reads your edits back. You choose the folder, your browser asks for permission first,
+                    and EngineCV only touches the files it made. The folder and its files stay on your computer: nothing in them
+                    is uploaded to EngineCV or any third party. EngineCV keeps the folder&apos;s permission and a per-document
+                    sync state, with no document text, in local database tables on this device.
+                </p>
+                <p>
+                    Where else those files go is decided by your own tools. If the folder is inside OneDrive, Dropbox, iCloud or
+                    similar, that service copies it. An AI agent you point at the folder may send what it reads to its model
+                    provider, and other programs or people with access to your computer can read the files too. Disconnecting
+                    leaves the files and your documents in place, and &quot;Delete all my data&quot; does not delete files in
+                    the folder.
+                </p>
+                <p>
                     In Chromium browsers (Chrome, Edge and similar) you can link a CV to a file on your computer, so a local AI
                     agent or any text editor can change it and the editor follows. You choose where the file lives. It holds the
                     CV as plain JSON, including your contact details, and your browser writes it only after you picked it, only
