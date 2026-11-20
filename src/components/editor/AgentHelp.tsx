@@ -6,7 +6,7 @@ import { copyTextToClipboard } from "@/lib/export-clipboard";
 import Link from "next/link";
 import { useTranslation } from "@/lib/i18n";
 import { SKILL_URL } from "@/lib/agent/authoring/skill-urls";
-import { isLinkingSupported } from "@/lib/linked-file/fs-access";
+import { isLinkingSupported } from "@/lib/workspace/fs-access";
 
 type CopyKind = "install" | "prompt";
 

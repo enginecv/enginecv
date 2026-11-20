@@ -1,4 +1,4 @@
-import { hashText } from "@/lib/linked-file/hash";
+import { hashText } from "@/lib/workspace/hash";
 import { importCvFromText, importLetterFromText } from "./apply-stored";
 import type { DirectoryAdapter } from "./directory-adapter";
 import type { Reconciliation } from "./documents";

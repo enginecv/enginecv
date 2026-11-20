@@ -1,7 +1,7 @@
 import type { DirectoryAdapter } from "./directory-adapter";
 import { MACHINE_DIR } from "./agent-files";
 import { db } from "@/lib/db";
-import { applyContent } from "@/lib/linked-file/apply-content";
+import { applyContent } from "@/lib/workspace/apply-content";
 import { recordResumeHistory } from "@/lib/history";
 import { parseHistoryResume } from "@/lib/history";
 import { letterFromHistory } from "@/lib/letters/history";

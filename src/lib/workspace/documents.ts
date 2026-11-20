@@ -5,7 +5,7 @@ import { classifyListing, type ConflictCopy } from "./scan";
 import type { DocKind, WorkspaceDocRecord } from "./types";
 import { patchDocRow } from "./workspace-store";
 import { parseLetterText } from "@/lib/letters/file-format";
-import { hashText } from "@/lib/linked-file/hash";
+import { hashText } from "@/lib/workspace/hash";
 
 /**
  * Who is who in the folder. A document is identified by the `id` inside its file, not by the file

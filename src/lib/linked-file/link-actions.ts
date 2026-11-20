@@ -1,14 +1,14 @@
 import { db } from "@/lib/db";
 import { useResumeStore } from "@/lib/store";
 import { attachLink, detachLink, getActiveEngine } from "./controller";
-import { fileStemToTitle, suggestedFileName } from "./file-name";
+import { fileStemToTitle, suggestedFileName } from "@/lib/workspace/file-name";
 import {
     FileAccessError,
     createHandleAdapter,
     pickExistingFile,
     pickNewFile,
     type FileAdapter,
-} from "./fs-access";
+} from "@/lib/workspace/fs-access";
 import { LinkedElsewhereError, getLink, removeLink, saveLink } from "./link-store";
 import { canonicalText } from "./sync-engine";
 

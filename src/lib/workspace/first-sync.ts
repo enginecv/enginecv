@@ -1,4 +1,4 @@
-import { hashText } from "@/lib/linked-file/hash";
+import { hashText } from "@/lib/workspace/hash";
 import { nameKey, parseDocumentFileName } from "./names";
 import type { DocKind } from "./types";
 

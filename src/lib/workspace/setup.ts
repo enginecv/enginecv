@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { hashText } from "@/lib/linked-file/hash";
+import { hashText } from "@/lib/workspace/hash";
 import { applyLetterContent } from "@/lib/letters/apply-content";
 import { letterFileText, parseLetterText } from "@/lib/letters/file-format";
 import type { LetterDocument } from "@/lib/letters/schema";
@@ -15,7 +15,7 @@ import { safeStem, uniqueFileName, keysOf, nameKey } from "./names";
 import { classifyListing } from "./scan";
 import { MAX_FILE_BYTES, type DocKind, type WorkspaceDocRecord } from "./types";
 import { newDocRow, saveWorkspace } from "./workspace-store";
-import { sectionCounts } from "@/lib/linked-file/apply-content";
+import { sectionCounts } from "@/lib/workspace/apply-content";
 
 /**
  * Connecting a folder: look at what is there, propose what to do with each document, and (once the

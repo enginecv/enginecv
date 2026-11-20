@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { hashText } from "@/lib/linked-file/hash";
+import { hashText } from "@/lib/workspace/hash";
 import type { LetterDocument } from "@/lib/letters/schema";
 import type { Resume } from "@/lib/schema";
 import { MACHINE_DIR } from "./agent-files";

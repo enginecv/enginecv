@@ -80,7 +80,7 @@ describe("agent files: made again, never over the person's edits", () => {
         // An older generated version: its stored hash matches its own text, so it is untouched, just old.
         const body = "# EngineCV workspace\nolder wording\n";
         const lines = (await dir.readExternal("AGENTS.md"))!.split("\n");
-        const { hashText } = await import("@/lib/linked-file/hash");
+        const { hashText } = await import("@/lib/workspace/hash");
         await dir.writeExternal("AGENTS.md", `${lines[0]}\n<!-- hash:${hashText(body)} -->\n${body}`);
         current = await start();
         expect(await dir.readExternal("AGENTS.md")).toBe(agentsMarkdown());

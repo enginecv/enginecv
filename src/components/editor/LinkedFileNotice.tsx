@@ -4,7 +4,7 @@ import { FileWarning, X } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "@/lib/i18n";
 import { grantAndAttach } from "@/lib/linked-file/controller";
-import { OPEN_LINKED_FILE_PANEL_EVENT } from "@/lib/linked-file/types";
+import { OPEN_LINKED_FILE_PANEL_EVENT } from "@/lib/workspace/file-state";
 import { useResumeStore } from "@/lib/store";
 
 const actionButton = "rounded-lg border border-edge bg-surface-1 px-3 py-1.5 text-xs font-medium text-strong transition-colors hover:border-faint";

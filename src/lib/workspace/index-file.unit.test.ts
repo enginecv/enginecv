@@ -1,6 +1,6 @@
 import { encode } from "gpt-tokenizer/encoding/o200k_base";
 import { describe, expect, it } from "vitest";
-import { sectionCounts } from "@/lib/linked-file/apply-content";
+import { sectionCounts } from "@/lib/workspace/apply-content";
 import { makeWorkspaceCv } from "../../../test/setup/workspace-fixtures";
 import { AGENTS_FILE, agentsMarkdown, exportsReference, machineGitignore, readmeMarkdown, workspaceJson } from "./agent-files";
 import { buildIndex, indexText } from "./index-file";

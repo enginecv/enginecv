@@ -7,8 +7,8 @@ import {
     type EngineState,
     type StartMode,
 } from "@/lib/workspace/engine";
-import type { FileAdapter } from "./fs-access";
-import type { LinkedFileState } from "./types";
+import type { FileAdapter } from "@/lib/workspace/fs-access";
+import type { LinkedFileState } from "@/lib/workspace/file-state";
 
 /**
  * The sync state machine for one linked CV file (feature 089). The algorithm lives in

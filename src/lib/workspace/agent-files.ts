@@ -2,7 +2,7 @@ import { buildFieldOverview } from "@/lib/agent/authoring/instructions";
 import { AUTHORING_FORMAT, AUTHORING_SCHEMA_URL } from "@/lib/agent/authoring/schema";
 import { LETTER_SCHEMA_URL } from "@/lib/letters/file-format";
 import { LETTER_FORMAT } from "./format-version";
-import { hashText } from "@/lib/linked-file/hash";
+import { hashText } from "@/lib/workspace/hash";
 import { INDEX_FORMAT, WORKSPACE_FORMAT } from "./format-version";
 
 /**

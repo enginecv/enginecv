@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { createHandleAdapter } from "@/lib/linked-file/fs-access";
+import { createHandleAdapter } from "@/lib/workspace/fs-access";
 import { createQaFullResume } from "@/lib/qa/sample-resumes";
 import type { Resume } from "@/lib/schema";
 import { createMemoryDirectory } from "../../../test/setup/memory-directory";

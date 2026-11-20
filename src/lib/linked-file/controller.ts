@@ -2,7 +2,7 @@ import type { LinkedFileRecord } from "@/lib/db";
 import { recordResumeHistory } from "@/lib/history";
 import { useResumeStore } from "@/lib/store";
 import type { Resume } from "@/lib/schema";
-import { createHandleAdapter, isLinkingSupported, type FileAdapter } from "./fs-access";
+import { createHandleAdapter, isLinkingSupported, type FileAdapter } from "@/lib/workspace/fs-access";
 import { getLink, setPaused, updateFileName } from "./link-store";
 import { createSyncEngine, type StartMode, type SyncEngine } from "./sync-engine";
 

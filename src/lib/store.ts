@@ -23,7 +23,7 @@ import { getBuiltinTemplateById, getTemplatePreviewOptions, isBuiltinTemplateId 
 import { createNewResume, DEFAULT_TEMPLATE_ID } from "./templates/default-design";
 import { applyTemplateToResume } from "./templates/template-apply";
 import { getSampleResumeForTemplatePreview } from "./templates/template-preview";
-import { INITIAL_LINKED_FILE_STATE, type LinkedFileState } from "./linked-file/types";
+import { INITIAL_LINKED_FILE_STATE, type LinkedFileState } from "./workspace/file-state";
 import { mergeCustomizationValue, withoutSectionStyleOverride } from "./customization";
 import { rememberTemplate } from "./analytics/export-event";
 

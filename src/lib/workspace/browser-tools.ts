@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
-import { sectionCounts } from "@/lib/linked-file/apply-content";
-import { hashText } from "@/lib/linked-file/hash";
+import { sectionCounts } from "@/lib/workspace/apply-content";
+import { hashText } from "@/lib/workspace/hash";
 import { letterDocumentSchema } from "@/lib/letters/schema";
 import { parseCv } from "@/lib/letters/store";
 import { recordActivity } from "./activity";

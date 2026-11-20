@@ -1,6 +1,6 @@
-import { mapFileError, type FileAdapter, type FileStamp } from "@/lib/linked-file/fs-access";
-import { hashText } from "@/lib/linked-file/hash";
-import type { LinkDivergence, LinkedFileState } from "@/lib/linked-file/types";
+import { mapFileError, type FileAdapter, type FileStamp } from "@/lib/workspace/fs-access";
+import { hashText } from "@/lib/workspace/hash";
+import type { LinkDivergence, LinkedFileState } from "@/lib/workspace/file-state";
 import type { DocumentCodec } from "./codecs/types";
 import type { PendingReview, ReasonCode } from "./types";
 

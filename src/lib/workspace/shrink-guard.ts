@@ -1,5 +1,5 @@
 import type { Resume } from "@/lib/schema";
-import { ENTRY_SECTIONS } from "@/lib/linked-file/apply-content";
+import { ENTRY_SECTIONS } from "@/lib/workspace/apply-content";
 import type { PendingReview } from "./types";
 
 /**

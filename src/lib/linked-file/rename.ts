@@ -1,4 +1,4 @@
-import { fileStemToTitle, suggestedFileName } from "./file-name";
+import { fileStemToTitle, suggestedFileName } from "@/lib/workspace/file-name";
 import { getLink } from "./link-store";
 
 export type RenameResult =

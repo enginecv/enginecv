@@ -25,7 +25,7 @@ import { CvTitleInput } from "@/components/editor/CvTitleInput";
 import { LinkedFileControl } from "@/components/editor/LinkedFileControl";
 import { LinkedFileNotice } from "@/components/editor/LinkedFileNotice";
 import { useLinkedFile } from "@/hooks/useLinkedFile";
-import { OPEN_LINKED_FILE_PANEL_EVENT } from "@/lib/linked-file/types";
+import { OPEN_LINKED_FILE_PANEL_EVENT } from "@/lib/workspace/file-state";
 import { hideChecklist, showChecklistAgain } from "@/lib/preferences/onboarding";
 import { SaveAsTemplateDialog } from "@/components/editor/SaveAsTemplateDialog";
 const ShortcutsOverlay = dynamic(() => import("@/components/editor/ShortcutsOverlay").then(module => module.ShortcutsOverlay), { ssr: false });

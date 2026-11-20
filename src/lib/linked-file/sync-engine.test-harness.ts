@@ -1,9 +1,9 @@
 import { vi } from "vitest";
 import { FakeDisk, asHandle, type FakeFileHandle } from "../../../test/setup/fake-file-handle";
 import { createEmptyResume, type Resume } from "@/lib/schema";
-import { createHandleAdapter } from "./fs-access";
+import { createHandleAdapter } from "@/lib/workspace/fs-access";
 import { createSyncEngine, type StartMode, type SyncEngine, type SyncEngineDeps } from "./sync-engine";
-import { INITIAL_LINKED_FILE_STATE, type LinkedFileState } from "./types";
+import { INITIAL_LINKED_FILE_STATE, type LinkedFileState } from "@/lib/workspace/file-state";
 
 export const FILE_NAME = "cv.enginecv.json";
 

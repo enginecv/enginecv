@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { hashText } from "@/lib/linked-file/hash";
+import { hashText } from "@/lib/workspace/hash";
 import { planFirstSync, type AppDocumentInfo, type FolderFileInfo } from "./first-sync";
 
 const doc = (id: string, over: Partial<AppDocumentInfo> = {}): AppDocumentInfo => ({ id, kind: "cv", title: `CV ${id}`, fileName: `cv-${id}.cv.json`, text: `app-${id}`, lastHash: null, ...over });

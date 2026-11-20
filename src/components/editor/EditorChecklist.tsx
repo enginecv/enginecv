@@ -2,8 +2,8 @@
 
 import { Check, Circle, ListChecks, X } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
-import { isLinkingSupported } from "@/lib/linked-file/fs-access";
-import { OPEN_LINKED_FILE_PANEL_EVENT } from "@/lib/linked-file/types";
+import { isLinkingSupported } from "@/lib/workspace/fs-access";
+import { OPEN_LINKED_FILE_PANEL_EVENT } from "@/lib/workspace/file-state";
 import { hideChecklist } from "@/lib/preferences/onboarding";
 import { useClientPreferencesStore } from "@/lib/preferences/store";
 import { useResumeStore } from "@/lib/store";

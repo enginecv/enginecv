@@ -1,4 +1,4 @@
-import { FileAccessError, createHandleAdapter, mapFileError, type FileAdapter } from "@/lib/linked-file/fs-access";
+import { FileAccessError, createHandleAdapter, mapFileError, type FileAdapter } from "@/lib/workspace/fs-access";
 import type { ListedFile } from "./scan";
 
 /**

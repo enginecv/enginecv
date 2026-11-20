@@ -1,4 +1,4 @@
-import { sectionCounts } from "@/lib/linked-file/apply-content";
+import { sectionCounts } from "@/lib/workspace/apply-content";
 import {
     AGENTS_FILE,
     MACHINE_DIR,

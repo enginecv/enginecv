@@ -1,7 +1,7 @@
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { translate } from "@/lib/i18n/translate";
-import { OPEN_LINKED_FILE_PANEL_EVENT, INITIAL_LINKED_FILE_STATE, type LinkedFileState } from "@/lib/linked-file/types";
+import { OPEN_LINKED_FILE_PANEL_EVENT, INITIAL_LINKED_FILE_STATE, type LinkedFileState } from "@/lib/workspace/file-state";
 import { useResumeStore } from "@/lib/store";
 
 const grantAndAttach = vi.fn().mockResolvedValue(true);

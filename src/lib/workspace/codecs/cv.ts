@@ -1,6 +1,6 @@
 import { authoringToResume, parseAuthoringText, resumeToAuthoring, serializeAuthoring } from "@/lib/agent/authoring";
 import type { Notice } from "@/lib/agent/authoring/notices";
-import { applyContent, countEntries, describeContentChange } from "@/lib/linked-file/apply-content";
+import { applyContent, countEntries, describeContentChange } from "@/lib/workspace/apply-content";
 import type { Resume } from "@/lib/schema";
 import type { DocumentCodec, ParseOutcome } from "./types";
 

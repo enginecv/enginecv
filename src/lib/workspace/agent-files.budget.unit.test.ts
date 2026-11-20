@@ -1,7 +1,7 @@
 import { encode } from "gpt-tokenizer/encoding/o200k_base";
 import { describe, expect, it } from "vitest";
 import { createQaFullResume } from "@/lib/qa/sample-resumes";
-import { sectionCounts } from "@/lib/linked-file/apply-content";
+import { sectionCounts } from "@/lib/workspace/apply-content";
 import { LETTER_SCHEMA_URL, letterFileSchema } from "@/lib/letters/file-format";
 import { AUTHORING_FORMAT } from "@/lib/agent/authoring/schema";
 import { makeLetter } from "../../../test/setup/letter-fixtures";
