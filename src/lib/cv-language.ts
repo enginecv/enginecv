@@ -313,7 +313,7 @@ const CV_LANGUAGE_LABELS: Record<string, CvLabelSet> = {
         height: "Altezza",
     },
     pt: {
-        nativeLabel: "Portugues",
+        nativeLabel: "Português",
         locale: "pt-PT",
         summary: "Resumo",
         experience: "Experiencia",
@@ -342,7 +342,7 @@ const CV_LANGUAGE_LABELS: Record<string, CvLabelSet> = {
         height: "Altura",
     },
     "pt-BR": {
-        nativeLabel: "Portugues (Brasil)",
+        nativeLabel: "Português (Brasil)",
         locale: "pt-BR",
         summary: "Resumo",
         experience: "Experiencia",
@@ -429,7 +429,7 @@ const CV_LANGUAGE_LABELS: Record<string, CvLabelSet> = {
         height: "Wzrost",
     },
     cs: {
-        nativeLabel: "Cesky",
+        nativeLabel: "Čeština",
         locale: "cs-CZ",
         summary: "Shrnuti",
         experience: "Zkusenosti",
@@ -458,7 +458,7 @@ const CV_LANGUAGE_LABELS: Record<string, CvLabelSet> = {
         height: "Vyska",
     },
     sk: {
-        nativeLabel: "Slovencina",
+        nativeLabel: "Slovenčina",
         locale: "sk-SK",
         summary: "Zhrnutie",
         experience: "Skusenosti",
@@ -487,7 +487,7 @@ const CV_LANGUAGE_LABELS: Record<string, CvLabelSet> = {
         height: "Vyska",
     },
     sl: {
-        nativeLabel: "Slovenscina",
+        nativeLabel: "Slovenščina",
         locale: "sl-SI",
         summary: "Povzetek",
         experience: "Izkusnje",
@@ -574,7 +574,7 @@ const CV_LANGUAGE_LABELS: Record<string, CvLabelSet> = {
         height: "Visina",
     },
     ro: {
-        nativeLabel: "Romana",
+        nativeLabel: "Română",
         locale: "ro-RO",
         summary: "Rezumat",
         experience: "Experienta",
@@ -632,7 +632,7 @@ const CV_LANGUAGE_LABELS: Record<string, CvLabelSet> = {
         height: "Magassag",
     },
     tr: {
-        nativeLabel: "Turkce",
+        nativeLabel: "Türkçe",
         locale: "tr-TR",
         summary: "Ozet",
         experience: "Deneyim",
@@ -1405,6 +1405,11 @@ const CV_DOCUMENT_LABELS: Record<string, CvDocumentLabelSet> = {
         repoPrivate: "Privat",
     },
 };
+
+/** True for a language the CV can be written in (a key of the label table). */
+export function isCvLanguage(language: string): boolean {
+    return Object.prototype.hasOwnProperty.call(CV_LANGUAGE_LABELS, language);
+}
 
 export const CV_LANGUAGE_OPTIONS = Object.entries(CV_LANGUAGE_LABELS).map(([value, labels]) => ({
     value,
