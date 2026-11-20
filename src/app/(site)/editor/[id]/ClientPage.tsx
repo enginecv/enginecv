@@ -7,6 +7,7 @@ import { createLetterRecord } from "@/lib/letters/store";
 import dynamic from "next/dynamic";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useResumeStore } from "@/lib/store";
+import { ensureWorkspace } from "@/lib/workspace/controller";
 import { db } from "@/lib/db";
 import { createId } from "@/lib/id";
 import { getRelativeHistorySelection, loadResumeHistory, parseHistoryResume, recordResumeHistory } from "@/lib/history";
@@ -193,6 +194,10 @@ export default function EditorPage({ params }: { params: Promise<{ id: string }>
     const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
     const [isPaletteOpen, setIsPaletteOpen] = useState(false);
     const [isLoaded, setIsLoaded] = useState(false);
+    // A connected workspace folder keeps syncing after a reload or a direct link to this CV.
+    useEffect(() => {
+        void ensureWorkspace();
+    }, []);
     const checklistHidden = useClientPreferencesStore((state) => state.preferences.onboarding.checklistHidden);
     const [showHistoryPanel, setShowHistoryPanel] = useState(false);
     const [isMobileLayout, setIsMobileLayout] = useState(false);

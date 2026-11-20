@@ -178,7 +178,18 @@ function startLeader() {
     leader.start();
 }
 
-/** Called once when the app starts in a browser: restores a connected workspace, or says why there is none. */
+let initPromise: Promise<void> | null = null;
+
+/**
+ * Makes sure a connected workspace folder is running on this page, once per page load. Every page that edits
+ * a CV or a letter calls it, so a reload or a direct link to the editor keeps syncing, not only the dashboard.
+ */
+export function ensureWorkspace(): Promise<void> {
+    initPromise ??= initWorkspace();
+    return initPromise;
+}
+
+/** Restores a connected workspace, or says why there is none. Prefer `ensureWorkspace` from pages. */
 export async function initWorkspace(): Promise<void> {
     startBrowserTools();
     if (!isWorkspaceSupported()) {
@@ -275,6 +286,7 @@ export async function disconnectWorkspace(): Promise<void> {
 
 /** For tests: forget module state. */
 export function resetWorkspaceController(): void {
+    initPromise = null;
     runtime?.stop();
     runtime = null;
     stopMirroring();

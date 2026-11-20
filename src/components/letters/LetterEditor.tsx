@@ -5,6 +5,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
+import { ensureWorkspace } from "@/lib/workspace/controller";
 import { Group, Panel, Separator } from "react-resizable-panels";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { LanguageSwitcher } from "@/components/ui/LanguageSwitcher";
@@ -66,6 +67,11 @@ export function LetterEditor({ letterId }: { letterId: string }) {
     const [busy, setBusy] = useState(false);
     const [actionError, setActionError] = useState(false);
     const cvChoices = useLiveQuery(async () => (await db.resumes.toArray()).map((row) => ({ id: row.id as string, label: row.meta?.title?.trim() || row.basics?.name?.trim() || t("dashboard.untitled") })), [t]) ?? [];
+
+    // A connected workspace folder keeps syncing after a reload or a direct link to this letter.
+    useEffect(() => {
+        void ensureWorkspace();
+    }, []);
 
     // The same breakpoint as the CV editor: below it, one pane at a time with a footer to switch.
     useEffect(() => {

@@ -35,7 +35,7 @@ import { DeleteDocumentDialog } from "@/components/workspace/DeleteDocumentDialo
 import { useWorkspaceMembership } from "@/components/workspace/useWorkspaceMembership";
 import { useHasWorkspaceFile } from "@/components/workspace/useHasWorkspaceFile";
 import { WorkspacePanel } from "@/components/workspace/WorkspacePanel";
-import { initWorkspace, retireBeforeDelete, useWorkspaceStore } from "@/lib/workspace/controller";
+import { ensureWorkspace, retireBeforeDelete, useWorkspaceStore } from "@/lib/workspace/controller";
 import type { RetireChoice } from "@/lib/workspace/lifecycle";
 import { DASHBOARD_CONTENT_CLASS, DASHBOARD_NAV_CLASS } from "@/components/dashboard/layout";
 import { CopyLettersDialog } from "@/components/letters/CopyLettersDialog";
@@ -827,7 +827,7 @@ function Dashboard() {
 
     // Restores a connected workspace folder (or says why there is none) once the dashboard is up.
     useEffect(() => {
-        void initWorkspace();
+        void ensureWorkspace();
     }, []);
     const [showExamplePicker, setShowExamplePicker] = useState(false);
     // The Import data window, with a file or source it should start from.
