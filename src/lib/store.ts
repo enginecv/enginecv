@@ -21,6 +21,7 @@ import {
 } from "./templates/template-schema";
 import { getBuiltinTemplateById, getTemplatePreviewOptions, isBuiltinTemplateId } from "./templates/enginecv-templates";
 import { createNewResume, DEFAULT_TEMPLATE_ID } from "./templates/default-design";
+import { getDefaultCvDateFormat, isCvLanguage } from "./cv-language";
 import { applyTemplateToResume } from "./templates/template-apply";
 import { getSampleResumeForTemplatePreview } from "./templates/template-preview";
 import { mergeCustomizationValue, withoutSectionStyleOverride } from "./customization";
@@ -172,7 +173,8 @@ interface ResumeStore {
     // DB Sync
     loadFromDb: (id: string) => Promise<void>;
     saveToDb: (trigger?: ResumeHistoryTrigger) => Promise<void>;
-    createNew: () => Promise<string>;
+    /** A blank resume; `language` is the app language it starts in (the CV language and its date format). */
+    createNew: (options?: { language?: string }) => Promise<string>;
 
     // Template mode actions
     loadTemplateFromDb: (id: string) => Promise<TemplateDocument | null>;
@@ -942,10 +944,15 @@ export const useResumeStore = create<ResumeStore>((set, get) => ({
         }
     },
 
-    createNew: async () => {
+    createNew: async (options) => {
         // A blank resume starts from the default template, not the bare schema
         // defaults, so the first thing a user sees is a finished design.
         const newResume = createNewResume();
+        // It starts in the app language when the CV supports it, so a German app does not open an English CV.
+        if (options?.language && isCvLanguage(options.language)) {
+            newResume.settings.language = options.language;
+            newResume.settings.dateFormat = getDefaultCvDateFormat(options.language);
+        }
         const id = createId();
         const now = Date.now();
         newResume.id = id;

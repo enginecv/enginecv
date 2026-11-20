@@ -470,10 +470,10 @@ export default function EditorPage({ params }: { params: Promise<{ id: string }>
     const handleCreateBlankResume = useCallback(async () => {
         requestJsonEditorLeave(async () => {
         await handleManualSave();
-        const resumeId = await createNewResume();
+        const resumeId = await createNewResume({ language: locale });
         router.push(`/editor/${resumeId}`);
         });
-    }, [createNewResume, handleManualSave, router]);
+    }, [createNewResume, handleManualSave, locale, router]);
 
     const handleDuplicateCurrentResume = useCallback(async () => {
         requestJsonEditorLeave(async () => {

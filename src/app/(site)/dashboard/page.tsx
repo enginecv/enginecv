@@ -803,7 +803,7 @@ export default function DashboardPage() {
 }
 
 function Dashboard() {
-    const { t, tn } = useTranslation();
+    const { t, tn, locale } = useTranslation();
     const router = useRouter();
     const searchParams = useSearchParams();
     const tabQueryParam = searchParams?.get("tab") ?? null;
@@ -901,7 +901,7 @@ function Dashboard() {
         setStartError(null);
         setPendingStart("blank");
         try {
-            const id = await createNewResume();
+            const id = await createNewResume({ language: locale });
             // A `?start=blank` link replaces its history entry, so Back cannot create a second resume.
             if (options?.replace) router.replace(`/editor/${id}`);
             else router.push(`/editor/${id}`);
@@ -910,7 +910,7 @@ function Dashboard() {
             setStartError(t("onboarding.panel.error"));
             setPendingStart(null);
         }
-    }, [createNewResume, router, setShowCreateModal, t]);
+    }, [createNewResume, locale, router, setShowCreateModal, t]);
 
     const handleOpenGithubImport = useCallback(() => {
         setShowCreateModal(false);
