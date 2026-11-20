@@ -629,22 +629,11 @@ export default function EditorPage({ params }: { params: Promise<{ id: string }>
         return () => window.removeEventListener("enginecv:panel-layout", handlePanelLayout);
     }, [showHistoryPanel]);
 
-    /**
-     * Drop the caret into the live preview on the first editable field, which is
-     * where the arrow-key / hjkl field navigation takes over. Two frames so the
-     * mobile pane switch has painted before we go looking for the field.
-     */
-    const goToPreviewFields = useCallback(() => {
+    /** Brings the live preview into view: switches the pane on a phone, scrolls the first page up on a desktop. */
+    const goToPreview = useCallback(() => {
         if (isMobileLayout) setMobilePane("preview");
         requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-                const field = document.querySelector<HTMLElement>(
-                    ".resume-document [data-editable-field]",
-                );
-                if (!field) return;
-                field.focus();
-                field.scrollIntoView({ block: "center", behavior: "smooth" });
-            });
+            document.querySelector<HTMLElement>(".resume-document")?.scrollIntoView({ block: "start", behavior: "smooth" });
         });
     }, [isMobileLayout]);
 
@@ -1494,8 +1483,8 @@ export default function EditorPage({ params }: { params: Promise<{ id: string }>
             group: t("palette.group.goTo"),
             label: t("palette.goToPreview"),
             icon: Eye,
-            keywords: ["preview", "editor", "fields", "resume", "page", "canvas"],
-            run: goToPreviewFields,
+            keywords: ["preview", "resume", "page", "canvas"],
+            run: goToPreview,
         },
         {
             id: "json-editor-open",
@@ -1642,7 +1631,7 @@ export default function EditorPage({ params }: { params: Promise<{ id: string }>
     }, [
         autoSaveEnabled,
         checklistHidden,
-        goToPreviewFields,
+        goToPreview,
         handleManualSave,
         isDirty,
         isFocusMode,

@@ -12,7 +12,7 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import ReactMarkdown from "react-markdown";
-import { fromHardBreaks, preserveLineBreaks } from "@/lib/markdown-breaks";
+import { preserveLineBreaks } from "@/lib/markdown-breaks";
 import remarkGfm from "remark-gfm";
 import rehypeSanitize from "rehype-sanitize";
 import rehypeRaw from "rehype-raw";
@@ -88,8 +88,8 @@ import type {
     PreviewSectionKey,
 } from "@/lib/preview/pagination-types";
 import { DesignOverlayElementView } from "./preview/DesignOverlay";
-import { InlineEditProvider, InlineInteractiveContext, InlineField, InlineToolbar } from "./preview/PreviewInlineEdit";
-import { decideClick, decideDoubleClick } from "@/lib/preview/pointer-intent";
+import { PreviewField } from "./preview/PreviewField";
+import { decideClick } from "@/lib/preview/pointer-intent";
 import { resolveSectionPlacements } from "@/lib/layout/section-placement";
 
 interface ResumePreviewProps {
@@ -524,9 +524,6 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
     const requestCustomizePanel = useResumeStore((state) => state.requestCustomizePanel);
     const pendingPreviewCommand = useResumeStore((state) => state.pendingPreviewCommand);
     const consumePreviewCommand = useResumeStore((state) => state.consumePreviewCommand);
-    const updateBasics = useResumeStore((state) => state.updateBasics);
-    const updateExperience = useResumeStore((state) => state.updateExperience);
-    const updateSettings = useResumeStore((state) => state.updateSettings);
     const preferencesHydrated = useClientPreferencesStore((state) => state.hydrated);
     const preferredZoom = useClientPreferencesStore((state) => state.preferences.preview.zoom);
     const updateClientPreferenceSection = useClientPreferencesStore(
@@ -534,7 +531,6 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
     );
     // Pending single-click nav menu, deferred so a following double-click
     // (inline edit) can cancel it before its backdrop swallows the 2nd click.
-    const navClickTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
     const viewportRef = useRef({ width: 0, height: 0 });
     const contentSizeRef = useRef({ width: 0, height: 0 });
 
@@ -696,14 +692,9 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
             container.style.cursor = spaceHeld.current ? 'grab' : '';
         };
 
-        // Left click on a tagged preview element opens the selection menu.
-        const clearNavTimer = () => {
-            if (navClickTimer.current) { clearTimeout(navClickTimer.current); navClickTimer.current = null; }
-        };
-
         // The click rules live in lib/preview/pointer-intent so they stay in one
-        // tested table. A plain click on a link inside a selectable element opens
-        // the menu (with "Open link"); Ctrl/Cmd+click follows the link.
+        // tested table. A plain click on a tagged element opens the Go to / Customize
+        // menu (with "Open link" on a link); Ctrl/Cmd+click follows a link.
         const handleClick = (e: MouseEvent) => {
             const target = e.target as HTMLElement;
             const linkEl = target.closest('a[href]') as HTMLAnchorElement | null;
@@ -711,12 +702,10 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
             const decision = decideClick({
                 thumbnailMode,
                 button: e.button,
-                detail: e.detail,
                 didDrag: didDrag.current,
                 spaceHeld: spaceHeld.current,
                 ctrlKey: e.ctrlKey,
                 metaKey: e.metaKey,
-                isContentEditable: target.isContentEditable,
                 linkHref: linkEl ? linkEl.href : null,
                 navSection: el?.getAttribute('data-nav-section') || null,
             });
@@ -724,17 +713,9 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
                 case 'ignore':
                     return;
                 case 'native':
-                    clearNavTimer();
                     if (decision.closeMenu) setNavMenu(null);
                     return;
-                case 'cancel-timer':
-                    // Second click of a double-click: the element's own double-click
-                    // (inline edit or heading navigation) proceeds unobstructed.
-                    clearNavTimer();
-                    if (decision.preventDefault) e.preventDefault();
-                    return;
                 case 'close-menu':
-                    clearNavTimer();
                     setNavMenu(null);
                     return;
                 case 'open-menu': {
@@ -745,42 +726,10 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
                     const entryIndex = idxAttr != null && idxAttr !== '' ? Number(idxAttr) : null;
                     const kind = el.getAttribute('data-nav-kind') || 'entry';
                     e.preventDefault();
-                    // Defer: a double-click within ~220ms clears this before it fires.
-                    const payload = { x: e.clientX, y: e.clientY, section, entryIndex, kind, href: decision.href };
-                    clearNavTimer();
-                    navClickTimer.current = setTimeout(() => {
-                        setNavMenu(payload);
-                        navClickTimer.current = null;
-                    }, 220);
+                    setNavMenu({ x: e.clientX, y: e.clientY, section, entryIndex, kind, href: decision.href });
                     return;
                 }
             }
-        };
-
-        // Double-click on a section heading or an entry jumps to it in the sidebar.
-        // Editable text keeps its own double-click (inline edit); Alt+double-click
-        // navigates from anywhere, text included.
-        const handleDblClick = (e: MouseEvent) => {
-            const target = e.target as HTMLElement;
-            const el = target.closest('[data-nav-section]') as HTMLElement | null;
-            const idxAttr = el?.getAttribute('data-nav-entry-index');
-            const decision = decideDoubleClick({
-                thumbnailMode,
-                altKey: e.altKey,
-                isContentEditable: target.isContentEditable,
-                hasEditableAncestor: target.closest('[data-editable-field]') != null,
-                navSection: el?.getAttribute('data-nav-section') || null,
-                navKind: el?.getAttribute('data-nav-kind') || null,
-                navEntryIndex: idxAttr != null && idxAttr !== '' ? Number(idxAttr) : null,
-            });
-            if (decision.kind !== 'navigate') return;
-            clearNavTimer();
-            setNavMenu(null);
-            e.preventDefault();
-            // This listener runs before React's, so stopping here also keeps an
-            // Alt+double-click on editable text from starting inline edit.
-            e.stopPropagation();
-            requestEditorNav(decision.section, decision.entryIndex);
         };
 
         // Middle-button "auxclick" would otherwise autoscroll / open links.
@@ -790,18 +739,15 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
 
         container.addEventListener('mousedown', handleMouseDown);
         container.addEventListener('click', handleClick);
-        container.addEventListener('dblclick', handleDblClick);
         container.addEventListener('auxclick', handleAuxClick);
         window.addEventListener('mousemove', handleMouseMove);
         window.addEventListener('mouseup', handleMouseUp);
         return () => {
             container.removeEventListener('mousedown', handleMouseDown);
             container.removeEventListener('click', handleClick);
-            container.removeEventListener('dblclick', handleDblClick);
             container.removeEventListener('auxclick', handleAuxClick);
             window.removeEventListener('mousemove', handleMouseMove);
             window.removeEventListener('mouseup', handleMouseUp);
-            if (navClickTimer.current) clearTimeout(navClickTimer.current);
         };
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
@@ -926,40 +872,6 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
         zoomIn,
         zoomOut,
     ]);
-
-    // --- Inline edit-in-place ---------------------------------------------
-    const inlineEditable = !thumbnailMode && isInteractiveDesignPreview;
-
-    // Patch a single experience entry (by id) from an inline edit.
-    const patchExperience = useCallback((id: string, patch: Record<string, unknown>) => {
-        const next = resume.experience.map((e) =>
-            e.id === id ? { ...e, ...patch } : e,
-        );
-        updateExperience(next);
-    }, [resume.experience, updateExperience]);
-
-    // Global-binding size targets for the floating toolbar (class-wide).
-    const entryTitleSizeTarget = {
-        size: {
-            value: settings.entryLayout.titleFontSize,
-            min: 8, max: 16, step: 1, unit: "pt",
-            set: (n: number) => updateSettings({ entryLayout: { ...settings.entryLayout, titleFontSize: n } }),
-        },
-    };
-    const entrySubtitleSizeTarget = {
-        size: {
-            value: settings.entryLayout.subtitleFontSize,
-            min: 8, max: 16, step: 1, unit: "pt",
-            set: (n: number) => updateSettings({ entryLayout: { ...settings.entryLayout, subtitleFontSize: n } }),
-        },
-    };
-    const nameSizeTarget = {
-        size: {
-            value: settings.header.fontSize,
-            min: 12, max: 54, step: 2, unit: "px",
-            set: (n: number) => updateSettings({ header: { ...settings.header, fontSize: n } }),
-        },
-    };
 
     const contentAlignClass = settings.personalDetails.alignment === "center" ? "items-center text-center" :
         settings.personalDetails.alignment === "right" ? "items-end text-right" :
@@ -1154,26 +1066,6 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
                 outline-offset: 3px;
                 border-radius: 3px;
                 cursor: pointer;
-            }
-            /* Inline edit fields: Canva/Docs-style focusable "input" boxes. */
-            .resume-document [data-editable-field] {
-                border-radius: 4px;
-                cursor: text;
-                transition: box-shadow .12s ease, background-color .12s ease;
-                outline: none;
-            }
-            .resume-document [data-editable-field]:hover {
-                background-color: color-mix(in srgb, ${settings.colors.accent} 10%, transparent);
-            }
-            .resume-document [data-editable-field]:focus,
-            .resume-document [data-editable-field]:focus-visible {
-                box-shadow: 0 0 0 2px ${settings.colors.accent};
-                background-color: color-mix(in srgb, ${settings.colors.accent} 6%, transparent);
-            }
-            .resume-document [data-editable-field].is-editing {
-                box-shadow: 0 0 0 2px ${settings.colors.accent};
-                background-color: color-mix(in srgb, ${settings.colors.accent} 5%, transparent);
-                cursor: auto;
             }
         }
         .resume-document .date-text {
@@ -1750,14 +1642,10 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
                 style={{ marginBottom: `${trailingGap}px` }}
             >
                 <h2 className="heading-style" style={getSectionHeadingStyle("summary")}>{cvLabels.summary}</h2>
-                {/* Markdown like entry descriptions, and double-click editable in the live preview. */}
+                {/* Markdown like entry descriptions. */}
                 <div className="leading-relaxed opacity-90" data-testid="resume-preview-summary-body">
-                    <InlineField
-                        mode="rich"
-                        // The editor reads Markdown, where a single line break is a space:
-                        // hand it hard breaks and store plain line breaks again.
+                    <PreviewField
                         value={preserveLineBreaks(summary)}
-                        onCommit={(md) => updateBasics({ summary: fromHardBreaks(md) })}
                         staticRender={(
                             <ReactMarkdown components={markdownComponents} remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw, rehypeSanitize]}>{preserveLineBreaks(summary)}</ReactMarkdown>
                         )}
@@ -2628,22 +2516,17 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
 
         const headerContent = (
             <div className={`flex min-w-0 flex-1 flex-col ${contentAlignClass}`}>
-                <InlineField
+                <PreviewField
                     as="h1"
-                    mode="plain"
                     value={name}
-                    onCommit={(v) => updateBasics({ name: v })}
                     staticRender={name || cvLabels.yourName}
                     className={`tracking-tight ${headline ? "mb-1" : "mb-2"}`}
-                    styleTarget={nameSizeTarget}
                     dataAttrs={{ "data-testid": "resume-preview-name", "data-nav-section": "basics", "data-nav-kind": "heading" }}
                 />
-                {(headline || inlineEditable) && (
-                    <InlineField
+                {headline && (
+                    <PreviewField
                         as="p"
-                        mode="plain"
                         value={headline}
-                        onCommit={(v) => updateBasics({ headline: v })}
                         className="job-title text-sm opacity-80 mb-2"
                         dataAttrs={{ "data-nav-section": "basics", "data-nav-kind": "heading" }}
                     />
@@ -2782,10 +2665,8 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
     const experienceBody = (exp: any) => {
         if (exp.description) {
             return (
-                <InlineField
-                    mode="rich"
+                <PreviewField
                     value={exp.description}
-                    onCommit={(md) => patchExperience(exp.id, { description: md })}
                     staticRender={(
                         <ReactMarkdown components={markdownComponents} remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw, rehypeSanitize]}>{exp.description}</ReactMarkdown>
                     )}
@@ -2800,48 +2681,36 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
         return null;
     };
 
-    // Editable experience job title node (used as renderEntry's `title` slot).
+    // Experience job title node (used as renderEntry's `title` slot).
     const experienceTitle = (exp: any) => (
-        <InlineField
+        <PreviewField
             as="span"
-            mode="plain"
             value={exp.position || ""}
-            onCommit={(v) => patchExperience(exp.id, { position: v })}
             staticRender={exp.position || cvLabels.position}
-            styleTarget={entryTitleSizeTarget}
         />
     );
 
-    // Editable experience subtitle (company); keeps the link/icon in the static
-    // view, swaps to a plain text field while editing.
+    // Experience subtitle (company), with its link and icon.
     const experienceSubtitle = (exp: any) => (
-        <InlineField
+        <PreviewField
             as="span"
-            mode="plain"
             value={exp.company || ""}
-            onCommit={(v) => patchExperience(exp.id, { company: v })}
             staticRender={renderEntrySubtitle(
                 exp.company || "",
                 exp.url,
                 exp.urlIcon,
                 getConfiguredSectionKey("experience"),
             )}
-            styleTarget={entrySubtitleSizeTarget}
         />
     );
 
-    // Editable experience location (only rendered when present, so the entry
+    // Experience location (only rendered when present, so the entry
     // layout heuristic that keys off date/location is preserved).
     const experienceLocation = (exp: any) => (
-        <InlineField
-            mode="plain"
-            value={exp.location || ""}
-            onCommit={(v) => patchExperience(exp.id, { location: v })}
-        />
+        <PreviewField value={exp.location || ""} />
     );
 
-    // Individually selectable start / end dates. Each field shows the formatted
-    // value but edits the raw stored string (e.g. "2020-03"). The end field and
+    // Start and end dates, formatted. The end field and
     // separator only render when an end exists, so ongoing roles (and exports)
     // stay clean. Only shown when a start date exists — see the layout note on
     // experienceLocation.
@@ -2849,21 +2718,17 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
     // once a long range wraps.
     const experienceDates = (exp: any) => (
         <span>
-            <InlineField
+            <PreviewField
                 as="span"
-                mode="plain"
                 value={exp.start || ""}
-                onCommit={(v) => patchExperience(exp.id, { start: v })}
                 staticRender={exp.start ? formatResumeDate(exp.start) : undefined}
             />
             {exp.end && (
                 <>
                     {" – "}
-                    <InlineField
+                    <PreviewField
                         as="span"
-                        mode="plain"
                         value={exp.end}
-                        onCommit={(v) => patchExperience(exp.id, { end: v })}
                         staticRender={formatResumeDate(exp.end)}
                     />
                 </>
@@ -4274,11 +4139,8 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
     };
 
     const previewContent = (
-      <InlineEditProvider>
-       <InlineInteractiveContext.Provider value={inlineEditable}>
         <div className={`${scopeClass} relative`}>
             <style>{scopedStyles}</style>
-            {inlineEditable && <InlineToolbar />}
 
             {navMenu && !thumbnailMode && (
                 <PreviewNavMenu
@@ -4322,7 +4184,6 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
                         boxSizing: 'border-box',
                     }}
                 >
-                  <InlineInteractiveContext.Provider value={false}>
                     {resumeBlocks.map((block, idx) => (
                         <div
                             key={block.key}
@@ -4335,7 +4196,6 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
                             {block.node}
                         </div>
                     ))}
-                  </InlineInteractiveContext.Provider>
                 </div>
             ) : (
                 <div
@@ -4353,7 +4213,6 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
                         boxSizing: 'border-box',
                     }}
                 >
-                  <InlineInteractiveContext.Provider value={false}>
                     <div
                         data-layout-measure="basic:profile"
                         style={{
@@ -4414,7 +4273,6 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
                             </div>
                         );
                     })}
-                  </InlineInteractiveContext.Provider>
                 </div>
             )}
 
@@ -4534,8 +4392,6 @@ export function ResumePreview({ resumeOverride, paperSizeOverride, thumbnailMode
                 ))}
             </div>
         </div>
-       </InlineInteractiveContext.Provider>
-      </InlineEditProvider>
     );
 
     // Fullscreen: fixed overlay covering the entire viewport
