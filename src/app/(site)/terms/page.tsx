@@ -33,7 +33,9 @@ export default function TermsPage() {
                 <p>
                     The core product is designed to keep working data in your browser. Because of that, you should export
                     and back up important resumes yourself. EngineCV is not responsible for data loss caused by cleared browser
-                    storage, device issues, or changes to your local environment.
+                    storage, device issues, or changes to your local environment. If you connect a workspace folder or let an AI
+                    agent edit your files, you are responsible for what that agent or any sync tool does with them, and EngineCV
+                    is not responsible for changes they make or data they send elsewhere.
                 </p>
             </LegalSection>
 

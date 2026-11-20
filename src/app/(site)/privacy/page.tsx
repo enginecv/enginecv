@@ -30,8 +30,8 @@ export default function PrivacyPage() {
                     local data can be removed. Keep your own exports or encrypted JSON backups.
                 </p>
                 <p>
-                    A CV can also be kept in a file on your computer if you choose to link one (section 5). That file is outside
-                    the browser&apos;s storage.
+                    Your CVs and letters can also be kept as files in a workspace folder on your computer if you choose to
+                    connect one (section 5). Those files are outside the browser&apos;s storage.
                 </p>
                 <DataMapDiagram detailed />
             </LegalSection>
@@ -143,6 +143,11 @@ export default function PrivacyPage() {
                     EngineCV asks you to confirm this before it writes the first file. The data download on{" "}
                     <Link href="/your-data" className="underline">Your data</Link> does not include the folder&apos;s files, and
                     you delete them yourself in your file manager.
+                </p>
+                <p>
+                    There is also an experimental setting, off by default, that lets an AI assistant built into your browser read
+                    and change your documents through EngineCV. If you turn it on, what that assistant reads goes to its
+                    provider under the provider&apos;s own policy, not through EngineCV.
                 </p>
             </LegalSection>
 
