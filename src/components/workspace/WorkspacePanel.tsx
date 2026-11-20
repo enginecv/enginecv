@@ -7,7 +7,7 @@ import { db } from "@/lib/db";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { useDialogFocus } from "@/hooks/useDialogFocus";
 import { useTranslation } from "@/lib/i18n";
-import { analyzeFolderHandle, applyHeldChange, chooseDuplicate, connectFolder, disconnectWorkspace, ignoreFile, keepAppVersion, recreateDocumentFile, relinkDocumentTo, resumePermission, setHideContact, setPaused, useWorkspaceStore } from "@/lib/workspace/controller";
+import { analyzeFolderHandle, applyHeldChange, chooseDuplicate, connectFolder, disconnectWorkspace, ignoreFile, keepAppVersion, recreateDocumentFile, relinkDocumentTo, resumePermission, setHideContact as applyHideContact, setPaused, useWorkspaceStore } from "@/lib/workspace/controller";
 import { isBrowserToolsEnabled, isBrowserToolsSupported, setBrowserToolsEnabled } from "@/lib/workspace/browser-tools";
 import { pickWorkspaceFolder } from "@/lib/workspace/directory-adapter";
 import type { PlanItem } from "@/lib/workspace/first-sync";
@@ -142,7 +142,7 @@ export function WorkspacePanel({ onClose, initialActivityDocId }: { onClose: () 
                                 {!state.isLeader && <p className="text-xs text-faint" data-testid="workspace-other-tab">{t("workspace.panel.otherTab")}</p>}
                             </div>
                             <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-edge bg-surface-1 p-3">
-                                <input type="checkbox" checked={state.hideContact} disabled={!!state.rewriting} onChange={(event) => void setHideContact(event.target.checked)} data-testid="workspace-hide-contact" className="mt-1" />
+                                <input type="checkbox" checked={state.hideContact} disabled={!!state.rewriting} onChange={(event) => void applyHideContact(event.target.checked)} data-testid="workspace-hide-contact" className="mt-1" />
                                 <span className="min-w-0">
                                     <span className="block text-sm font-medium text-strong">{t("workspace.warning.hide")}</span>
                                     <span className="block text-xs text-mid">{state.hideContact ? t("workspace.panel.hideOnNote") : t("workspace.warning.hideHint")}</span>

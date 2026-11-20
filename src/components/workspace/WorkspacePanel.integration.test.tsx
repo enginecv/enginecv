@@ -83,6 +83,25 @@ describe("WorkspacePanel", () => {
         expect(await folder.readExternal("cvs/Master CV.cv.json")).not.toContain("amina@example.com");
     });
 
+    it("turns leaving contact details out on and off after connecting", async () => {
+        await mount();
+        fireEvent.click(await screen.findByTestId("workspace-choose"));
+        fireEvent.click(await screen.findByTestId("workspace-warning-continue"));
+        fireEvent.click(await screen.findByTestId("workspace-first-sync-apply"));
+        await screen.findByTestId("workspace-phase-connected");
+        expect(await folder.readExternal("cvs/Master CV.cv.json")).toContain("amina@example.com");
+
+        const box = screen.getByTestId("workspace-hide-contact") as HTMLInputElement;
+        fireEvent.click(box);
+        await waitFor(() => expect(screen.getByTestId("workspace-hide-contact")).toBeChecked());
+        await waitFor(async () => expect(await folder.readExternal("cvs/Master CV.cv.json")).not.toContain("amina@example.com"));
+        expect((await db.workspace.toArray())[0].hideContact).toBe(true);
+
+        fireEvent.click(screen.getByTestId("workspace-hide-contact"));
+        await waitFor(() => expect(screen.getByTestId("workspace-hide-contact")).not.toBeChecked());
+        await waitFor(async () => expect(await folder.readExternal("cvs/Master CV.cv.json")).toContain("amina@example.com"));
+    });
+
     it("keeps Apply disabled until a disagreement has been looked at, and defaults to keeping the app's version", async () => {
         const edited = editFile(cvFileText(makeWorkspaceCv({ id: "cv-1", title: "Master CV" })), (doc) => {
             (doc.basics as Record<string, unknown>).headline = "From an agent";
