@@ -199,7 +199,7 @@ export const es: Translations = {
   "hero.noTermAccount": "cuenta",
   "hero.noTermPaywall": "muro de pago",
   "hero.noTermNonsense": "tonterías",
-  "hero.headline": "El creador de currículums gratuito que no secuestra tu CV.",
+  "hero.headline": "El creador de currículums que no secuestra tu CV.",
   "hero.startBuilding": "Crear mi CV gratis",
   "hero.viewTemplates": "Explorar plantillas",
   "landing.hero.localNote": "Sin cuenta. Tu CV se queda en tu dispositivo.",

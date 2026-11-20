@@ -199,7 +199,7 @@ export const bs: Translations = {
   "hero.noTermAccount": "računa",
   "hero.noTermPaywall": "naplate",
   "hero.noTermNonsense": "gluposti",
-  "hero.headline": "Besplatan alat za životopis koji ne drži vaš CV kao taoca.",
+  "hero.headline": "Alat za životopis koji ne drži vaš CV kao taoca.",
   "hero.startBuilding": "Napravi moj CV – besplatno",
   "hero.viewTemplates": "Pregledaj šablone",
   "landing.hero.localNote": "Bez računa. Vaš CV ostaje na vašem uređaju.",

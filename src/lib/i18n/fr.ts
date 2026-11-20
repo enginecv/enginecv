@@ -199,7 +199,7 @@ export const fr: Translations = {
   "hero.noTermAccount": "compte",
   "hero.noTermPaywall": "paywall",
   "hero.noTermNonsense": "baratin",
-  "hero.headline": "Le créateur de CV gratuit qui ne prend pas votre CV en otage.",
+  "hero.headline": "Le créateur de CV qui ne prend pas votre CV en otage.",
   "hero.startBuilding": "Créer mon CV – gratuit",
   "hero.viewTemplates": "Explorer les modèles",
   "landing.hero.localNote": "Aucun compte requis. Votre CV reste sur votre appareil.",

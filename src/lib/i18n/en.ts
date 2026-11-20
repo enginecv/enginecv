@@ -199,7 +199,7 @@ export const en: Translations = {
   "hero.noTermAccount": "Account",
   "hero.noTermPaywall": "Paywall",
   "hero.noTermNonsense": "Nonsense",
-  "hero.headline": "The free résumé builder that doesn't hold your CV hostage.",
+  "hero.headline": "The résumé builder that doesn't hold your CV hostage.",
   "hero.startBuilding": "Build My Resume — Free",
   "hero.viewTemplates": "Explore Templates",
   "landing.hero.localNote": "No account needed. Your resume stays on your device.",

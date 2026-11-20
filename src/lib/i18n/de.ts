@@ -199,7 +199,7 @@ export const de: Translations = {
   "hero.noTermAccount": "Konto",
   "hero.noTermPaywall": "Paywall",
   "hero.noTermNonsense": "Ballast",
-  "hero.headline": "Der kostenlose Lebenslauf-Builder, der deinen Lebenslauf nicht als Geisel hält.",
+  "hero.headline": "Der Lebenslauf-Builder, der deinen Lebenslauf nicht als Geisel hält.",
   "hero.startBuilding": "Meinen Lebenslauf erstellen – kostenlos",
   "hero.viewTemplates": "Vorlagen entdecken",
   "landing.hero.localNote": "Kein Konto nötig. Dein Lebenslauf bleibt auf deinem Gerät.",
