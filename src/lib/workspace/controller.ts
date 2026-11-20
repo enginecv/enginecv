@@ -12,11 +12,11 @@ import type { ConflictCopy } from "./scan";
 import { MACHINE_DIR } from "./agent-files";
 import { safeStem } from "./names";
 import { parseCv } from "@/lib/letters/store";
-import type { ChangeSourceKind, DocState } from "./types";
+import type { ChangeSourceKind, DocState, WorkspaceDocRecord } from "./types";
 import { listLinkedCvs, moveLinkedCvs } from "./migrate-links";
 import { BROWSER_TOOLS_EVENT, syncBrowserTools } from "./browser-tools";
 import { excludeDocument, includeDocument, mirrorDocuments, retireDocument, type IncludeChoice, type RetireChoice } from "./lifecycle";
-import { clearWorkspace, getWorkspace, setDocState, updateWorkspace } from "./workspace-store";
+import { clearWorkspace, getWorkspace, putDocRow, setDocState, updateWorkspace } from "./workspace-store";
 
 /**
  * The workspace's lifecycle in this browser: is there a folder, do we have permission, are we the tab
@@ -358,6 +358,22 @@ export async function retireBeforeDelete(docId: string, choice: RetireChoice): P
     if (!adapter) return;
     await retireDocument(adapter, docId, choice);
     await runtime?.reload(docId);
+    await refreshCounts();
+}
+
+/**
+ * Undo of a delete that kept the file: puts the document's row back and stops ignoring its file, so the
+ * document is mirrored to the same file again. Does nothing without a connected folder.
+ */
+export async function restoreRetiredDocument(row: WorkspaceDocRecord): Promise<void> {
+    if (!adapter) return;
+    await putDocRow(row);
+    if (row.fileName) {
+        const workspace = await getWorkspace();
+        const rest = (workspace?.ignoredFiles ?? []).filter((name) => name !== row.fileName);
+        await updateWorkspace({ ignoredFiles: rest });
+    }
+    await runtime?.reload(row.docId);
     await refreshCounts();
 }
 

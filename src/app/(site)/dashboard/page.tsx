@@ -42,6 +42,8 @@ import { CopyLettersDialog } from "@/components/letters/CopyLettersDialog";
 import { DeleteCvDialog } from "@/components/letters/DeleteCvDialog";
 import type { DeletionDecision } from "@/lib/letters/deletion";
 import type { LetterDocument } from "@/lib/letters/schema";
+import { UndoToast, useUndoSlot } from "@/components/dashboard/UndoToast";
+import { restoreDeletedCv, restoreDeletedTemplate, snapshotCvForUndo, snapshotTemplateForUndo, type DeletedCvSnapshot } from "@/lib/cv-undo";
 import { copyLettersToCv, createLetterRecord, deleteCvWithLetters, importDataExport, listLettersForCv } from "@/lib/letters/store";
 import type { DataExportExtras } from "@/lib/import/staging/types";
 import { CreateModal } from "@/components/dashboard/CreateModal";
@@ -844,6 +846,8 @@ function Dashboard() {
     const [startError, setStartError] = useState<string | null>(null);
     const [startFocusId, setStartFocusId] = useState<StartPathId | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+    const cvUndo = useUndoSlot<{ snapshot: DeletedCvSnapshot; fileKept: boolean }>();
+    const templateUndo = useUndoSlot<NonNullable<Awaited<ReturnType<typeof snapshotTemplateForUndo>>>>();
     // The letters linked to the CV being deleted; when there are any, a dialog decides what happens to them.
     const [deleteLetters, setDeleteLetters] = useState<LetterDocument[]>([]);
     const deleteHasFile = useHasWorkspaceFile(deleteTarget?.id);
@@ -1050,8 +1054,10 @@ function Dashboard() {
         setDeleteBusy(true);
         setDeleteFailed(false);
         try {
+            const snapshot = await snapshotCvForUndo(deleteTarget.id);
             await retireBeforeDelete(deleteTarget.id, "keep-file").catch(() => undefined);
             await deleteCvWithLetters(deleteTarget.id, decisions);
+            if (snapshot) cvUndo.offer({ snapshot, fileKept: true });
             cancelDelete();
         } catch {
             // Nothing was changed: the CV and every letter are as they were.
@@ -1059,7 +1065,7 @@ function Dashboard() {
         } finally {
             setDeleteBusy(false);
         }
-    }, [deleteTarget, cancelDelete]);
+    }, [deleteTarget, cancelDelete, cvUndo]);
 
     const handleDownloadResume = useCallback((resume: Resume) => {
         exportToJson(resume, getResumeExportFilename(resume));
@@ -1068,14 +1074,23 @@ function Dashboard() {
     const handleDelete = useCallback(async (fileChoice: RetireChoice = "keep-file") => {
         if (!deleteTarget) return;
         try {
+            const snapshot = await snapshotCvForUndo(deleteTarget.id);
             await retireBeforeDelete(deleteTarget.id, fileChoice).catch(() => undefined);
             await deleteCvWithLetters(deleteTarget.id, []);
+            if (snapshot) cvUndo.offer({ snapshot, fileKept: fileChoice === "keep-file" });
             cancelDelete();
         } catch {
             // A draft appeared since the question was asked: show the letters dialog instead.
             setDeleteLetters(await listLettersForCv(deleteTarget.id));
         }
-    }, [deleteTarget, cancelDelete]);
+    }, [deleteTarget, cancelDelete, cvUndo]);
+
+    const handleUndoCvDelete = useCallback(async () => {
+        const pending = cvUndo.item;
+        if (!pending) return;
+        cvUndo.clear();
+        await restoreDeletedCv(pending.snapshot, pending.fileKept).catch(() => undefined);
+    }, [cvUndo]);
 
     const resumeCount = resumes?.length ?? 0;
     const hasResumes = resumeCount > 0;
@@ -1272,9 +1287,18 @@ function Dashboard() {
 
     const handleDeleteTemplate = useCallback(async () => {
         if (!templateDeleteTarget) return;
+        const row = await snapshotTemplateForUndo(templateDeleteTarget.id);
         await db.templates.delete(templateDeleteTarget.id);
+        if (row) templateUndo.offer(row);
         setTemplateDeleteTarget(null);
-    }, [setTemplateDeleteTarget, templateDeleteTarget]);
+    }, [setTemplateDeleteTarget, templateDeleteTarget, templateUndo]);
+
+    const handleUndoTemplateDelete = useCallback(async () => {
+        const row = templateUndo.item;
+        if (!row) return;
+        templateUndo.clear();
+        await restoreDeletedTemplate(row).catch(() => undefined);
+    }, [templateUndo]);
 
     const handleDuplicateTemplate = useCallback(async (template: TemplateDocument) => {
         const id = createId();
@@ -1969,6 +1993,9 @@ function Dashboard() {
                 onConfirm={handleDeleteTemplate}
                 onCancel={() => setTemplateDeleteTarget(null)}
             />
+
+            {cvUndo.item && <UndoToast message={t("dashboard.resumeDeleted")} undoLabel={t("dashboard.undo")} onUndo={() => void handleUndoCvDelete()} testId="cv-undo" />}
+            {templateUndo.item && <UndoToast message={t("dashboard.templateDeleted")} undoLabel={t("dashboard.undo")} onUndo={() => void handleUndoTemplateDelete()} testId="template-undo" />}
 
             </SidebarInset>
         </SidebarProvider>
