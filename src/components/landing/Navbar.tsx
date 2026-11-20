@@ -31,6 +31,7 @@ export function Navbar() {
 
   const NAV_LINKS = [
     { label: t("nav.templates"), href: localizedPath(GALLERY_PATH, locale) },
+    { label: t("howItWorks.title"), href: "/how-it-works" },
     { label: t("nav.features"), href: "#features" },
     { label: t("nav.faq"), href: "#faq" },
     { label: t("nav.blog"), href: blogIndexPath(locale) },

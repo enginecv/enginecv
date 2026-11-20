@@ -26,7 +26,6 @@ const ALLOWED = new Set([
     // Alt text inside the resume document, which follows the CV language.
     "src/components/editor/ResumePreview.tsx: Signature",
     // Illustrative files and database names in the landing-page diagrams.
-    "src/components/landing/NoLockInSection.tsx: resume-john-doe.json",
     "src/components/landing/ProductStory.tsx: EngineCVDatabase",
     "src/components/landing/ProductStory.tsx: resume.json",
     "src/components/landing/ProductStory.tsx: 24.8 KB",
@@ -40,7 +39,6 @@ const ALLOWED = new Set([
     "src/components/templates/TemplatePreviewCard.tsx: Education",
     "src/components/templates/TemplatePreviewCard.tsx: Projects",
     "src/components/templates/TemplatePreviewCard.tsx: Skills",
-    "src/components/landing/BYOAISection.tsx: Ollama",
     // Literal fragments of example URLs, not interface instructions.
     "src/components/editor/EditorSidebar.tsx: .com/username",
     "src/components/import/OrganizationPicker.tsx: github.com/",

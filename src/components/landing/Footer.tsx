@@ -67,7 +67,7 @@ export function Footer() {
                                 { Icon: LayoutTemplate, label: t("footer.templates"), href: localizedPath(GALLERY_PATH, locale) },
                                 ...((indexLocales() as string[]).includes(locale) ? [{ Icon: FileText, label: t("footer.examples"), href: roleExamplePath(locale) }] : []),
                         { Icon: Sparkles, label: t("footer.features"), href: "#features" },
-                        { Icon: ListChecks, label: t("howItWorks.title"), href: "#how-it-works" },
+                        { Icon: ListChecks, label: t("howItWorks.title"), href: "/how-it-works" },
                         ],
                 },
                 {

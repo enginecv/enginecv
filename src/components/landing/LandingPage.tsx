@@ -1,12 +1,9 @@
 import { Navbar } from "@/components/landing/Navbar";
 import { Hero } from "@/components/landing/Hero";
+import { WorkspaceSection } from "@/components/landing/WorkspaceSection";
 import { ProductStory } from "@/components/landing/ProductStory";
 import { ExportFormatsSection } from "@/components/landing/ExportFormatsSection";
-import { FreeToolsSection } from "@/components/landing/FreeToolsSection";
-import { JsonResumeSection } from "@/components/landing/JsonResumeSection";
-import { PopularGuidesSection } from "@/components/landing/PopularGuidesSection";
 import { PrivacySection } from "@/components/landing/PrivacySection";
-import { OpenSourceSection } from "@/components/landing/OpenSourceSection";
 import { FAQ } from "@/components/landing/FAQ";
 import { SupportSection } from "@/components/landing/SupportSection";
 import { FinalCTA } from "@/components/landing/FinalCTA";
@@ -27,13 +24,10 @@ export function LandingPage({ locale }: { locale: Locale }) {
         <Navbar />
         <main className="flex-1">
           <Hero />
+          <WorkspaceSection />
           <ProductStory />
           <ExportFormatsSection />
-          <JsonResumeSection />
-          <FreeToolsSection />
-          <PopularGuidesSection locale={locale} />
           <PrivacySection />
-          <OpenSourceSection />
           <FAQ />
           <SupportSection />
           <FinalCTA />
