@@ -224,6 +224,15 @@ export function createWorkspaceRuntime(options: RuntimeOptions): WorkspaceRuntim
             // A folder problem is the controller's to report; the next change tries again.
         }
     }
+    /** Cheap and only now and then: a deleted instruction file or index comes back even when nothing else changes. */
+    async function keepMachineFilesFresh() {
+        if (!running || options.machineFiles === false) return;
+        lastEnsure = Date.now();
+        const indexMissing = !(await options.adapter.exists(MACHINE_DIR, "index.json").catch(() => true));
+        void refreshMachineFiles({ ensure: true, index: indexMissing });
+    }
+    let housekeepingTimer: ReturnType<typeof setInterval> | null = null;
+
     function refreshIndexSoon() {
         if (!running || options.machineFiles === false) return;
         if (indexTimer) clearTimeout(indexTimer);
@@ -351,6 +360,11 @@ export function createWorkspaceRuntime(options: RuntimeOptions): WorkspaceRuntim
                 ? options.createSource(() => void this.checkNow())
                 : createChangeSource({ adapter: options.adapter, folders: ["cvs", "letters", REQUESTS_DIR], root: options.root, onPossibleChange: () => void this.checkNow(), isVisible: options.isVisible });
             await source.start();
+            // The folder scan only watches the document folders, so a deleted AGENTS.md or index is noticed by this timer.
+            housekeepingTimer = setInterval(() => {
+                if (typeof document !== "undefined" && document.visibilityState === "hidden") return;
+                void keepMachineFilesFresh();
+            }, ENSURE_EVERY_MS);
             if (typeof document !== "undefined") document.addEventListener("visibilitychange", visibility);
             if (typeof window !== "undefined") window.addEventListener("focus", focus);
         },
@@ -358,6 +372,8 @@ export function createWorkspaceRuntime(options: RuntimeOptions): WorkspaceRuntim
             running = false;
             if (indexTimer) clearTimeout(indexTimer);
             indexTimer = null;
+            if (housekeepingTimer) clearInterval(housekeepingTimer);
+            housekeepingTimer = null;
             source?.stop();
             source = null;
             for (const entry of engines.values()) {
@@ -377,11 +393,8 @@ export function createWorkspaceRuntime(options: RuntimeOptions): WorkspaceRuntim
             }
             await Promise.all([...engines.values()].map((entry) => entry.engine.checkNow()));
             await handleRequests();
-            // Cheap and only now and then: a deleted instruction file or index comes back without anything else changing.
             if (Date.now() - lastEnsure > ENSURE_EVERY_MS) {
-                lastEnsure = Date.now();
-                const indexMissing = !(await options.adapter.exists(MACHINE_DIR, "index.json").catch(() => true));
-                void refreshMachineFiles({ ensure: true, index: indexMissing });
+                await keepMachineFilesFresh();
             }
         },
         get changeSource() {
