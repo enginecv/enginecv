@@ -10,6 +10,12 @@ EngineCV can keep your CVs and cover letters as plain files in a folder on your 
 
 Edits you make in the editor are written to the files too, so the folder is also a backup.
 
+## Notifications
+
+While EngineCV is open it shows a small notification when something happens in the folder: a new CV or letter made from a file, an edit applied (with its counts and an Undo button), an export finished, a change held for review, or a change refused. A notification links to the document. Repeated edits to one document are grouped, and the panel has a switch to turn them off.
+
+A file does not say who wrote it, so EngineCV names an agent only when the agent signs its work: a top-level `"edited_by": "Claude Code"` in a CV or letter file, or `"agent": "Claude Code"` in an export request. The name is cleaned and shown as plain text. Unsigned changes say "a file" instead of guessing.
+
 ## What is safe
 
 - A file with a problem (invalid JSON, a half-written file, too large, a newer format) never changes the document and is never overwritten. The document shows why; fix the file and it recovers.

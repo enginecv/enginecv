@@ -86,6 +86,8 @@ function buildSkillBody(): string {
         "",
         `> ${PRIVACY_WARNING}`,
         "",
+        "Sign your work: add a top-level `\"edited_by\": \"<your name>\"` (for example `Claude Code`). EngineCV shows it in a notification so the person sees what changed and who did it.",
+        "",
         "## The format",
         "",
         `The file is one JSON document with \`"format": "${AUTHORING_FORMAT}"\`. Schema: ${AUTHORING_SCHEMA_URL}`,

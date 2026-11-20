@@ -9,6 +9,8 @@ EngineCV (https://enginecv.app) is a resume builder that runs in the browser. Th
 
 > The file holds the user's CV, including contact details. Treat it as private: never copy it to a place the user did not ask for, and tell the user that reading it may send its contents to your model provider.
 
+Sign your work: add a top-level `"edited_by": "<your name>"` (for example `Claude Code`). EngineCV shows it in a notification so the person sees what changed and who did it.
+
 ## The format
 
 The file is one JSON document with `"format": "enginecv.authoring/v1"`. Schema: https://enginecv.app/schema/authoring/v1.json

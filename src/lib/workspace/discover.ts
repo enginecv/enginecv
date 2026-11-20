@@ -1,4 +1,5 @@
 import { hashText } from "@/lib/workspace/hash";
+import { agentFromText } from "./agent-name";
 import { importCvFromText, importLetterFromText } from "./apply-stored";
 import type { DirectoryAdapter } from "./directory-adapter";
 import type { Reconciliation } from "./documents";
@@ -21,6 +22,8 @@ export interface Discovered {
     kind: DocKind;
     fileName: string;
     notices: number;
+    /** The agent that signed the file, when it did. */
+    agent: string | null;
 }
 
 export async function importUnclaimed(adapter: DirectoryAdapter, unmatched: Reconciliation["unmatched"], options: { hideContact: boolean; now?: number }): Promise<{ imported: Discovered[]; failed: Array<{ fileName: string; code: string }> }> {
@@ -38,7 +41,7 @@ export async function importUnclaimed(adapter: DirectoryAdapter, unmatched: Reco
             }
             // The row remembers the file as read, so the engine starts by noticing that only the app side differs (the id and the canonical layout still have to be written).
             await putDocRow(newDocRow({ docId: result.id, kind: file.kind, fileName: file.fileName, included: true, lastHash: hashText(text) }, now));
-            imported.push({ docId: result.id, kind: file.kind, fileName: file.fileName, notices: result.notices.length });
+            imported.push({ docId: result.id, kind: file.kind, fileName: file.fileName, notices: result.notices.length, agent: agentFromText(text) });
         } catch {
             failed.push({ fileName: file.fileName, code: "unknown" });
         }

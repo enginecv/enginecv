@@ -38,6 +38,8 @@ export interface ProcessorDeps {
     adapter: DirectoryAdapter;
     now?: () => number;
     produce?: (input: { kind: "cv" | "letter"; docId: string; format: string; paper?: "a4" | "letter" }) => Promise<ProducedExport>;
+    /** A request was answered (for a notification). */
+    onAnswered?: (info: { docId: string | null; ok: boolean; format: string | null; agent: string | null; file?: string; code?: string }) => void;
 }
 
 export interface ProcessOutcome {
@@ -60,8 +62,9 @@ async function appWrittenExports(adapter: DirectoryAdapter): Promise<Set<string>
     return written;
 }
 
-async function answer(deps: ProcessorDeps, request: { id: string; docId: string | null }, outcome: { ok: true; file: string; bytes: number } | { ok: false; code: RequestErrorCode; message: string }): Promise<void> {
+async function answer(deps: ProcessorDeps, request: { id: string; docId: string | null; agent?: string; format?: string }, outcome: { ok: true; file: string; bytes: number } | { ok: false; code: RequestErrorCode; message: string }): Promise<void> {
     const now = (deps.now ?? Date.now)();
+    deps.onAnswered?.({ docId: request.docId, ok: outcome.ok, format: request.format ?? null, agent: request.agent ?? null, ...(outcome.ok ? { file: outcome.file } : { code: outcome.code }) });
     if (outcome.ok) {
         await writeResult(deps.adapter, success(request.id, outcome.file, outcome.bytes, now));
         await recordActivity({ docId: request.docId, kind: "accepted", code: "exported", detail: outcome.file, now });
@@ -82,10 +85,10 @@ async function handle(deps: ProcessorDeps, request: ExportRequest, written: Set<
     const rows = await listDocRows();
     const row = resolveTarget(request.target, rows);
     if (!row) {
-        await answer(deps, { id: request.id, docId: null }, { ok: false, code: "unknown-document", message: `Unknown target ${request.target}. Read .enginecv/index.json for ids.` });
+        await answer(deps, { id: request.id, docId: null, agent: request.agent, format: request.format }, { ok: false, code: "unknown-document", message: `Unknown target ${request.target}. Read .enginecv/index.json for ids.` });
         return;
     }
-    const ctx = { id: request.id, docId: row.docId };
+    const ctx = { id: request.id, docId: row.docId, agent: request.agent, format: request.format };
     if (!formatsFor(row.kind).includes(request.format)) {
         await answer(deps, ctx, { ok: false, code: "format-unavailable", message: `A ${row.kind === "cv" ? "CV" : "letter"} cannot be exported as ${request.format}. Use one of: ${formatsFor(row.kind).join(", ")}. For PDF request html and follow .enginecv/reference/exports.md.` });
         return;

@@ -31,11 +31,15 @@ import { listDocRows, patchDocRow as patchDocRowRaw, setDocState as setDocStateR
 
 export interface RuntimeEvents {
     /** An outside change was applied to a document. */
-    onApplied?: (docId: string, summary: { added: number; removed: number; changed: number; notices: Notice[] }) => void;
+    onApplied?: (docId: string, summary: { added: number; removed: number; changed: number; notices: Notice[]; agent: string | null; activityId: number | null }) => void;
     /** What needs a look in the folder: unclaimed files, duplicates, sync-tool conflict copies. */
     onAttention?: (attention: { unmatched: Reconciliation["unmatched"]; duplicates: Reconciliation["duplicates"]; conflictCopies: ConflictCopy[] }) => void;
     /** A file nobody claimed became a new document. */
-    onImported?: (docId: string, kind: DocKind) => void;
+    onImported?: (docId: string, kind: DocKind, agent: string | null) => void;
+    /** A change was held for the person to review (it would remove too much). */
+    onReview?: (docId: string, agent: string | null) => void;
+    /** An export request was answered. */
+    onExported?: (info: { docId: string | null; ok: boolean; format: string | null; agent: string | null; file?: string; code?: string }) => void;
     /** A file or folder operation failed in a way that may mean the folder itself is gone or no longer allowed. */
     onFolderProblem?: () => void;
     /** The app's own records could not be saved (storage full or unavailable). */
@@ -192,7 +196,7 @@ export function createWorkspaceRuntime(options: RuntimeOptions): WorkspaceRuntim
                 await appendLog(options.adapter, { at: Date.now(), doc: item.docId, file: `${item.kind === "cv" ? "cvs" : "letters"}/${item.fileName}`, outcome: "accepted", detail: "new document" }).catch(() => undefined);
                 const fresh = (await listDocRows()).find((candidate) => candidate.docId === item.docId);
                 if (fresh) await attach(fresh);
-                options.events?.onImported?.(item.docId, item.kind);
+                options.events?.onImported?.(item.docId, item.kind, item.agent);
             }
             const importedNames = new Set(found.imported.map((item) => item.fileName));
             leftOver = result.unmatched.filter((file) => !importedNames.has(file.fileName));
@@ -248,7 +252,7 @@ export function createWorkspaceRuntime(options: RuntimeOptions): WorkspaceRuntim
         if (!running || handlingRequests || options.requests === false) return;
         handlingRequests = true;
         try {
-            await processRequests({ adapter: options.adapter, produce: options.produceExport });
+            await processRequests({ adapter: options.adapter, produce: options.produceExport, onAnswered: (info) => options.events?.onExported?.(info) });
         } catch {
             // A folder problem is the controller's to report; an unhandled request is picked up on the next pass.
         } finally {
@@ -309,9 +313,13 @@ export function createWorkspaceRuntime(options: RuntimeOptions): WorkspaceRuntim
                 const fileLabel = `${folder}/${row.fileName}`;
                 if (patch.lastUpdate) {
                     const { added, removed, changed, notices } = patch.lastUpdate;
-                    options.events?.onApplied?.(row.docId, { added, removed, changed, notices });
+                    const agent = patch.lastUpdate.agent ?? null;
                     const detail = `+${added}/-${removed}/~${changed}`;
-                    void recordActivity({ docId: row.docId, kind: "accepted", code: "applied", detail, restoreId: lastRestoreId, restoreKind: row.kind });
+                    // Told after the activity row exists, so a notification's Undo can point at it.
+                    void (async () => {
+                        const activityId = await recordActivity({ docId: row.docId, kind: "accepted", code: "applied", detail, restoreId: lastRestoreId, restoreKind: row.kind }).catch(() => null);
+                        options.events?.onApplied?.(row.docId, { added, removed, changed, notices, agent, activityId: typeof activityId === "number" ? activityId : null });
+                    })();
                     void appendLog(options.adapter, { at: Date.now(), doc: row.docId, file: fileLabel, outcome: "accepted", detail }).catch(() => undefined);
                 }
                 if (patch.syncedHash) {
@@ -328,6 +336,7 @@ export function createWorkspaceRuntime(options: RuntimeOptions): WorkspaceRuntim
                 options.events?.onState?.(row.docId, next.state, next.reason);
                 if (next.state === "review" && patch.review) {
                     void patchDocRow(row.docId, { pendingReview: patch.review });
+                    options.events?.onReview?.(row.docId, patch.review.agent ?? null);
                     void recordActivity({ docId: row.docId, kind: "review", code: "shrink-guard", detail: `${patch.review.keptCount} of ${patch.review.previousCount} kept` });
                     void appendLog(options.adapter, { at: Date.now(), doc: row.docId, file: fileLabel, outcome: "review", code: "shrink-guard" }).catch(() => undefined);
                     void writeRefusal(options.adapter, { docId: row.docId, file: fileLabel, code: "shrink-guard", detail: `${patch.review.keptCount} of ${patch.review.previousCount} kept` }).catch(() => undefined);

@@ -24,6 +24,8 @@ export const letterFileSchema = z.object({
     $schema: z.string().optional(),
     format: z.string().optional(),
     id: z.string().optional(),
+    /** Optional name of the agent or tool that wrote the file; shown in notifications. */
+    edited_by: z.string().optional(),
     status: z.enum(["draft", "sent"]).optional(),
     cv: z.object({ id: z.string(), title: z.string().optional() }).nullable().optional(),
     standalone: z.boolean().optional(),

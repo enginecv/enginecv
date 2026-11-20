@@ -1,3 +1,4 @@
+import { agentFromText } from "./agent-name";
 import { mapFileError, type FileAdapter, type FileStamp } from "@/lib/workspace/fs-access";
 import { hashText } from "@/lib/workspace/hash";
 import type { LinkDivergence, LinkedFileState } from "@/lib/workspace/file-state";
@@ -192,6 +193,7 @@ export function createDocumentSyncEngine<TDoc>(deps: DocumentEngineDeps<TDoc>): 
     /** Validates `text`; a valid document is applied as one revertible update. */
     async function processText(text: string, options: { force?: boolean; skipGuard?: boolean } = {}): Promise<ReadOutcome> {
         const parsed = codec.parse(text, { now: now(), hideContact: deps.hideContact?.() ?? false });
+        const agent = parsed.ok ? agentFromText(text) : null;
         if (!parsed.ok) return { kind: "error", code: parsed.reason.code, line: parsed.reason.line, column: parsed.reason.column, detail: parsed.reason.detail };
 
         const hash = hashText(text);
@@ -207,8 +209,9 @@ export function createDocumentSyncEngine<TDoc>(deps: DocumentEngineDeps<TDoc>): 
         if (!options.skipGuard && deps.guard) {
             const review = deps.guard(before, parsed.doc);
             if (review) {
-                held = { hash, review };
-                return { kind: "review", review };
+                const signed = agent ? { ...review, agent } : review;
+                held = { hash, review: signed };
+                return { kind: "review", review: signed };
             }
         }
 
@@ -225,7 +228,7 @@ export function createDocumentSyncEngine<TDoc>(deps: DocumentEngineDeps<TDoc>): 
         const meaningful = change.added + change.removed + change.changed > 0 || parsed.notices.length > 0;
         emit({
             lastUpdate: meaningful
-                ? { at: now(), ...change, notices: parsed.notices }
+                ? { at: now(), ...change, notices: parsed.notices, agent }
                 : null,
         });
         return { kind: "applied" };

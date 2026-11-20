@@ -75,6 +75,8 @@ export interface WorkspaceRecord {
     changeSource: ChangeSourceKind;
     /** File names the person chose to ignore (conflict copies, duplicates they decided about). */
     ignoredFiles?: string[];
+    /** Show a notification when something changes in the folder. On unless set to false. */
+    notify?: boolean;
 }
 
 export interface FileStampRecord {
@@ -87,6 +89,8 @@ export interface PendingReview {
     keptCount: number;
     previousCount: number;
     at: number;
+    /** The agent that signed the file, when it did. */
+    agent?: string | null;
 }
 
 export interface WorkspaceDocRecord {

@@ -1,5 +1,6 @@
 import { MACHINE_DIR } from "./agent-files";
 import type { DirectoryAdapter } from "./directory-adapter";
+import { cleanAgentName } from "./agent-name";
 import { nameKey } from "./names";
 import type { DocKind, WorkspaceDocRecord } from "./types";
 
@@ -39,6 +40,8 @@ export interface ExportRequest {
     target: string;
     format: ExportRequestFormat;
     paper?: "a4" | "letter";
+    /** Who asked, when the request says (shown in a notification). */
+    agent?: string;
 }
 
 export type RequestCheck = { ok: true; request: ExportRequest } | { ok: false; code: RequestErrorCode; message: string; incomplete?: boolean };
@@ -68,7 +71,7 @@ export function checkRequest(fileId: string, text: string): RequestCheck {
     if (typeof body.target !== "string" || body.target.trim() === "") return { ok: false, code: "request-invalid", message: `"target" must be a document id from .enginecv/index.json or its file path.` };
     if (typeof body.format !== "string") return { ok: false, code: "request-invalid", message: `"format" is required: ${CV_FORMATS.join(", ")}.` };
     if (body.paper !== undefined && body.paper !== "a4" && body.paper !== "letter") return { ok: false, code: "request-invalid", message: `"paper" must be "a4" or "letter".` };
-    return { ok: true, request: { id: fileId, action: "export", target: body.target.trim(), format: body.format as ExportRequestFormat, ...(body.paper ? { paper: body.paper as "a4" | "letter" } : {}) } };
+    return { ok: true, request: { id: fileId, action: "export", target: body.target.trim(), format: body.format as ExportRequestFormat, ...(body.paper ? { paper: body.paper as "a4" | "letter" } : {}), ...(cleanAgentName(body.agent) ? { agent: cleanAgentName(body.agent)! } : {}) } };
 }
 
 /** The document a target names: by id, or by its file path (`cvs/Name.cv.json`). */

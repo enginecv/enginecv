@@ -32,10 +32,11 @@ Start with \`.enginecv/index.json\`, then open only the file you need.
 Rules
 1. Change only what was asked. Keep \`id\`, \`format\` and every entry you were not asked to touch.
 2. Save the whole file in one write. Never leave it half written.
-3. Do not remove many entries or whole sections unless told to. EngineCV holds such a change for review.
+3. Do not remove many entries or sections unless told to; EngineCV holds that for review.
 4. A letter with \`"status": "sent"\` is frozen. To reuse it, write a new letter file with a new \`id\`.
 5. Do not edit \`exports/\` or \`.enginecv/\`, except request files.
-6. If EngineCV refuses a change, read \`.enginecv/results/\` and \`.enginecv/log.ndjson\`, fix the file and save again.
+6. If a change is refused, read \`.enginecv/results/\` and \`.enginecv/log.ndjson\`, fix the file, save again.
+7. Sign files you write: \`"edited_by": "<your name>"\`. EngineCV shows it.
 
 Read more only when needed
 - \`.enginecv/reference/cv-format.md\`: CV fields
@@ -82,6 +83,7 @@ function exportsBody(): string {
         "- `target`: a CV id from `.enginecv/index.json`, or a file path such as `cvs/Master CV.cv.json` or `letters/Acme.letter.json` (letters are named by path)",
         "- `format`: CV `html` `docx` `md` `txt` `tex` `json`; letter `html` `docx` `md` `txt` `tex`",
         "- `paper` (optional): `a4` or `letter`",
+        "- `agent` (optional): your name, for example `Claude Code`; EngineCV shows it in a notification",
         "",
         "## Read the answer",
         "",
@@ -175,6 +177,7 @@ function cvFormatBody(): string {
         "- Save the whole file in one write, valid JSON (double quotes, no comments, no trailing commas).",
         "- If the new file would keep fewer than half of a CV's entries and drop three or more, EngineCV holds it for the person to review instead of applying it.",
         "- Harmless slips (a code fence, a trailing comma, a byte-order mark) are repaired with a notice. A cut-off or invalid file is refused and the CV stays as it was; read `.enginecv/results/`.",
+        '- Sign your work: add a top-level `"edited_by": "<your name>"` (for example `Claude Code`). EngineCV shows it in a notification so the person sees what changed and who did it.',
         "- Keys EngineCV does not know are ignored with a notice.",
         "",
         "## Not in the file",
@@ -200,6 +203,7 @@ function letterFormatBody(): string {
         '| `status` | Read only. `"draft"` or `"sent"`. |',
         '| `cv` | `{ "id": "<CV id from index.json>", "title": "<hint>" }`. The letter follows that CV. Only `id` matters. |',
         "| `standalone` | `true` for a letter with no CV. Then put sender details in `sender`. |",
+        "| `edited_by` | Optional. Your name, for example `Claude Code`; shown in a notification. |",
         "| `title`, `company`, `role`, `subject`, `salutation`, `closing` | Text. |",
         "| `language`, `date` | Language code; date as `YYYY-MM-DD`. |",
         '| `layout`, `paper` | `"standard"` or `"din5008"` (German business letter); `"a4"` or `"letter"`. din5008 is A4 only. |',

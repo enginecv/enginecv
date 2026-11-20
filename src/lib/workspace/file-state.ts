@@ -24,5 +24,5 @@ export interface LinkedFileState {
     lastSyncedAt: number | null;
     error: { code: LinkErrorCode; line?: number; column?: number } | null;
     divergence: LinkDivergence | null;
-    lastUpdate: { at: number; added: number; removed: number; changed: number; notices: Notice[] } | null;
+    lastUpdate: { at: number; added: number; removed: number; changed: number; notices: Notice[]; /** The agent that signed the file, when it did. */ agent?: string | null } | null;
 }
