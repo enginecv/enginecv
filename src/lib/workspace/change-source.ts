@@ -12,8 +12,11 @@ export const OBSERVER_DEBOUNCE_MS = 150;
 export const POLL_INTERVAL_MS = 1500;
 export const IDLE_POLL_INTERVAL_MS = 2000;
 const IDLE_AFTER_MS = 60_000;
-/** With the observer working, a slow safety scan still runs in case it misses something. */
-export const SAFETY_SCAN_MS = 15_000;
+/**
+ * With the observer attached, a safety scan still runs in case it misses something. The observer can attach
+ * without ever firing for folders it does not really support, so this stays short (a listing is cheap).
+ */
+export const SAFETY_SCAN_MS = 3_000;
 export const SLOW_SCAN_MS = 750;
 const SLOW_SCANS_IN_A_ROW = 3;
 const SLOW_INTERVAL_MS = 5000;
