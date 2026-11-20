@@ -2,7 +2,8 @@
 
 import { CheckCircle2, X } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
+import type { SourceId } from "@/lib/import/sources";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { SecretKeyDialog } from "@/components/ui/SecretKeyDialog";
 import { useDialogFocus } from "@/hooks/useDialogFocus";
@@ -38,8 +39,8 @@ export interface ImportDataDialogProps {
     initialFiles?: File[];
     /** Tests inject a fake GitHub provider. */
     githubProvider?: ImportProvider;
-    /** Opens the GitHub panel straight away. */
-    initialSource?: "github";
+    /** The source tab to open first (a deep link such as ?start=linkedin). */
+    initialSource?: SourceId;
     /**
      * A "Download my data" file holds several CVs. When given, they go here
      * (each becomes its own CV) instead of being combined into one.
@@ -76,7 +77,7 @@ export function ImportDataDialog({
     initialSource,
     onImportDataExport,
 }: ImportDataDialogProps) {
-    const { t } = useTranslation();
+    const { t, tn } = useTranslation();
     const router = useRouter();
     const fixedNew = target === "new";
     const hub = useImportHub(current, fixedNew ? "new" : "merge");
@@ -125,6 +126,11 @@ export function ImportDataDialog({
             .finally(() => setBusy(false));
     };
 
+    const stagedCounts = useMemo(() => {
+        const counts: Partial<Record<SourceId, number>> = {};
+        for (const batch of hub.batches) counts[batch.sourceId as SourceId] = (counts[batch.sourceId as SourceId] ?? 0) + 1;
+        return counts;
+    }, [hub.batches]);
     const hasStaged = hub.batches.length > 0 && hub.step !== "done";
     const requestClose = useCallback(() => {
         if (busy || keyOpen || confirmDiscard || confirmReplace) return;
@@ -182,17 +188,22 @@ export function ImportDataDialog({
                 aria-modal="true"
                 aria-label={t("importHub.title")}
                 data-testid="import-hub-dialog"
-                className="relative flex max-h-[92dvh] w-full max-w-3xl flex-col overflow-hidden rounded-t-2xl border border-edge bg-surface-2 shadow-2xl sm:rounded-2xl"
+                className="relative flex max-h-[92dvh] w-full max-w-5xl flex-col overflow-hidden rounded-t-2xl border border-edge bg-surface-2 shadow-2xl sm:rounded-2xl"
             >
                 <header className="flex items-start gap-3 border-b border-edge px-4 py-3 sm:px-6">
                     <div className="min-w-0 flex-1">
                         <h2 className="text-base font-semibold text-strong">{t("importHub.title")}</h2>
-                        <ol className="mt-1 flex flex-wrap gap-x-3 text-xs text-faint" aria-label={t("importHub.title")}>
-                            {STEPS.map((step, index) => (
-                                <li key={step.id} aria-current={step.id === hub.step ? "step" : undefined} className={index === currentStepIndex ? "font-medium text-accent" : ""}>
-                                    {index + 1}. {t(step.labelKey)}
-                                </li>
-                            ))}
+                        <ol className="mt-2 flex items-center gap-2 text-xs" aria-label={t("importHub.title")}>
+                            {STEPS.map((step, index) => {
+                                const reached = index <= currentStepIndex;
+                                return (
+                                    <li key={step.id} aria-current={step.id === hub.step ? "step" : undefined} className={`flex items-center gap-2 ${index === currentStepIndex ? "font-medium text-strong" : reached ? "text-mid" : "text-faint"}`}>
+                                        <span aria-hidden="true" className={`flex h-5 w-5 items-center justify-center rounded-full text-[11px] font-semibold ${reached ? "bg-accent text-surface-2" : "border border-edge text-faint"}`}>{index + 1}</span>
+                                        <span>{t(step.labelKey)}</span>
+                                        {index < STEPS.length - 1 && <span aria-hidden="true" className={`ml-1 h-px w-6 sm:w-10 ${index < currentStepIndex ? "bg-accent" : "bg-edge"}`} />}
+                                    </li>
+                                );
+                            })}
                         </ol>
                     </div>
                     <button
@@ -210,7 +221,7 @@ export function ImportDataDialog({
                     {hub.step === "sources" && (
                         <>
                             <p className="text-sm text-faint">{t("importHub.intro")}</p>
-                            <SourcePicker onAdd={addBatches} helpers={helpers} initialFiles={initialFiles} githubProvider={githubProvider} initialGithubOpen={initialSource === "github"} />
+                            <SourcePicker onAdd={addBatches} helpers={helpers} initialFiles={initialFiles} githubProvider={githubProvider} initialSource={initialSource} stagedCounts={stagedCounts} />
                             <StagedSources batches={hub.batches} onRemove={hub.removeBatch} />
                             <p className="text-xs text-faint">{t("importHub.privacy")}</p>
                         </>
@@ -261,7 +272,10 @@ export function ImportDataDialog({
                 </div>
 
                 {hub.step === "sources" && (
-                    <footer className="flex justify-end border-t border-edge px-4 py-3 sm:px-6">
+                    <footer className="flex items-center justify-between gap-3 border-t border-edge px-4 py-3 sm:px-6">
+                        <p className="min-w-0 text-sm text-mid" data-testid="import-hub-footer-summary">
+                            {hub.batches.length === 0 ? t("importHub.footer.none") : tn("importHub.footer.sources", hub.batches.length)}
+                        </p>
                         <button
                             type="button"
                             disabled={hub.batches.length === 0}

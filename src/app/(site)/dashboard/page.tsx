@@ -35,6 +35,7 @@ import { DeleteDocumentDialog } from "@/components/workspace/DeleteDocumentDialo
 import { useWorkspaceMembership } from "@/components/workspace/useWorkspaceMembership";
 import { useHasWorkspaceFile } from "@/components/workspace/useHasWorkspaceFile";
 import { WorkspacePanel } from "@/components/workspace/WorkspacePanel";
+import type { SourceId } from "@/lib/import/sources";
 import { ensureWorkspace, retireBeforeDelete, useWorkspaceStore } from "@/lib/workspace/controller";
 import type { RetireChoice } from "@/lib/workspace/lifecycle";
 import { DASHBOARD_CONTENT_CLASS, DASHBOARD_NAV_CLASS } from "@/components/dashboard/layout";
@@ -831,7 +832,7 @@ function Dashboard() {
     }, []);
     const [showExamplePicker, setShowExamplePicker] = useState(false);
     // The Import data window, with a file or source it should start from.
-    const [hub, setHub] = useState<{ files?: File[]; source?: "github" } | null>(null);
+    const [hub, setHub] = useState<{ files?: File[]; source?: SourceId } | null>(null);
     const [fileDragActive, setFileDragActive] = useState(false);
     // The start path whose action is running (blank creation), and where focus goes for `?start=json`.
     const [pendingStart, setPendingStart] = useState<StartPathId | null>(null);
@@ -917,14 +918,15 @@ function Dashboard() {
         setHub({ source: "github" });
     }, [setHub, setShowCreateModal]);
 
-    // LinkedIn, Europass and paste-from-AI all start in the same window: drop the file or paste the text.
-    const handleOpenImportHub = useCallback(() => {
+    // LinkedIn, Europass and paste-from-AI start in the same window, each on its own tab.
+    const openImportHub = useCallback((source?: SourceId) => {
         setShowCreateModal(false);
-        setHub({});
+        setHub(source ? { source } : {});
     }, [setHub, setShowCreateModal]);
-    const handleOpenLinkedinImport = handleOpenImportHub;
-    const handleOpenEuropassImport = handleOpenImportHub;
-    const handleOpenPasteFromAi = handleOpenImportHub;
+    const handleOpenImportHub = useCallback(() => openImportHub(), [openImportHub]);
+    const handleOpenLinkedinImport = useCallback(() => openImportHub("linkedin"), [openImportHub]);
+    const handleOpenEuropassImport = useCallback(() => openImportHub("europass"), [openImportHub]);
+    const handleOpenPasteFromAi = useCallback(() => openImportHub("paste-ai"), [openImportHub]);
 
     const handleOpenExamplePicker = useCallback(() => {
         setShowCreateModal(false);

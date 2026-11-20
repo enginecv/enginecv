@@ -60,7 +60,7 @@ function open(githubProvider: ImportProvider) {
 }
 
 async function lookUp(user: ReturnType<typeof userEvent.setup>, name = "octocat") {
-    await user.click(screen.getByTestId("import-hub-github-toggle"));
+    await user.click(screen.getByTestId("import-hub-source-github"));
     await user.type(screen.getByTestId("github-import-input"), name);
     await user.click(screen.getByTestId("github-import-submit"));
 }
@@ -72,11 +72,14 @@ describe("GitHub as a source in the hub", () => {
 
     afterEach(cleanup);
 
-    it("makes no request until the person asks", () => {
+    it("makes no request until the person asks, and says so on its own tab", async () => {
+        const user = userEvent.setup();
         const fake = provider();
         open(fake);
-        expect(screen.getByTestId("import-hub-github")).toHaveTextContent("Contacts GitHub when you ask");
+        // Nothing about GitHub is loaded while another tab is showing.
         expect(screen.queryByTestId("github-import-input")).not.toBeInTheDocument();
+        await user.click(screen.getByTestId("import-hub-source-github"));
+        expect(screen.getByTestId("import-hub-github")).toHaveTextContent("Contacts GitHub when you ask");
         expect(fake.fetchProfile).not.toHaveBeenCalled();
         expect(fake.fetchRepositories).not.toHaveBeenCalled();
     });
@@ -91,8 +94,8 @@ describe("GitHub as a source in the hub", () => {
         const batch = await screen.findByTestId("import-hub-batch");
         expect(batch).toHaveTextContent("The Octocat");
         expect(batch).toHaveTextContent("GitHub");
-        // The panel closes and nothing was saved.
-        expect(screen.queryByTestId("github-import-input")).not.toBeInTheDocument();
+        // The tab keeps a badge for what was added, and nothing was saved.
+        expect(screen.getByTestId("import-hub-source-github")).toHaveTextContent("1");
 
         await user.click(screen.getByTestId("import-hub-review"));
         const projects = screen.getByTestId("import-hub-section-projects");
@@ -121,12 +124,12 @@ describe("GitHub as a source in the hub", () => {
         expect(screen.queryByTestId("import-hub-batch")).not.toBeInTheDocument();
     });
 
-    it("closes the panel from the toggle", async () => {
+    it("shows the lookup only on the GitHub tab", async () => {
         const user = userEvent.setup();
         open(provider());
-        await user.click(screen.getByTestId("import-hub-github-toggle"));
+        await user.click(screen.getByTestId("import-hub-source-github"));
         expect(screen.getByTestId("github-import-input")).toBeInTheDocument();
-        await user.click(screen.getByTestId("import-hub-github-toggle"));
+        await user.click(screen.getByTestId("import-hub-source-enginecv"));
         expect(screen.queryByTestId("github-import-input")).not.toBeInTheDocument();
     });
 });
