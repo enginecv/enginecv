@@ -12,7 +12,9 @@ import type { ConflictCopy } from "./scan";
 import { MACHINE_DIR } from "./agent-files";
 import { safeStem } from "./names";
 import { parseCv } from "@/lib/letters/store";
-import type { ChangeSourceKind, DocState, WorkspaceDocRecord } from "./types";
+import { useNotices, type NewNotice } from "./notices";
+import { cvTitle, letterTitle } from "./setup";
+import type { ChangeSourceKind, DocKind, DocState, WorkspaceDocRecord } from "./types";
 import { BROWSER_TOOLS_EVENT, syncBrowserTools } from "./browser-tools";
 import { excludeDocument, includeDocument, mirrorDocuments, retireDocument, type IncludeChoice, type RetireChoice } from "./lifecycle";
 import { clearWorkspace, getWorkspace, putDocRow, setDocState, updateWorkspace } from "./workspace-store";
@@ -30,6 +32,8 @@ export interface WorkspaceUiState {
     folderName: string | null;
     changeSource: ChangeSourceKind | null;
     hideContact: boolean;
+    /** Notifications when something changes in the folder (on unless turned off). */
+    notify: boolean;
     paused: boolean;
     isLeader: boolean;
     docCount: number;
@@ -45,7 +49,7 @@ export interface WorkspaceUiState {
     attention: { unmatched: Reconciliation["unmatched"]; duplicates: Reconciliation["duplicates"]; conflictCopies: ConflictCopy[] };
 }
 
-const initial: WorkspaceUiState = { phase: "loading", folderName: null, changeSource: null, hideContact: false, paused: false, isLeader: false, docCount: 0, byState: {}, error: null, storageProblem: false, rewriting: null, attention: { unmatched: [], duplicates: [], conflictCopies: [] } };
+const initial: WorkspaceUiState = { phase: "loading", folderName: null, changeSource: null, hideContact: false, notify: true, paused: false, isLeader: false, docCount: 0, byState: {}, error: null, storageProblem: false, rewriting: null, attention: { unmatched: [], duplicates: [], conflictCopies: [] } };
 
 export const useWorkspaceStore = create<WorkspaceUiState>(() => initial);
 
@@ -81,7 +85,24 @@ function syncRuntime() {
             root: rootHandle,
             hideContact: () => useWorkspaceStore.getState().hideContact,
             paused: () => useWorkspaceStore.getState().paused,
-            events: { onState: () => void refreshCounts(), onAttention: (attention) => set({ attention }), onImported: () => void refreshCounts(), onFolderProblem: () => void verifyFolder(), onStorageProblem: () => set({ storageProblem: true }) },
+            events: {
+                onState: (docId, state, reason) => {
+                    void refreshCounts();
+                    noteStateChange(docId, state, reason?.code ?? null);
+                },
+                onAttention: (attention) => set({ attention }),
+                onImported: (docId, kind, agent) => {
+                    void refreshCounts();
+                    notify(docId, async (title) => ({ kind: "created", docId, docKind: kind, title, agent }));
+                },
+                onApplied: (docId, summary) => notify(docId, async (title, docKind) => ({ kind: "edited", docId, docKind, title, agent: summary.agent, added: summary.added, removed: summary.removed, changed: summary.changed, activityId: summary.activityId })),
+                onReview: (docId, agent) => notify(docId, async (title, docKind) => ({ kind: "review", docId, docKind, title, agent, code: "shrink-guard" })),
+                onExported: (info) => notify(info.docId, async (title, docKind) => (info.ok
+                    ? { kind: "exported", docId: info.docId, docKind, title, agent: info.agent, format: info.format }
+                    : { kind: "refused", docId: info.docId, docKind, title, agent: info.agent, code: info.code ?? "export-failed", format: info.format })),
+                onFolderProblem: () => void verifyFolder(),
+                onStorageProblem: () => set({ storageProblem: true }),
+            },
         });
         void runtime.start().then(() => set({ changeSource: runtime?.changeSource?.kind ?? "poll" })).catch(() => undefined);
         startMirroring();
@@ -90,6 +111,42 @@ function syncRuntime() {
         runtime = null;
         stopMirroring();
     }
+}
+
+/** The last state a document was reported in, so a refusal is announced when it starts, not on every page load. */
+const lastReported = new Map<string, DocState>();
+const REFUSAL_CODES_TO_SKIP = new Set(["duplicate-id", "permission", "file-busy", "storage-full"]);
+
+function noteStateChange(docId: string, state: DocState, code: string | null) {
+    const before = lastReported.get(docId);
+    lastReported.set(docId, state);
+    if (state !== "blocked" || before === "blocked" || !code || REFUSAL_CODES_TO_SKIP.has(code)) return;
+    notify(docId, async (title, docKind) => ({ kind: "refused", docId, docKind, title, code }));
+}
+
+/** Tells the person about something that happened in the folder, when notifications are on. */
+function notify(docId: string | null, build: (title: string, docKind: DocKind | null) => Promise<NewNotice>) {
+    if (!useWorkspaceStore.getState().notify) return;
+    void (async () => {
+        let title = "";
+        let docKind: DocKind | null = null;
+        if (docId) {
+            const cv = await db.resumes.get(docId);
+            if (cv) { title = cvTitle(cv); docKind = "cv"; }
+            else {
+                const letter = await db.coverLetters.get(docId);
+                if (letter) { title = letterTitle(letter); docKind = "letter"; }
+            }
+        }
+        useNotices.getState().push(await build(title, docKind));
+    })().catch(() => undefined);
+}
+
+/** Turns notifications on or off for this folder. */
+export async function setNotifications(on: boolean): Promise<void> {
+    set({ notify: on });
+    if (!on) useNotices.getState().clear();
+    await updateWorkspace({ notify: on }).catch(() => undefined);
 }
 
 let verifying = false;
@@ -203,7 +260,7 @@ export async function initWorkspace(): Promise<void> {
     }
     adapter = createDirectoryAdapter(row.handle);
     rootHandle = row.handle;
-    set({ folderName: row.folderName, hideContact: row.hideContact, paused: row.paused, changeSource: row.changeSource });
+    set({ folderName: row.folderName, hideContact: row.hideContact, notify: row.notify !== false, paused: row.paused, changeSource: row.changeSource });
     await refreshCounts();
     try {
         const state = await adapter.permissionState();
@@ -287,6 +344,8 @@ export async function disconnectWorkspace(): Promise<void> {
 /** For tests: forget module state. */
 export function resetWorkspaceController(): void {
     initPromise = null;
+    lastReported.clear();
+    useNotices.getState().clear();
     runtime?.stop();
     runtime = null;
     stopMirroring();

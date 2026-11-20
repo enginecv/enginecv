@@ -511,3 +511,48 @@ test.describe("12. idle", () => {
         expect(problems).toEqual([]);
     });
 });
+
+test.describe("13. notifications", () => {
+    test("a signed new CV, a signed edit, an export request and an unsigned edit each show a notification with the right words", async ({ page }) => {
+        const problems = watchProblems(page);
+        const { file, doc } = await connectWithCv(page);
+        const notices = page.getByTestId("agent-notices");
+
+        // A new CV an agent made, signed.
+        const fresh = { ...doc, basics: { ...doc.basics, name: "Specialised Person" }, edited_by: "Claude Code" };
+        delete (fresh as any).id;
+        await writeFile(page, "cvs/Specialised.cv.json", JSON.stringify(fresh, null, 2));
+        await expect(notices.getByTestId("agent-notice-created")).toContainText("Claude Code created a new CV", { timeout: 12_000 });
+        await expect(notices.getByTestId("agent-notice-created").getByTestId("agent-notice-open")).toHaveAttribute("href", /\/editor\//);
+        await notices.getByTestId("agent-notice-created").getByTestId("agent-notice-dismiss").click();
+
+        // A signed edit: named, with its counts, and Undo.
+        await writeFile(page, file, JSON.stringify({ ...json(await readFile(page, file)), edited_by: "Codex", projects: [{ name: "Weather Bot", description: "x" }] }, null, 2));
+        await expect(notices.getByTestId("agent-notice-edited")).toContainText("Codex edited", { timeout: 12_000 });
+        await expect(notices.getByTestId("agent-notice-edited")).toContainText("+1");
+        await notices.getByTestId("agent-notice-edited").getByTestId("agent-notice-undo").click();
+        await expect.poll(() => appHas(page, "Weather Bot"), { timeout: 10_000 }).toBe(false);
+
+        // An export request, signed.
+        await writeFile(page, ".enginecv/requests/n1.request.json", JSON.stringify({ id: "n1", action: "export", target: file, format: "md", agent: "Claude Code" }));
+        await expect(notices.getByTestId("agent-notice-exported")).toContainText("Claude Code exported", { timeout: 15_000 });
+
+        // An unsigned edit does not guess a name.
+        const { edited_by: _signature, ...plain } = json(await readFile(page, file));
+        await writeFile(page, file, JSON.stringify({ ...plain, projects: [{ name: "Unsigned", description: "x" }] }, null, 2));
+        await expect(notices.getByTestId("agent-notice-edited").last()).toContainText("was changed from a file", { timeout: 12_000 });
+        expect(problems).toEqual([]);
+    });
+
+    test("turning notifications off in the panel stops them", async ({ page }) => {
+        const { file, doc } = await connectWithCv(page);
+        await openPanel(page);
+        await page.getByTestId("workspace-notifications").click();
+        await expect(page.getByTestId("workspace-notifications")).not.toBeChecked();
+        await closePanel(page);
+        await writeFile(page, file, JSON.stringify({ ...doc, edited_by: "Codex", projects: [{ name: "Quiet", description: "x" }] }, null, 2));
+        await expect.poll(() => appHas(page, "Quiet"), { timeout: 12_000 }).toBe(true);
+        await page.waitForTimeout(1500);
+        await expect(page.getByTestId("agent-notices")).toHaveCount(0);
+    });
+});

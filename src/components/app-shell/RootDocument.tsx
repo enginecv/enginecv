@@ -5,6 +5,7 @@ import { AdConsentPrompt } from "@/components/integrations/AdConsentPrompt";
 import { AcquisitionSource } from "@/components/integrations/AcquisitionSource";
 import { LegacyTrackingPurge } from "@/components/integrations/LegacyTrackingPurge";
 import { WipeListener } from "@/components/your-data/WipeListener";
+import { AgentNotices } from "@/components/workspace/AgentNotices";
 import { SiteScripts } from "@/components/integrations/SiteScripts";
 import { SkipLink } from "@/components/ui/SkipLink";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -87,6 +88,7 @@ export async function RootDocument({
       <LegacyTrackingPurge />
       <AcquisitionSource />
       <WipeListener />
+      <AgentNotices />
       <TooltipProvider delayDuration={300}>
         {children}
       </TooltipProvider>
