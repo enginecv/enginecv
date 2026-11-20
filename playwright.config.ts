@@ -65,6 +65,18 @@ export default defineConfig({
                 baseURL: adsBaseURL,
             },
         },
+        // Launch smoke test on the other engines. Opt in (PLAYWRIGHT_CROSS_BROWSER=1) because they need
+        // `npx playwright install webkit firefox` first.
+        ...(process.env.PLAYWRIGHT_CROSS_BROWSER
+            ? (["webkit", "firefox"] as const).map((engine) => ({
+                name: engine,
+                testMatch: "**/smoke-launch.spec.ts",
+                use: {
+                    ...devices[engine === "webkit" ? "Desktop Safari" : "Desktop Firefox"],
+                    storageState: CONSENT_DECIDED_STATE_PATH,
+                },
+            }))
+            : []),
         {
             name: "parse",
             testMatch: "**/parse-pdf.spec.ts",
