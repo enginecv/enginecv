@@ -1,6 +1,6 @@
 # Agent skill acceptance script
 
-Manual check that the generated skill (`public/agent/enginecv/SKILL.md`) lets a fresh agent session edit a linked CV file correctly. Run it after any change to the format or to `src/lib/agent/authoring/skill.ts`, and before announcing the feature.
+Manual check that the generated skill (`public/agent/enginecv/SKILL.md`) lets a fresh agent session edit a CV file in the workspace folder correctly. Run it after any change to the format or to `src/lib/agent/authoring/skill.ts`, and before announcing the feature.
 
 ## Setup
 

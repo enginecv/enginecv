@@ -1,6 +1,6 @@
 ## EngineCV resume file
 
-The user's CV lives in a JSON file in the `enginecv.authoring/v1` format, linked to https://enginecv.app. Ask for the file's path if you do not know it. Full guidance: https://enginecv.app/agent/enginecv/SKILL.md
+The user's CV lives in a JSON file in the `enginecv.authoring/v1` format, in a workspace folder connected to https://enginecv.app. Ask for the file's path if you do not know it. Full guidance: https://enginecv.app/agent/enginecv/SKILL.md
 
 The file holds the user's CV, including contact details. Treat it as private: never copy it to a place the user did not ask for, and tell the user that reading it may send its contents to your model provider.
 

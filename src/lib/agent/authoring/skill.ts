@@ -12,7 +12,7 @@ import { FOLDER_AGENTS_URL, FOLDER_REFERENCE_URL, SKILL_URL } from "./skill-urls
 
 /**
  * The EngineCV agent skill: guidance a local AI agent reads before it edits a
- * linked CV file. Generated from the same field tables as the format and its
+ * CV file in the workspace folder. Generated from the same field tables as the format and its
  * JSON Schema, so the two cannot drift; `scripts/generate-agent-skill.ts`
  * writes the public files and a unit test fails when they are stale.
  */
@@ -82,7 +82,7 @@ function buildSkillBody(): string {
     return [
         "# EngineCV resume file",
         "",
-        "EngineCV (https://enginecv.app) is a resume builder that runs in the browser. The user's CV is linked to a JSON file on their computer. You edit that file with your normal file tools; the editor notices the change within a few seconds, checks it and updates the CV. If you do not know the file's path, ask the user for it.",
+        "EngineCV (https://enginecv.app) is a resume builder that runs in the browser. The user keeps their CVs as JSON files in a workspace folder on their computer. You edit those files with your normal file tools; EngineCV notices the change within a few seconds, checks it and updates the CV. If you do not know the folder or the file's path, ask the user for it.",
         "",
         `> ${PRIVACY_WARNING}`,
         "",
@@ -141,7 +141,7 @@ export function buildAgentsSnippet(): string {
     return [
         "## EngineCV resume file",
         "",
-        `The user's CV lives in a JSON file in the \`${AUTHORING_FORMAT}\` format, linked to https://enginecv.app. Ask for the file's path if you do not know it. Full guidance: ${SKILL_URL}`,
+        `The user's CV lives in a JSON file in the \`${AUTHORING_FORMAT}\` format, in a workspace folder connected to https://enginecv.app. Ask for the file's path if you do not know it. Full guidance: ${SKILL_URL}`,
         "",
         `${PRIVACY_WARNING}`,
         "",

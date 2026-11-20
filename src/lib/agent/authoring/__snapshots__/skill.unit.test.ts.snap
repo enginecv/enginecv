@@ -8,7 +8,7 @@ description: Edit the user's EngineCV resume file (an enginecv.authoring/v1 JSON
 
 # EngineCV resume file
 
-EngineCV (https://enginecv.app) is a resume builder that runs in the browser. The user's CV is linked to a JSON file on their computer. You edit that file with your normal file tools; the editor notices the change within a few seconds, checks it and updates the CV. If you do not know the file's path, ask the user for it.
+EngineCV (https://enginecv.app) is a resume builder that runs in the browser. The user keeps their CVs as JSON files in a workspace folder on their computer. You edit those files with your normal file tools; EngineCV notices the change within a few seconds, checks it and updates the CV. If you do not know the folder or the file's path, ask the user for it.
 
 > The file holds the user's CV, including contact details. Treat it as private: never copy it to a place the user did not ask for, and tell the user that reading it may send its contents to your model provider.
 
