@@ -297,7 +297,7 @@ export async function listLettersForCv(cvId: string): Promise<LetterDocument[]> 
  * as they were.
  */
 export async function deleteCvWithLetters(cvId: string, decisions: readonly DeletionDecision[], now: number = Date.now()): Promise<void> {
-    await db.transaction("rw", db.resumes, db.coverLetters, db.linkedFiles, async () => {
+    await db.transaction("rw", db.resumes, db.coverLetters, async () => {
         const plan = planCvDeletion(await listLettersForCv(cvId), cvId);
         for (const decision of decisions) {
             if (decision.action !== "link") continue;
@@ -306,8 +306,6 @@ export async function deleteCvWithLetters(cvId: string, decisions: readonly Dele
         const updated = applyDeletionDecisions(plan, decisions, now);
         await db.coverLetters.bulkPut(updated);
         await db.resumes.delete(cvId);
-        // The file stays on disk; only the link goes with the CV.
-        await db.linkedFiles.delete(cvId);
     });
 }
 

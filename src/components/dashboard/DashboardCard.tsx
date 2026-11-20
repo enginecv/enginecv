@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { ArrowUpRight, Clock, Info, Link2, type LucideIcon } from "lucide-react";
+import { ArrowUpRight, Clock, Info, type LucideIcon } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useTranslation } from "@/lib/i18n";
 import { formatResumeTimestamp } from "@/lib/resume-utils";
@@ -31,7 +31,6 @@ export function DashboardCard({
     primaryLoading = false,
     actions,
     errorMessage,
-    linkedFileName,
     docId,
     meta,
     children,
@@ -53,7 +52,6 @@ export function DashboardCard({
     /** The CV id, so a workspace problem (blocked, review, no file) shows as a chip. */
     docId?: string;
     /** The file this CV is linked to (feature 089); shown wherever the CV name is. */
-    linkedFileName?: string;
     /** Extra line under the title, such as a count that links to related documents. */
     meta?: ReactNode;
     children?: ReactNode;
@@ -87,12 +85,6 @@ export function DashboardCard({
                                         {title}
                                     </h2>
                                     {docId && <div className="mt-1 empty:hidden"><DocStateBadge docId={docId} interactive /></div>}
-                                    {linkedFileName && (
-                                        <p className="mt-1 flex items-center gap-1 truncate text-[11px] text-faint" data-testid="dashboard-linked-file" title={linkedFileName}>
-                                            <Link2 className="h-3 w-3 shrink-0" aria-hidden="true" />
-                                            <span className="truncate">{linkedFileName}</span>
-                                        </p>
-                                    )}
                                     {meta && <div className="mt-1.5">{meta}</div>}
                                     {description && (
                                         <p className="mt-1 line-clamp-2 text-[13px] leading-relaxed text-mid">

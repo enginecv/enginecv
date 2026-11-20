@@ -30,18 +30,10 @@ export interface FoundItem {
     entry: RegistryEntry | null;
 }
 
-/** What is kept about a linked file. The handle itself is browser-only and never read out. */
-export interface LinkedFileInfo {
-    resumeId: string;
-    fileName: string;
-    linkedAt: number;
-}
-
 export interface EngineCvContent {
     resumes: Resume[];
     resumeHistory: ResumeHistoryEntry[];
     templates: TemplateDocument[];
-    linkedFiles?: LinkedFileInfo[];
     /** Cover letters and the paragraph library; absent in older callers and tests. */
     coverLetters?: LetterDocument[];
     letterParagraphs?: ParagraphEntry[];
@@ -98,11 +90,10 @@ export function browserAdapters(): BrowserAdapters {
         readEngineCvContent: async () => {
             // Imported here so the inventory never opens (and so creates) the database unless it exists.
             const { db } = await import("@/lib/db");
-            const [resumes, resumeHistory, templates, links, coverLetters, letterParagraphs, workspace, workspaceDocs, workspaceActivity, letterHistory] = await Promise.all([
+            const [resumes, resumeHistory, templates, coverLetters, letterParagraphs, workspace, workspaceDocs, workspaceActivity, letterHistory] = await Promise.all([
                 db.resumes.toArray(),
                 db.resumeHistory.toArray(),
                 db.templates.toArray(),
-                db.linkedFiles.toArray(),
                 db.coverLetters.toArray(),
                 db.letterParagraphs.toArray(),
                 db.workspace.toArray(),
@@ -110,8 +101,7 @@ export function browserAdapters(): BrowserAdapters {
                 db.workspaceActivity.toArray(),
                 db.letterHistory.toArray(),
             ]);
-            const linkedFiles = links.map(({ resumeId, fileName, linkedAt }) => ({ resumeId, fileName, linkedAt }));
-            return { resumes, resumeHistory, templates, linkedFiles, coverLetters, letterParagraphs, workspace, workspaceDocs, workspaceActivity, letterHistory };
+            return { resumes, resumeHistory, templates, coverLetters, letterParagraphs, workspace, workspaceDocs, workspaceActivity, letterHistory };
         },
     };
 }
@@ -170,7 +160,7 @@ function storageItems(location: "local-storage" | "session-storage", values: Rec
     });
 }
 
-const TABLES = ["resumes", "resumeHistory", "templates", "linkedFiles", "coverLetters", "letterParagraphs", "workspace", "workspaceDocs", "workspaceActivity", "letterHistory"] as const;
+const TABLES = ["resumes", "resumeHistory", "templates", "coverLetters", "letterParagraphs", "workspace", "workspaceDocs", "workspaceActivity", "letterHistory"] as const;
 
 export async function collectInventory(overrides: Partial<BrowserAdapters> = {}): Promise<Inventory> {
     const adapters = { ...browserAdapters(), ...overrides };
@@ -198,7 +188,7 @@ export async function collectInventory(overrides: Partial<BrowserAdapters> = {})
         });
         if (!content) continue;
         for (const table of TABLES) {
-            // Older readers return no linkedFiles or letters; leave the row out rather than show a zero.
+            // Older readers return no letters; leave the row out rather than show a zero.
             if (content[table] === undefined) continue;
             const rows = content[table] as readonly object[];
             const entry = matchEntry({ location: "indexeddb-table", name: table, database: ENGINECV_DATABASE });

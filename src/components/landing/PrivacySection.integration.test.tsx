@@ -47,27 +47,6 @@ describe("PrivacySection", () => {
   });
 });
 
-describe("PrivacySection: linked files", () => {
-  beforeEach(() => {
-    useI18nStore.setState({ locale: "en", _hydrated: true });
-  });
-  afterEach(cleanup);
-
-  it("mentions the optional file link without claiming an upload, and links the technical page", () => {
-    render(<PrivacySection />);
-    const item = screen.getByTestId("landing-linked-file");
-    expect(item).toHaveTextContent("Still no upload by EngineCV");
-    expect(screen.getByRole("link", { name: "How linked files work" })).toHaveAttribute("href", "/linked-files");
-  });
-
-  it.each(["bs", "de", "fr", "es"] as const)("is translated in %s", (locale) => {
-    useI18nStore.setState({ locale, _hydrated: true });
-    render(<PrivacySection />);
-    expect(screen.getByTestId("landing-linked-file").textContent).not.toMatch(/Optional: keep a CV/);
-    expect(screen.getByTestId("landing-linked-file").textContent!.length).toBeGreaterThan(40);
-  });
-});
-
 describe("PrivacySection: export formats", () => {
   beforeEach(() => {
     useI18nStore.setState({ locale: "en", _hydrated: true });

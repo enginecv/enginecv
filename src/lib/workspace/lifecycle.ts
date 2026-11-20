@@ -6,7 +6,6 @@ import { MACHINE_DIR } from "./agent-files";
 import { applyFileToStoredCv, applyFileToStoredLetter, readAppDocuments } from "./apply-stored";
 import type { DirectoryAdapter } from "./directory-adapter";
 import { readFolderSnapshot, type FolderSnapshot, type IdCache } from "./documents";
-import { isLinkedCv, linkedCvIds } from "./link-guard";
 import { keysOf, nameKey, safeStem, uniqueFileName } from "./names";
 import { appText, cvTitle, letterTitle } from "./setup";
 import type { DocKind, WorkspaceDocRecord } from "./types";
@@ -58,8 +57,6 @@ export async function mirrorDocuments(adapter: DirectoryAdapter, options: Option
         ...docs.letters.map((letter) => ({ id: letter.id, kind: "letter" as const, title: letterTitle(letter), doc: letter as Resume | LetterDocument })),
     ];
     const live = new Set(entries.map((entry) => entry.id));
-    // A CV that is still linked to a single file is not mirrored until it is moved (a CV is never both).
-    const linked = await linkedCvIds();
 
     for (const row of rows) {
         if (!live.has(row.docId)) {
@@ -81,7 +78,6 @@ export async function mirrorDocuments(adapter: DirectoryAdapter, options: Option
     for (const entry of entries) {
         const row = byId.get(entry.id);
         try {
-            if (!row && linked.has(entry.id)) continue;
             if (!row) {
                 unclaimed ??= await readFolderSnapshot(adapter, idCache);
                 const own = unclaimed.files.find((file) => file.kind === entry.kind && file.id === entry.id && !claimedKeys.has(`${file.kind}:${nameKey(file.name)}`));
@@ -134,10 +130,8 @@ export async function excludeDocument(docId: string): Promise<void> {
 export type IncludeChoice = "keep-app" | "use-file";
 
 /** Brings a left-out document back. A file that already exists is either replaced by the app's version (copied first) or applied. */
-export async function includeDocument(adapter: DirectoryAdapter, docId: string, choice: IncludeChoice, options: Options, flags: { allowLinked?: boolean } = {}): Promise<{ ok: boolean; fileName: string | null }> {
+export async function includeDocument(adapter: DirectoryAdapter, docId: string, choice: IncludeChoice, options: Options): Promise<{ ok: boolean; fileName: string | null }> {
     const now = options.now ?? Date.now();
-    // Still linked to a single file: it has to be moved (which ends the link), not simply added.
-    if (!flags.allowLinked && (await isLinkedCv(docId))) return { ok: false, fileName: null };
     const docs = await readAppDocuments();
     const rows = await listDocRows();
     const row = rows.find((candidate) => candidate.docId === docId);

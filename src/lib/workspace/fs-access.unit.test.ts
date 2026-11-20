@@ -3,16 +3,8 @@ import { FakeDisk, FakeDomError, asHandle } from "../../../test/setup/fake-file-
 import {
     FileAccessError,
     createHandleAdapter,
-    isLinkingSupported,
     mapFileError,
-    pickExistingFile,
-    pickNewFile,
 } from "./fs-access";
-
-afterEach(() => {
-    delete (window as { showOpenFilePicker?: unknown }).showOpenFilePicker;
-    delete (window as { showSaveFilePicker?: unknown }).showSaveFilePicker;
-});
 
 describe("mapFileError", () => {
     it.each([
@@ -77,29 +69,5 @@ describe("adapter", () => {
         expect(await adapter.ensurePermission(true)).toBe(true);
         handle.permission = "denied";
         expect(await adapter.ensurePermission(true)).toBe(false);
-    });
-});
-
-describe("pickers", () => {
-    it("is unsupported without the pickers", () => {
-        expect(isLinkingSupported()).toBe(false);
-    });
-
-    it("passes id and startIn so the browser remembers the folder", async () => {
-        const handle = asHandle(new FakeDisk().create("a.json"));
-        const save = vi.fn().mockResolvedValue(handle);
-        const open = vi.fn().mockResolvedValue([handle]);
-        window.showSaveFilePicker = save;
-        window.showOpenFilePicker = open;
-        expect(isLinkingSupported()).toBe(true);
-        await pickNewFile("cv.enginecv.json");
-        await pickExistingFile();
-        expect(save).toHaveBeenCalledWith(expect.objectContaining({ id: "enginecv-link", startIn: "documents", suggestedName: "cv.enginecv.json" }));
-        expect(open).toHaveBeenCalledWith(expect.objectContaining({ id: "enginecv-link", startIn: "documents" }));
-    });
-
-    it("returns null when the dialog is closed", async () => {
-        window.showSaveFilePicker = vi.fn().mockRejectedValue(new FakeDomError("AbortError"));
-        expect(await pickNewFile("x")).toBeNull();
     });
 });

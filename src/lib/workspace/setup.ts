@@ -9,7 +9,6 @@ import { applyFileToStoredCv, applyFileToStoredLetter, importCvFromText, importL
 import { createCvCodec } from "./codecs/cv";
 import type { DirectoryAdapter } from "./directory-adapter";
 import { planFirstSync, type AppDocumentInfo, type FolderFileInfo, type PlanItem } from "./first-sync";
-import { dropLinkForMove, linkedCvIds } from "./link-guard";
 import { ensureMachineFiles, refreshIndex } from "./machine-files";
 import { safeStem, uniqueFileName, keysOf, nameKey } from "./names";
 import { classifyListing } from "./scan";
@@ -122,9 +121,7 @@ export async function analyzeFolder(adapter: DirectoryAdapter, docs: { cvs: Resu
             return null;
         }
     };
-    // A CV with the older per-CV link is offered a move: it joins the folder unless the person keeps it linked.
-    const linked = await linkedCvIds();
-    const plan = planFirstSync({ appDocs, folderFiles: files, sameContent }).map((item) => (item.docId && item.kind === "cv" && linked.has(item.docId) && item.class !== "conflict" ? { ...item, linked: true } : item));
+    const plan = planFirstSync({ appDocs, folderFiles: files, sameContent });
     return { plan, appDocs, skipped };
 }
 
@@ -218,16 +215,6 @@ export async function runSetup(input: {
 
     // Documents the plan did not mention (created during setup) are left for the controller's first scan.
     await db.workspaceDocs.bulkPut([...rows.values()]);
-
-    // A linked CV that now has its file in the folder is no longer linked the old way; its old file is left where it is.
-    for (const item of plan) {
-        if (!item.linked || !item.docId || item.choice === "skip") continue;
-        const row = rows.get(item.docId);
-        if (row?.included && row.fileName && !result.failed.some((failure) => failure.key === item.key)) {
-            await dropLinkForMove(item.docId);
-            result.moved += 1;
-        }
-    }
 
     // Instructions, references, the index and the marker files are the same ones the controller keeps fresh later.
     await ensureMachineFiles(adapter, { hideContact: options.hideContact, appVersion: options.appVersion, now });

@@ -25,7 +25,6 @@ const editorPreferencesSchema = z.object({
     autoSave: z.boolean().default(true),
     rightPanelVisible: z.boolean().default(false),
     // The one-time notice before a CV is linked to a file (an agent may send its contents to a model provider).
-    linkedFilePrivacyAcknowledged: z.boolean().default(false),
     // Accepted only to migrate preferences saved before AI chat was removed.
     rightPanelTab: z.enum(["ai", "history"]).default("history"),
 }).transform(({ rightPanelTab, ...preferences }) => ({

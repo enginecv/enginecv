@@ -2,14 +2,12 @@
 
 import { Check, Circle, ListChecks, X } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
-import { isLinkingSupported } from "@/lib/workspace/fs-access";
-import { OPEN_LINKED_FILE_PANEL_EVENT } from "@/lib/workspace/file-state";
 import { hideChecklist } from "@/lib/preferences/onboarding";
 import { useClientPreferencesStore } from "@/lib/preferences/store";
 import { useResumeStore } from "@/lib/store";
 
 interface Step {
-    id: "name" | "entry" | "customize" | "link" | "export";
+    id: "name" | "entry" | "customize" | "export";
     done: boolean;
     onClick?: () => void;
 }
@@ -29,7 +27,6 @@ export function EditorChecklist() {
         const { experience, education, projects, courses, certificates, awards } = state.resume;
         return [experience, education, projects, courses, certificates, awards].some((list) => list.length > 0);
     });
-    const linked = useResumeStore((state) => state.linkedFile.status !== "none" && state.linkedFile.status !== "unsupported");
     const requestContentSection = useResumeStore((state) => state.requestContentSection);
     const setSidebarTab = useResumeStore((state) => state.setSidebarTab);
 
@@ -37,10 +34,6 @@ export function EditorChecklist() {
         { id: "name", done: hasName, onClick: () => requestContentSection("basics", "open") },
         { id: "entry", done: hasEntry, onClick: () => requestContentSection("experience", "add") },
         { id: "customize", done: customizeSeen, onClick: () => setSidebarTab("customize") },
-        // Only offered where the browser can link a file; most new people do not know it exists.
-        ...(typeof window !== "undefined" && isLinkingSupported()
-            ? [{ id: "link" as const, done: linked, onClick: () => window.dispatchEvent(new Event(OPEN_LINKED_FILE_PANEL_EVENT)) }]
-            : []),
         { id: "export", done: exported },
     ];
     const done = steps.filter((step) => step.done).length;

@@ -1,7 +1,6 @@
 "use client";
 
 import { useResumeStore } from "@/lib/store";
-import { renameLinkedCv } from "@/lib/linked-file/rename";
 import { markCustomizeSeen } from "@/lib/preferences/onboarding";
 import { EditorChecklist } from "./EditorChecklist";
 import { resolveSkillsSection } from "@/lib/skills/levels";
@@ -200,7 +199,7 @@ function BasicsForm({ onBack }: { onBack: () => void }) {
     };
 
     const saveMetaEdits = async () => {
-        let nextTitle = draftMetaTitle.trim();
+        const nextTitle = draftMetaTitle.trim();
         const nextDescription = draftMetaDescription.trim();
 
         if (
@@ -211,16 +210,6 @@ function BasicsForm({ onBack }: { onBack: () => void }) {
             return;
         }
 
-        // A linked CV is named after its file, so a new name is refused (rename the file and relink).
-        const activeId = useResumeStore.getState().activeResumeId;
-        if (activeId && nextTitle !== (resume.meta.title || "")) {
-            const renamed = await renameLinkedCv(activeId, nextTitle);
-            if (!renamed.ok) {
-                setMetaError(t("linkedFile.error.renameLinked"));
-                return;
-            }
-            nextTitle = renamed.title;
-        }
         updateMeta({
             title: nextTitle,
             description: nextDescription,

@@ -121,7 +121,7 @@ export default function PrivacyPage() {
                 </p>
             </LegalSection>
 
-            <LegalSection title="5. Linked files and AI agents">
+            <LegalSection title="5. Workspace folder and AI agents">
                 <p>
                     In Chromium browsers you can also connect a <strong>workspace folder</strong>. EngineCV then writes your CVs
                     and cover letters into that folder as plain files (including your contact details unless you turn on
@@ -139,25 +139,10 @@ export default function PrivacyPage() {
                     the folder.
                 </p>
                 <p>
-                    In Chromium browsers (Chrome, Edge and similar) you can link a CV to a file on your computer, so a local AI
-                    agent or any text editor can change it and the editor follows. You choose where the file lives. It holds the
-                    CV as plain JSON, including your contact details, and your browser writes it only after you picked it, only
-                    for that CV, and only while the link exists. EngineCV keeps the file&apos;s name and your browser&apos;s
-                    permission to open it in a local database table (<code>linkedFiles</code>) on this device. The file is never
-                    uploaded and linking sends nothing to EngineCV or any third party.
-                </p>
-                <p>
-                    What happens to the file outside the browser is up to you. An AI agent that reads it may send its contents,
-                    including your contact details, to its model provider, and other programs or people with access to your
-                    computer can read it too. Only use agents you trust with that information. EngineCV asks you to confirm this
-                    the first time you link a file.
-                </p>
-                <p>
-                    The file is a copy outside the browser&apos;s storage. Clearing browser data and &quot;Delete all my data&quot;
-                    do not delete it, and the data download on <Link href="/your-data" className="underline">Your data</Link>{" "}
-                    lists its name but does not include it. Unlink the CV in the editor to stop syncing, and delete the file
-                    yourself to remove it. <Link href="/linked-files" className="underline">How linked files work</Link> explains
-                    the details.
+                    You can read and change the files with any text editor. Only use agents you trust with your contact details:
+                    EngineCV asks you to confirm this before it writes the first file. The data download on{" "}
+                    <Link href="/your-data" className="underline">Your data</Link> does not include the folder&apos;s files, and
+                    you delete them yourself in your file manager.
                 </p>
             </LegalSection>
 

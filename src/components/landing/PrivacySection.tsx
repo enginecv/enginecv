@@ -40,15 +40,6 @@ export function PrivacySection() {
                   {t(key)}
                 </div>
               ))}
-              <div className="flex items-start gap-3 border-t border-edge py-3 text-sm text-bright" data-testid="landing-linked-file">
-                <Check className="mt-0.5 h-4 w-4 shrink-0 text-success" strokeWidth={2.5} aria-hidden="true" />
-                <span>
-                  {t("landing.safety.linkedFile")}{" "}
-                  <Link href="/linked-files" className="font-semibold underline decoration-edge-strong underline-offset-4 hover:text-accent">
-                    {t("landing.safety.linkedFileLink")}
-                  </Link>
-                </span>
-              </div>
             </div>
           </div>
 

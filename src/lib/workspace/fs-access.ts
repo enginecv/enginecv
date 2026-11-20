@@ -34,19 +34,6 @@ export interface FileAdapter {
     permissionState(): Promise<"granted" | "prompt" | "denied">;
 }
 
-export const FILE_EXTENSION = ".enginecv.json";
-
-const PICKER_ID = "enginecv-link";
-const PICKER_TYPES: FilePickerAcceptType[] = [
-    { description: "EngineCV file (JSON)", accept: { "application/json": [".json"] } },
-];
-
-export function isLinkingSupported(): boolean {
-    return typeof window !== "undefined"
-        && typeof window.showOpenFilePicker === "function"
-        && typeof window.showSaveFilePicker === "function";
-}
-
 export function mapFileError(error: unknown): FileAccessError {
     if (error instanceof FileAccessError) return error;
     const name = (error as { name?: string } | null)?.name;
@@ -125,36 +112,4 @@ export function createHandleAdapter(handle: FileSystemFileHandle): FileAdapter {
             }
         },
     };
-}
-
-/** Returns null when the person closes the dialog. */
-export async function pickNewFile(suggestedName: string): Promise<FileSystemFileHandle | null> {
-    if (!window.showSaveFilePicker) throw new FileAccessError("unknown", "unsupported");
-    try {
-        return await window.showSaveFilePicker({
-            id: PICKER_ID,
-            startIn: "documents",
-            suggestedName,
-            types: PICKER_TYPES,
-        });
-    } catch (error) {
-        if ((error as { name?: string }).name === "AbortError") return null;
-        throw mapFileError(error);
-    }
-}
-
-export async function pickExistingFile(): Promise<FileSystemFileHandle | null> {
-    if (!window.showOpenFilePicker) throw new FileAccessError("unknown", "unsupported");
-    try {
-        const [handle] = await window.showOpenFilePicker({
-            id: PICKER_ID,
-            startIn: "documents",
-            multiple: false,
-            types: PICKER_TYPES,
-        });
-        return handle ?? null;
-    } catch (error) {
-        if ((error as { name?: string }).name === "AbortError") return null;
-        throw mapFileError(error);
-    }
 }

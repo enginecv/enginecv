@@ -10,8 +10,6 @@ import { recordResumeHistory } from "@/lib/history";
 import { useTranslation } from "@/lib/i18n";
 import type { ImportProvider } from "@/lib/import/provider";
 import type { ReadSourceHelpers } from "@/lib/import/read-source";
-import { isLinkingSupported } from "@/lib/workspace/fs-access";
-import { OPEN_LINKED_FILE_PANEL_EVENT } from "@/lib/workspace/file-state";
 import { useResumeStore } from "@/lib/store";
 import { applyMergePlan } from "@/lib/import/staging/apply";
 import type { DataExportExtras, StagedBatch } from "@/lib/import/staging/types";
@@ -86,8 +84,6 @@ export function ImportDataDialog({
     const [outcome, setOutcome] = useState<Outcome | null>(null);
     const [confirmDiscard, setConfirmDiscard] = useState(false);
     const [confirmReplace, setConfirmReplace] = useState(false);
-    const linkStatus = useResumeStore((state) => state.linkedFile.status);
-    const canOfferLink = typeof window !== "undefined" && isLinkingSupported();
 
     // Key prompt for encrypted files.
     const [keyOpen, setKeyOpen] = useState(false);
@@ -240,29 +236,6 @@ export function ImportDataDialog({
                                         className="min-h-11 rounded-md border border-edge px-4 text-sm text-bright outline-none hover:bg-surface-4 focus-visible:ring-1 focus-visible:ring-accent"
                                     >
                                         {t("importHub.done.undo")}
-                                    </button>
-                                )}
-                                {outcome.kind === "applied" && canOfferLink && linkStatus === "none" && (
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            onClose();
-                                            window.dispatchEvent(new Event(OPEN_LINKED_FILE_PANEL_EVENT));
-                                        }}
-                                        data-testid="import-hub-link-file"
-                                        className="min-h-11 rounded-md border border-edge px-4 text-sm text-bright outline-none hover:bg-surface-4 focus-visible:ring-1 focus-visible:ring-accent"
-                                    >
-                                        {t("importHub.done.link")}
-                                    </button>
-                                )}
-                                {outcome.kind === "created" && canOfferLink && !onOpenCreated && (
-                                    <button
-                                        type="button"
-                                        onClick={() => router.push(`/editor/${outcome.id}?link=1`)}
-                                        data-testid="import-hub-open-created-link"
-                                        className="min-h-11 rounded-md border border-edge px-4 text-sm text-bright outline-none hover:bg-surface-4 focus-visible:ring-1 focus-visible:ring-accent"
-                                    >
-                                        {t("importHub.done.openLink")}
                                     </button>
                                 )}
                                 {outcome.kind === "created" && (

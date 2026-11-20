@@ -102,8 +102,6 @@ export function buildDataExport(
             // Versions are stored as JSON text; written out as objects so the file is readable.
             resumeHistory: content.resumeHistory.map(({ resumeJson, ...rest }) => ({ ...rest, resume: parseValue(resumeJson) })),
             templates: content.templates,
-            // Names only: a file handle means nothing outside this browser, and the files themselves stay on the computer.
-            ...(content.linkedFiles ? { linkedFiles: content.linkedFiles } : {}),
             coverLetters: content.coverLetters ?? [],
             letterParagraphs: content.letterParagraphs ?? [],
         };
@@ -123,7 +121,6 @@ export function buildDataExport(
             ts("yourData.file.summary.data"),
             ts("yourData.file.summary.import"),
             ts("yourData.file.summary.notVisible"),
-            ...(content?.linkedFiles?.length ? [ts("yourData.file.summary.linkedFiles")] : []),
         ],
         items: inventory.items.map((item) => annotate(item, ts)),
         data: {

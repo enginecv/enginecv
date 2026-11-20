@@ -135,64 +135,6 @@ describe("WorkspacePanel", () => {
         expect(await db.resumes.count()).toBe(1);
     });
 
-    describe("CVs still linked to a single file", () => {
-        const FILE_STAND_IN = { kind: "file", name: "old.enginecv.json" } as unknown as FileSystemFileHandle;
-        beforeEach(async () => {
-            await db.linkedFiles.clear();
-            await db.linkedFiles.put({ resumeId: "cv-1", handle: FILE_STAND_IN, fileName: "old.enginecv.json", linkedAt: 1, paused: false });
-        });
-        afterEach(async () => {
-            await db.linkedFiles.clear();
-        });
-
-        it("marks the linked CV in the first-sync list, moves it by default, and ends its link", async () => {
-            await mount();
-            fireEvent.click(await screen.findByTestId("workspace-choose"));
-            fireEvent.click(within(await screen.findByTestId("workspace-warning")).getByTestId("workspace-warning-continue"));
-            const review = await screen.findByTestId("workspace-first-sync");
-            expect(within(review).getByTestId("migration-inline")).toBeInTheDocument();
-            expect(within(review).getByTestId("workspace-sync-linked-app:cv-1")).toBeInTheDocument();
-            expect(within(review).getByTestId("workspace-sync-choice-app:cv-1")).toHaveValue("keep-app");
-            expect(within(review).getByRole("option", { name: "Move into folder" })).toBeInTheDocument();
-            fireEvent.click(within(review).getByTestId("workspace-first-sync-apply"));
-            await waitFor(() => expect(screen.getByTestId("workspace-phase-connected")).toBeInTheDocument());
-            expect(await db.linkedFiles.count()).toBe(0);
-            expect(await folder.readExternal("cvs/Master CV.cv.json")).not.toBeNull();
-            expect(screen.queryByTestId("migration-banner")).toBeNull();
-        });
-
-        it("keeps the link when the person chooses to, and then offers the move from a banner", async () => {
-            await mount();
-            fireEvent.click(await screen.findByTestId("workspace-choose"));
-            fireEvent.click(within(await screen.findByTestId("workspace-warning")).getByTestId("workspace-warning-continue"));
-            const review = await screen.findByTestId("workspace-first-sync");
-            fireEvent.change(within(review).getByTestId("workspace-sync-choice-app:cv-1"), { target: { value: "skip" } });
-            fireEvent.click(within(review).getByTestId("workspace-first-sync-apply"));
-            await waitFor(() => expect(screen.getByTestId("workspace-phase-connected")).toBeInTheDocument());
-            expect(await db.linkedFiles.count()).toBe(1);
-            expect(await folder.readExternal("cvs/Master CV.cv.json")).toBeNull();
-
-            const banner = await screen.findByTestId("migration-banner");
-            fireEvent.click(within(banner).getByTestId("migration-later"));
-            expect(screen.queryByTestId("migration-banner")).toBeNull();
-            expect(await db.linkedFiles.count()).toBe(1); // "not now" changes nothing
-        });
-
-        it("moves from the banner, leaving the old file alone", async () => {
-            await mount();
-            fireEvent.click(await screen.findByTestId("workspace-choose"));
-            fireEvent.click(within(await screen.findByTestId("workspace-warning")).getByTestId("workspace-warning-continue"));
-            const review = await screen.findByTestId("workspace-first-sync");
-            fireEvent.change(within(review).getByTestId("workspace-sync-choice-app:cv-1"), { target: { value: "skip" } });
-            fireEvent.click(within(review).getByTestId("workspace-first-sync-apply"));
-            await waitFor(() => expect(screen.getByTestId("workspace-phase-connected")).toBeInTheDocument());
-            fireEvent.click(await screen.findByTestId("migration-move"));
-            await waitFor(() => expect(screen.queryByTestId("migration-banner")).toBeNull());
-            expect(await db.linkedFiles.count()).toBe(0);
-            expect(await folder.readExternal("cvs/Master CV.cv.json")).not.toBeNull();
-        });
-    });
-
     describe("assistant tools in the browser (experimental)", () => {
         afterEach(() => {
             localStorage.removeItem("enginecv.browserTools");

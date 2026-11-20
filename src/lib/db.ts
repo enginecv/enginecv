@@ -8,15 +8,6 @@ export type { LetterHistoryEntry, WorkspaceActivityRecord, WorkspaceDocRecord, W
 
 export type ResumeHistoryTrigger = "autosave" | "manual" | "import" | "restore" | "duplicate" | "json-edit" | "file-sync";
 
-/** A CV linked to a file on disk (feature 089). Never exported: a handle only means something in this browser. */
-export interface LinkedFileRecord {
-    resumeId: string;
-    handle: FileSystemFileHandle;
-    fileName: string;
-    linkedAt: number;
-    paused: boolean;
-}
-
 export interface ResumeHistoryEntry {
     id?: number;
     resumeId: string;
@@ -29,7 +20,6 @@ class ResumeDatabase extends Dexie {
     resumes!: Table<Resume, string>; // string = id
     resumeHistory!: Table<ResumeHistoryEntry, number>;
     templates!: Table<TemplateDocument, string>; // string = id
-    linkedFiles!: Table<LinkedFileRecord, string>; // string = resume id
     coverLetters!: Table<LetterDocument, string>; // string = id
     letterParagraphs!: Table<ParagraphEntry, string>; // string = id
     workspace!: Table<WorkspaceRecord, string>; // always one row, id "current"
@@ -81,6 +71,20 @@ class ResumeDatabase extends Dexie {
             resumeHistory: "++id, resumeId, createdAt, trigger",
             templates: "id, updatedAt, createdAt",
             linkedFiles: "resumeId",
+            coverLetters: "id, cvId, updatedAt, status",
+            letterParagraphs: "id, updatedAt",
+            workspace: "id",
+            workspaceDocs: "docId, kind, state",
+            workspaceActivity: "++id, at, docId",
+            letterHistory: "++id, letterId, createdAt",
+        });
+        // The per-CV file link (feature 089) never shipped; the workspace folder replaced it. Drops its table
+        // on browsers that already created it.
+        this.version(7).stores({
+            resumes: "id, updatedAt",
+            resumeHistory: "++id, resumeId, createdAt, trigger",
+            templates: "id, updatedAt, createdAt",
+            linkedFiles: null,
             coverLetters: "id, cvId, updatedAt, status",
             letterParagraphs: "id, updatedAt",
             workspace: "id",

@@ -23,7 +23,6 @@ import { getBuiltinTemplateById, getTemplatePreviewOptions, isBuiltinTemplateId 
 import { createNewResume, DEFAULT_TEMPLATE_ID } from "./templates/default-design";
 import { applyTemplateToResume } from "./templates/template-apply";
 import { getSampleResumeForTemplatePreview } from "./templates/template-preview";
-import { INITIAL_LINKED_FILE_STATE, type LinkedFileState } from "./workspace/file-state";
 import { mergeCustomizationValue, withoutSectionStyleOverride } from "./customization";
 import { rememberTemplate } from "./analytics/export-event";
 
@@ -87,7 +86,6 @@ interface ResumeStore {
     previewSectionPlacements: Record<string, "left" | "right" | "full">;
     autoSaveEnabled: boolean;
     /** The file this CV is linked to (feature 089). Ephemeral: reset whenever another CV opens. */
-    linkedFile: LinkedFileState;
     /** Set while "delete all my data" runs (in any tab); nothing may be saved until reload. */
     persistenceSuspended: boolean;
 
@@ -103,8 +101,6 @@ interface ResumeStore {
     // Actions
     setActiveResumeId: (id: string | null) => void;
     setResume: (resume: Resume) => void;
-    setLinkedFile: (patch: Partial<LinkedFileState>) => void;
-    resetLinkedFile: () => void;
     updatePaperSize: (size: 'a4' | 'letter') => void;
     setAIChatMode: (mode: AIChatMode) => void;
     setSidebarTab: (tab: SidebarTab) => void;
@@ -218,7 +214,6 @@ function createResumeEditorSessionState(resume: Resume, activeResumeId: string) 
         isDirty: false,
         lastSavedAt: resume.updatedAt,
         aiProposals: [],
-        linkedFile: INITIAL_LINKED_FILE_STATE,
         ...createEditorSurfaceState(),
     };
 }
@@ -233,7 +228,6 @@ export const useResumeStore = create<ResumeStore>((set, get) => ({
     aiProposals: [],
     aiChatMode: "auto",
     autoSaveEnabled: true,
-    linkedFile: INITIAL_LINKED_FILE_STATE,
     persistenceSuspended: false,
     pendingEditorNav: null,
     previewCommandSequence: 0,
@@ -247,8 +241,6 @@ export const useResumeStore = create<ResumeStore>((set, get) => ({
 
     setActiveResumeId: (id) => set({ activeResumeId: id }),
 
-    setLinkedFile: (patch) => set((state) => ({ linkedFile: { ...state.linkedFile, ...patch } })),
-    resetLinkedFile: () => set({ linkedFile: INITIAL_LINKED_FILE_STATE }),
 
     setResume: (resume) => set({
         resume,

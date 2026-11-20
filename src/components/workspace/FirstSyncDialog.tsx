@@ -5,7 +5,6 @@ import { useMemo, useState } from "react";
 import { useDialogFocus } from "@/hooks/useDialogFocus";
 import { useTranslation } from "@/lib/i18n";
 import type { PlanChoice, PlanItem } from "@/lib/workspace/first-sync";
-import { MigrationPrompt } from "./MigrationPrompt";
 
 /**
  * What goes where, before anything is written. Each differing document defaults to keeping the app's
@@ -34,7 +33,6 @@ export function FirstSyncDialog({ plan, leftOut, busy, onApply, onCancel }: {
                 <h2 className="text-lg font-bold text-strong">{t("workspace.firstSync.title")}</h2>
                 <p className="mt-1 text-sm text-mid">{t("workspace.firstSync.intro")}</p>
                 <p className="mt-1 text-xs text-faint">{t("workspace.firstSync.restoreNote")} {t("workspace.firstSync.backupNote")}</p>
-                <MigrationPrompt count={plan.filter((item) => item.linked).length} variant="inline" />
                 {leftOut > 0 && <p className="mt-1 text-xs text-faint" data-testid="workspace-left-out">{t("workspace.panel.leftOut", { count: leftOut })}</p>}
 
                 <div className="mt-4 min-h-0 flex-1 overflow-y-auto rounded-xl border border-edge">
@@ -52,7 +50,6 @@ export function FirstSyncDialog({ plan, leftOut, busy, onApply, onCancel }: {
                                     <td className="px-3 py-2">
                                         <span className="block font-medium text-strong">{item.title}</span>
                                         <span className="block text-xs text-faint">{t(`workspace.kind.${item.kind}`)}{item.fileName ? ` · ${item.fileName}` : ""}</span>
-                                        {item.linked && <span className="mt-0.5 block text-xs text-accent" data-testid={`workspace-sync-linked-${item.key}`}>{t("workspace.migrate.linkedRow")}</span>}
                                     </td>
                                     <td className="px-3 py-2 text-mid" data-testid={`workspace-sync-status-${item.key}`}>{t(`workspace.sync.${item.class}`)}</td>
                                     <td className="px-3 py-2">
@@ -64,7 +61,7 @@ export function FirstSyncDialog({ plan, leftOut, busy, onApply, onCancel }: {
                                             data-testid={`workspace-sync-choice-${item.key}`}
                                             className="w-full rounded-lg border border-edge bg-surface-1 px-2 py-1.5 text-sm text-strong disabled:opacity-60"
                                         >
-                                            {item.choices.map((choice) => <option key={choice} value={choice}>{item.linked && choice === "keep-app" ? t("workspace.migrate.move") : item.linked && choice === "skip" ? t("workspace.migrate.keep") : t(`workspace.choice.${choice}`)}</option>)}
+                                            {item.choices.map((choice) => <option key={choice} value={choice}>{t(`workspace.choice.${choice}`)}</option>)}
                                         </select>
                                     </td>
                                 </tr>

@@ -107,9 +107,6 @@ export function YourDataContent({ actions }: { actions?: (props: { inventory: In
                 <p data-testid="your-data-files">{ts("yourData.files.body")}</p>
                 <p>{ts("yourData.files.how")}</p>
                 <DeleteScopeDiagram />
-                <p>
-                    <Link href="/linked-files" className="underline">{ts("yourData.files.link")}</Link>
-                </p>
             </LegalSection>
 
             <LegalSection title={ts("yourData.server.title")}>
