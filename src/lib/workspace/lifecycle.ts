@@ -82,7 +82,7 @@ export async function mirrorDocuments(adapter: DirectoryAdapter, options: Option
                 unclaimed ??= await readFolderSnapshot(adapter, idCache);
                 const own = unclaimed.files.find((file) => file.kind === entry.kind && file.id === entry.id && !claimedKeys.has(`${file.kind}:${nameKey(file.name)}`));
                 if (own) {
-                    const adopted = newDocRow({ docId: entry.id, kind: entry.kind, fileName: own.name, included: true }, now);
+                    const adopted = newDocRow({ docId: entry.id, kind: entry.kind, fileName: own.name, fileTitle: entry.title, included: true }, now);
                     await putDocRow(adopted);
                     rows.push(adopted);
                     claimedKeys.add(`${entry.kind}:${nameKey(own.name)}`);
@@ -93,13 +93,20 @@ export async function mirrorDocuments(adapter: DirectoryAdapter, options: Option
                 const fileName = uniqueFileName(entry.title, entry.kind, taken);
                 const text = appText(entry.doc, entry.kind, { hideContact: options.hideContact, now }, titles);
                 await adapter.writeText(FOLDER[entry.kind], fileName, text);
-                const created = newDocRow({ docId: entry.id, kind: entry.kind, fileName, included: true, lastHash: hashText(text) }, now);
+                const created = newDocRow({ docId: entry.id, kind: entry.kind, fileName, fileTitle: entry.title, included: true, lastHash: hashText(text) }, now);
                 await putDocRow(created);
                 rows.push(created);
                 result.created.push(entry.id);
                 continue;
             }
             if (!row.included || !row.fileName || row.state !== "in-sync") continue;
+            // The file follows the title only when the title changes. A name someone gave the file in their file manager stays.
+            if (row.fileTitle === undefined) {
+                await patchDocRow(entry.id, { fileTitle: entry.title }, now);
+                row.fileTitle = entry.title;
+                continue;
+            }
+            if (row.fileTitle === entry.title) continue;
             const taken = await takenKeys(adapter, rows, entry.kind, entry.id);
             const wanted = uniqueFileName(entry.title, entry.kind, taken);
             if (nameKey(wanted) === nameKey(row.fileName)) continue;
@@ -107,8 +114,9 @@ export async function mirrorDocuments(adapter: DirectoryAdapter, options: Option
             if (current === null) continue; // the file is gone: reconciliation detaches it
             await adapter.writeText(FOLDER[entry.kind], wanted, current);
             await adapter.remove(FOLDER[entry.kind], row.fileName);
-            await patchDocRow(entry.id, { fileName: wanted }, now);
+            await patchDocRow(entry.id, { fileName: wanted, fileTitle: entry.title }, now);
             row.fileName = wanted;
+            row.fileTitle = entry.title;
             result.renamed.push(entry.id);
         } catch {
             result.failed.push(entry.id);

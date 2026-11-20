@@ -161,7 +161,9 @@ export async function runSetup(input: {
     for (const folder of [CV_DIR, LETTER_DIR, "exports", `${MACHINE_DIR}/requests`, `${MACHINE_DIR}/results`]) await adapter.writeText(folder, ".keep", "");
 
     const record = (docId: string, kind: DocKind, fileName: string | null, text: string | null, included: boolean) => {
-        rows.set(docId, newDocRow({ docId, kind, fileName, included, lastHash: text === null ? null : hashText(text) }, now));
+        // The title the file name came from, so the file is renamed only when the title changes later.
+        const fileTitle = infoById.get(docId)?.title;
+        rows.set(docId, newDocRow({ docId, kind, fileName, ...(fileTitle !== undefined ? { fileTitle } : {}), included, lastHash: text === null ? null : hashText(text) }, now));
     };
 
     for (const item of plan) {

@@ -67,6 +67,25 @@ describe("workspace document lifecycle", () => {
         expect(await dir.readExternal("cvs/Renamed CV.cv.json")).toBe(before);
     });
 
+    it("keeps a file name someone chose in their file manager until the title changes in the app", async () => {
+        const { dir, adapter } = await connected();
+        // Renamed in the file manager: the document follows by id and the name sticks.
+        const text = await dir.readExternal("cvs/Master CV.cv.json");
+        await dir.writeExternal("cvs/My Own Name.cv.json", text!);
+        await dir.removeExternal("cvs/Master CV.cv.json");
+        await db.workspaceDocs.update("cv-1", { fileName: "My Own Name.cv.json" });
+        await mirrorDocuments(adapter, options);
+        await mirrorDocuments(adapter, options);
+        expect(await dir.readExternal("cvs/My Own Name.cv.json")).toBe(text);
+        expect(await dir.readExternal("cvs/Master CV.cv.json")).toBeNull();
+
+        // A new title in the app does rename it.
+        await db.resumes.update("cv-1", { meta: { ...(await db.resumes.get("cv-1"))!.meta, title: "Fresh Title" } });
+        await mirrorDocuments(adapter, options);
+        expect(await dir.readExternal("cvs/Fresh Title.cv.json")).toBe(text);
+        expect(await dir.readExternal("cvs/My Own Name.cv.json")).toBeNull();
+    });
+
     it("only drops the row of a document deleted elsewhere; its file stays", async () => {
         const { dir, adapter } = await connected();
         await db.resumes.delete("cv-1");

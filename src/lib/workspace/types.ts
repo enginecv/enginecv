@@ -93,6 +93,8 @@ export interface WorkspaceDocRecord {
     docId: string;
     kind: DocKind;
     fileName: string | null;
+    /** The document title the file name was last derived from. The file is renamed only when the title changes, so a rename in the file manager sticks. */
+    fileTitle?: string;
     included: boolean;
     state: DocState;
     lastHash: string | null;
