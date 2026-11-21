@@ -907,6 +907,7 @@ export const bs: Translations = {
   "workspace.panel.hideConfirm": "Kontakt podaci će biti uklonjeni iz svih datoteka u folderu. EngineCV ih zadržava i uređivač ih i dalje prikazuje, pa se folder za ta polja više neće podudarati s uređivačem. Nastaviti?",
   "workspace.panel.hideConfirmYes": "Izostavi ih",
   "workspace.panel.hideConfirmNo": "Otkaži",
+  "workspace.otherTabShort": "Sinkronizacija radi u drugom tabu. Ovaj tab ne piše u folder.",
   "workspace.panel.rewriting": "Ažuriranje datoteka: {done} od {total}",
   "workspace.warning.continue": "Nastavi",
   "workspace.firstSync.title": "Provjerite što ide kamo",

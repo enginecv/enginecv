@@ -907,6 +907,7 @@ export const es: Translations = {
   "workspace.panel.hideConfirm": "Los datos de contacto se quitarán de todos los archivos de la carpeta. EngineCV los conserva y el editor sigue mostrándolos, así que la carpeta ya no coincidirá con el editor en esos campos. ¿Continuar?",
   "workspace.panel.hideConfirmYes": "Quitarlos",
   "workspace.panel.hideConfirmNo": "Cancelar",
+  "workspace.otherTabShort": "Sincronizando en otra pestaña. Esta pestaña no escribe en la carpeta.",
   "workspace.panel.rewriting": "Actualizando archivos: {done} de {total}",
   "workspace.warning.continue": "Continuar",
   "workspace.firstSync.title": "Revisa qué va dónde",

@@ -907,6 +907,7 @@ export const fr: Translations = {
   "workspace.panel.hideConfirm": "Les coordonnées seront retirées de tous les fichiers du dossier. EngineCV les conserve et l'éditeur les affiche toujours, le dossier ne correspondra donc plus à l'éditeur pour ces champs. Continuer ?",
   "workspace.panel.hideConfirmYes": "Les retirer",
   "workspace.panel.hideConfirmNo": "Annuler",
+  "workspace.otherTabShort": "Synchronisation dans un autre onglet. Cet onglet n'écrit pas dans le dossier.",
   "workspace.panel.rewriting": "Mise à jour des fichiers : {done} sur {total}",
   "workspace.warning.continue": "Continuer",
   "workspace.firstSync.title": "Vérifier ce qui va où",

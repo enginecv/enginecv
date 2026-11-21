@@ -907,6 +907,7 @@ export const de: Translations = {
   "workspace.panel.hideConfirm": "Kontaktdaten werden aus allen Dateien im Ordner entfernt. EngineCV behält sie und der Editor zeigt sie weiter an, der Ordner stimmt für diese Felder also nicht mehr mit dem Editor überein. Fortfahren?",
   "workspace.panel.hideConfirmYes": "Weglassen",
   "workspace.panel.hideConfirmNo": "Abbrechen",
+  "workspace.otherTabShort": "Die Synchronisierung läuft in einem anderen Tab. Dieser Tab schreibt nicht in den Ordner.",
   "workspace.panel.rewriting": "Dateien werden aktualisiert: {done} von {total}",
   "workspace.warning.continue": "Weiter",
   "workspace.firstSync.title": "Prüfen, was wohin geht",

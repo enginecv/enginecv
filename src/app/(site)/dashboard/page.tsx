@@ -655,6 +655,7 @@ function DashboardSidebar({
 }) {
     const { t, locale } = useTranslation();
     const workspacePhase = useWorkspaceStore((state) => state.phase);
+    const workspaceOtherTab = useWorkspaceStore((state) => state.phase === "connected" && !state.isLeader);
     const { isMobile, open, setOpenMobile } = useSidebar();
     const sidebarExpanded = open || isMobile;
 
@@ -742,15 +743,16 @@ function DashboardSidebar({
                         type="button"
                         onClick={onOpenWorkspace}
                         data-testid="dashboard-sidebar-workspace"
-                        title={!sidebarExpanded ? t("workspace.title") : undefined}
+                        title={workspaceOtherTab ? t("workspace.otherTabShort") : !sidebarExpanded ? t("workspace.title") : undefined}
                         aria-label={!sidebarExpanded ? t("workspace.title") : undefined}
                         className={`relative flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs text-faint transition-colors hover:text-strong ${sidebarExpanded ? "justify-start" : "justify-center px-2"}`}
                     >
                         <FolderSync className="h-4 w-4 shrink-0" aria-hidden="true" />
                         {sidebarExpanded && t("workspace.title")}
-                        {workspacePhase === "connected" && <span className="h-1.5 w-1.5 rounded-full bg-success" aria-hidden="true" data-testid="workspace-dot" />}
-                        {workspacePhase === "needs-permission" && <span className="h-1.5 w-1.5 rounded-full bg-accent" aria-hidden="true" data-testid="workspace-dot" />}
+                        {workspacePhase === "connected" && !workspaceOtherTab && <span className="h-1.5 w-1.5 rounded-full bg-success" aria-hidden="true" data-testid="workspace-dot" />}
+                        {(workspacePhase === "needs-permission" || workspaceOtherTab) && <span className="h-1.5 w-1.5 rounded-full bg-accent" aria-hidden="true" data-testid="workspace-dot" />}
                     </button>
+                    {workspaceOtherTab && sidebarExpanded && <p role="status" className="px-3 text-[11px] leading-snug text-accent" data-testid="workspace-other-tab-note">{t("workspace.otherTabShort")}</p>}
                     <Link
                         href="/your-data"
                         data-testid="dashboard-sidebar-your-data"
