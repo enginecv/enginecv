@@ -2,6 +2,8 @@
 
 import { useId, type ReactNode } from "react";
 import { Input } from "@/components/editor/FormUtils";
+import type { LetterTipSection } from "@/lib/letters/tips";
+import { LetterTipsLink } from "./LetterTipsLink";
 
 /**
  * Field primitives for the letter panes. A single-line field is the CV editor's own `Input`,
@@ -73,10 +75,13 @@ export function SelectField({ label, value, onChange, disabled, testId, id, chil
 }
 
 /** A headed block of a letter form, in the same heading style as the CV editor's forms (no nested card). */
-export function PaneSection({ title, children, testId }: { title: string; children: ReactNode; testId?: string }) {
+export function PaneSection({ title, children, testId, tips }: { title: string; children: ReactNode; testId?: string; /** Adds the Get Tips button for this section. */ tips?: LetterTipSection }) {
     return (
         <section className="space-y-4" data-testid={testId}>
-            <h3 className="text-sm font-medium text-strong/90">{title}</h3>
+            <div className="flex items-center justify-between gap-3">
+                <h3 className="text-sm font-medium text-strong/90">{title}</h3>
+                {tips && <LetterTipsLink section={tips} />}
+            </div>
             {children}
         </section>
     );

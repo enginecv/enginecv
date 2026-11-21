@@ -1929,7 +1929,7 @@ describe("ResumePreview", () => {
         unmount();
     });
 
-    it("renders the summary as Markdown, keeps its line breaks, and edits it in place", async () => {
+    it("renders the summary as Markdown and keeps its line breaks", async () => {
         const raf = installRafController();
         const resume = createSummaryResume();
         resume.basics = { ...resume.basics, summary: "Nurse with **6 years** in ICU.\nTrained 8 nurses." };
@@ -1954,13 +1954,6 @@ describe("ResumePreview", () => {
         expect(body.textContent).not.toContain("**");
         expect(body.querySelector("br")).toBeTruthy();
 
-        // Selectable like the name, headline and descriptions: a focusable field that
-        // opens the inline editor on double-click.
-        const field = body.querySelector("[data-editable-field]") as HTMLElement;
-        expect(field).toBeTruthy();
-        expect(field).toHaveAttribute("tabindex", "0");
-        fireEvent.doubleClick(field);
-        await waitFor(() => expect(body.querySelector("[contenteditable='true']")).toBeTruthy());
         unmount();
     });
 
@@ -2592,116 +2585,6 @@ describe("ResumePreview", () => {
         });
     });
 
-    describe("double-click on a section heading", () => {
-        afterEach(() => cleanup());
-
-        async function renderWithExperience() {
-            const resume = createEmptyResume();
-            resume.basics.name = "Jane Doe";
-            resume.settings.contentSections = ["experience"];
-            resume.experience = [{
-                id: "exp-1",
-                hidden: false,
-                company: "Acme Systems",
-                position: "Senior Engineer",
-                start: "2024-01",
-                end: "Present",
-                location: "Remote",
-                description: "Led platform delivery",
-                highlights: [],
-                skills: [],
-                url: "",
-                urlIcon: "auto",
-            }];
-            const requestEditorNav = vi.fn();
-            useResumeStore.setState({ resume, paperSize: "a4", requestEditorNav });
-            const { container } = render(<ResumePreview />);
-            const page = container.querySelector(".resume-page") as HTMLElement;
-            const heading = await waitFor(() => {
-                const node = page.querySelector<HTMLElement>('[data-nav-kind="heading"][data-nav-section="experience"] h2');
-                expect(node).not.toBeNull();
-                return node as HTMLElement;
-            });
-            return { page, heading, requestEditorNav };
-        }
-
-        function doubleClick(element: HTMLElement) {
-            fireEvent.click(element, { detail: 1 });
-            fireEvent.click(element, { detail: 2 });
-            fireEvent.dblClick(element);
-        }
-
-        it("navigates to the section without flashing the click menu", async () => {
-            const { heading, requestEditorNav } = await renderWithExperience();
-
-            doubleClick(heading);
-
-            expect(requestEditorNav).toHaveBeenCalledTimes(1);
-            expect(requestEditorNav).toHaveBeenCalledWith("experience", null);
-            await new Promise((resolve) => setTimeout(resolve, 320));
-            expect(findButton("Customize section")).toBeUndefined();
-        });
-
-        it("keeps inline text editing for double-clicks on editable text", async () => {
-            const { page, requestEditorNav } = await renderWithExperience();
-            const editable = await waitFor(() => {
-                const node = page.querySelector<HTMLElement>('[data-nav-kind="entry"] [data-editable-field]');
-                expect(node).not.toBeNull();
-                return node as HTMLElement;
-            });
-
-            doubleClick(editable);
-
-            expect(requestEditorNav).not.toHaveBeenCalled();
-        });
-
-        it("navigates to the entry when the entry area (not its text) is double-clicked", async () => {
-            const { page, requestEditorNav } = await renderWithExperience();
-            const entry = await waitFor(() => {
-                const node = page.querySelector<HTMLElement>('[data-nav-kind="entry"][data-nav-section="experience"]');
-                expect(node).not.toBeNull();
-                return node as HTMLElement;
-            });
-
-            doubleClick(entry);
-
-            expect(requestEditorNav).toHaveBeenCalledTimes(1);
-            expect(requestEditorNav).toHaveBeenCalledWith("experience", 0);
-            await new Promise((resolve) => setTimeout(resolve, 320));
-            expect(findButton("Go to entry")).toBeUndefined();
-        });
-
-        it("navigates from editable text on Alt+double-click without starting inline edit", async () => {
-            const { page, requestEditorNav } = await renderWithExperience();
-            const editable = await waitFor(() => {
-                const node = page.querySelector<HTMLElement>('[data-nav-kind="entry"] [data-editable-field]');
-                expect(node).not.toBeNull();
-                return node as HTMLElement;
-            });
-
-            fireEvent.dblClick(editable, { altKey: true });
-
-            expect(requestEditorNav).toHaveBeenCalledTimes(1);
-            expect(requestEditorNav).toHaveBeenCalledWith("experience", 0);
-            expect(page.querySelector('[contenteditable="true"], textarea, input')).toBeNull();
-        });
-
-        it("does not follow a link inside a heading area when double-clicked", async () => {
-            const { heading, requestEditorNav } = await renderWithExperience();
-            const link = document.createElement("a");
-            link.href = "https://example.com";
-            link.textContent = "x";
-            heading.appendChild(link);
-
-            fireEvent.click(link, { detail: 1 });
-            const second = new MouseEvent("click", { bubbles: true, cancelable: true, button: 0, detail: 2 });
-            expect(link.dispatchEvent(second)).toBe(false);
-            fireEvent.dblClick(link);
-
-            expect(requestEditorNav).toHaveBeenCalledWith("experience", null);
-        });
-    });
-
     describe("navigating to an entry when earlier entries are hidden", () => {
         afterEach(() => cleanup());
 
@@ -2726,12 +2609,6 @@ describe("ResumePreview", () => {
             return { page, entries, requestEditorNav };
         }
 
-        function doubleClick(element: HTMLElement) {
-            fireEvent.click(element, { detail: 1 });
-            fireEvent.click(element, { detail: 2 });
-            fireEvent.dblClick(element);
-        }
-
         it("reports the entry's position in the full list, not among the visible ones", async () => {
             const { entries, requestEditorNav } = await renderWith((resume) => {
                 resume.settings.contentSections = ["experience"];
@@ -2742,7 +2619,12 @@ describe("ResumePreview", () => {
             // The only visible entry is the second one in the editor.
             expect(entries[0]).toHaveAttribute("data-nav-entry-index", "1");
 
-            doubleClick(entries[0]);
+            fireEvent.click(entries[0]);
+            fireEvent.click(await waitFor(() => {
+                const button = findButton("Go to entry");
+                expect(button).toBeTruthy();
+                return button as HTMLButtonElement;
+            }));
             expect(requestEditorNav).toHaveBeenCalledWith("experience", 1);
         });
 

@@ -11,7 +11,7 @@ import { PaneSection, TextAreaField, TextField } from "./fields";
  * only (and is marked); the reset button makes it follow the CV again. The CV itself
  * is never changed from here.
  */
-export function SenderPane({ sender, cvSender, overridden, onChange, readOnly = false }: {
+export function SenderPane({ sender, cvSender, overridden, onChange, readOnly = false, standalone = false }: {
     /** What the letter prints now. */
     sender: Sender;
     /** The CV's own values, or null when the CV is missing. */
@@ -19,6 +19,8 @@ export function SenderPane({ sender, cvSender, overridden, onChange, readOnly = 
     overridden: SenderKey[];
     onChange: (change: (current: LetterDocument) => LetterDocument) => void;
     readOnly?: boolean;
+    /** No CV: the fields are simply typed in, with nothing to differ from. */
+    standalone?: boolean;
 }) {
     const { t } = useTranslation();
 
@@ -39,8 +41,8 @@ export function SenderPane({ sender, cvSender, overridden, onChange, readOnly = 
         });
 
     return (
-        <PaneSection title={t("letters.section.sender")} testId="letter-sender-pane">
-            <p className="text-xs text-mid">{t("letters.sender.hint")}</p>
+        <PaneSection title={t("letters.section.sender")} testId="letter-sender-pane" tips="sender">
+            <p className="text-xs text-mid">{t(standalone ? "letters.sender.standaloneHint" : "letters.sender.hint")}</p>
             {SENDER_KEYS.map((key) => {
                 const differs = overridden.includes(key);
                 const Field = key === "address" ? TextAreaField : TextField;

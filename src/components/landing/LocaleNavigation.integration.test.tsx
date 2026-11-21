@@ -33,7 +33,7 @@ describe("localized site navigation", () => {
         expect(container.querySelectorAll('a[href="/blog"]')).toHaveLength(0);
         expect(container.querySelector(`a[href="/${locale}#features"]`)).toBeInTheDocument();
         expect(container.querySelector(`a[href="/${locale}#faq"]`)).toBeInTheDocument();
-        expect(container.querySelector(`a[href="/${locale}#how-it-works"]`)).toBeInTheDocument();
+        expect(container.querySelector('a[href="/how-it-works"]')).toBeInTheDocument();
         expect(container.querySelector('a[href="/#faq"]')).not.toBeInTheDocument();
     });
 

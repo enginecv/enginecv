@@ -2,10 +2,8 @@ import { cleanup, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { useI18nStore } from "@/lib/i18n";
 import { DataMapDiagram } from "./DataMapDiagram";
-import { AgentWalkthroughDiagram } from "./AgentWalkthroughDiagram";
 import { DeleteScopeDiagram } from "./DeleteScopeDiagram";
 import { ExportFormatsDiagram } from "./ExportFormatsDiagram";
-import { SyncLoopDiagram } from "./SyncLoopDiagram";
 
 beforeEach(() => useI18nStore.setState({ locale: "en", _hydrated: true }));
 afterEach(cleanup);
@@ -26,7 +24,7 @@ describe("DataMapDiagram", () => {
         unmount();
         render(<DataMapDiagram detailed />);
         expect(screen.getByText(/IndexedDB › resumes/)).toBeInTheDocument();
-        expect(screen.getByText(/IndexedDB › linkedFiles/)).toBeInTheDocument();
+        expect(screen.getByText(/IndexedDB › workspace/)).toBeInTheDocument();
     });
 
     it("is a captioned figure and hides its decorative arrows from screen readers", () => {
@@ -38,23 +36,12 @@ describe("DataMapDiagram", () => {
     });
 });
 
-describe("SyncLoopDiagram", () => {
-    it("lists both directions as ordered steps and what an invalid file does", () => {
-        render(<SyncLoopDiagram />);
-        const toCv = within(screen.getByTestId("diagram-sync-to-cv")).getAllByRole("listitem");
-        expect(toCv).toHaveLength(5);
-        expect(toCv[3]).toHaveTextContent("history snapshot");
-        expect(within(screen.getByTestId("diagram-sync-to-file")).getAllByRole("listitem")).toHaveLength(3);
-        expect(screen.getByTestId("diagram-sync-invalid")).toHaveTextContent("the file is not overwritten");
-    });
-});
-
 describe("DeleteScopeDiagram", () => {
     it("says what is removed from the browser and what stays on the computer", () => {
         render(<DeleteScopeDiagram />);
         expect(within(screen.getByTestId("diagram-delete-removes")).getAllByRole("listitem")).toHaveLength(4);
         const stays = screen.getByTestId("diagram-delete-stays");
-        expect(stays).toHaveTextContent("Files you linked to a CV");
+        expect(stays).toHaveTextContent("Files in your workspace folder");
         expect(stays).toHaveTextContent("Delete these yourself");
     });
 });
@@ -62,7 +49,7 @@ describe("DeleteScopeDiagram", () => {
 describe("all five languages", () => {
     it.each(["en", "de", "bs", "fr", "es"] as const)("renders every diagram in %s without a missing label", (locale) => {
         useI18nStore.setState({ locale, _hydrated: true });
-        render(<><DataMapDiagram detailed /><SyncLoopDiagram /><DeleteScopeDiagram /></>);
+        render(<><DataMapDiagram detailed /><DeleteScopeDiagram /></>);
         // A missing key renders as the key itself.
         expect(document.body.textContent).not.toMatch(/diagram\.[a-z]+\./);
         if (locale !== "en") expect(screen.getByTestId("diagram-no-server").textContent).not.toBe("No EngineCV server holds your CV");
@@ -92,21 +79,10 @@ describe("ExportFormatsDiagram", () => {
     });
 });
 
-describe("AgentWalkthroughDiagram", () => {
-    it("shows three ordered steps from linking to the update", () => {
-        render(<AgentWalkthroughDiagram />);
-        const steps = within(screen.getByTestId("diagram-agent-walkthrough")).getAllByRole("listitem").filter((li) => li.dataset.testid?.startsWith("diagram-agent-step"));
-        expect(steps).toHaveLength(3);
-        expect(screen.getByTestId("diagram-agent-step-1")).toHaveTextContent("Link a file");
-        expect(screen.getByTestId("diagram-agent-step-2")).toHaveTextContent("Tell your agent");
-        expect(screen.getByTestId("diagram-agent-step-3")).toHaveTextContent("Updated from file: 1 added");
-    });
-});
-
 describe("new diagrams in all five languages", () => {
     it.each(["en", "de", "bs", "fr", "es"] as const)("has no missing label in %s", (locale) => {
         useI18nStore.setState({ locale, _hydrated: true });
-        render(<><ExportFormatsDiagram /><AgentWalkthroughDiagram /></>);
+        render(<ExportFormatsDiagram />);
         expect(document.body.textContent).not.toMatch(/diagram\.[a-z]+\./);
         expect(document.body.textContent).not.toMatch(/landing\.exports\./);
     });

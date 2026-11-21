@@ -1,8 +1,8 @@
 import { expect, test, type Page } from "@playwright/test";
 
 // Live preview pointer behaviour in the editor (feature 083): a plain click on
-// a link opens the Go to / Customize menu, Ctrl/Cmd+click follows the link, and
-// double-clicking a section heading jumps to that section.
+// a link opens the Go to / Customize menu and Ctrl/Cmd+click follows the link.
+// The preview does not edit text: a click only navigates.
 //
 // The example CV only carries mailto: and tel: links. Opening an http link in a
 // new tab (window.open with noopener) is covered by the ResumePreview
@@ -70,61 +70,51 @@ test.describe("editor preview links", () => {
     });
 });
 
-test.describe("editor preview headings", () => {
-    test("double-clicking a section heading jumps to it without opening the menu", async ({ page }) => {
+test.describe("editor preview headings and text", () => {
+    test("a click on a section heading offers Go to section and Customize section", async ({ page }) => {
         await openExampleInEditor(page);
         const heading = page.locator('.resume-page [data-nav-kind="heading"][data-nav-section="experience"] h2').first();
         await expect(heading).toBeVisible();
 
-        await heading.dblclick();
+        await heading.click();
+        await menuButton(page, "Go to section").click();
 
         // The sidebar opens the experience section editor (only it has "Remove Section").
         await expect(menuButton(page, "Remove Section")).toBeVisible();
         await expect(page.getByRole("textbox", { name: "Section Heading" })).toHaveValue("Professional Experience");
-        await page.waitForTimeout(350);
-        await expect(menuButton(page, "Customize section")).toHaveCount(0);
     });
 
-    test("double-clicking entry text still starts inline editing instead of navigating", async ({ page }) => {
+    test("text in the preview is not editable, and a double-click does nothing", async ({ page }) => {
         await openExampleInEditor(page);
-        const editable = page.locator('.resume-page [data-nav-kind="entry"] [data-editable-field]').first();
-        await expect(editable).toBeVisible();
+        await expect(page.locator(".resume-page [data-editable-field]")).toHaveCount(0);
+        const text = page.locator('.resume-page [data-nav-section="experience"][data-nav-kind="entry"]').first();
+        await expect(text).toBeVisible();
 
-        await editable.dblclick();
+        await text.dblclick();
 
-        await expect(page.locator('.resume-page [contenteditable="true"], .resume-page textarea, .resume-page input').first()).toBeVisible();
-        await expect(menuButton(page, "Customize section")).toHaveCount(0);
-        await expect(menuButton(page, "Remove Section")).toHaveCount(0);
+        await expect(page.locator('.resume-page [contenteditable="true"], .resume-page textarea, .resume-page input')).toHaveCount(0);
+        await expect(page.getByRole("heading", { name: /^Edit entry in/ })).toHaveCount(0);
     });
 
-    test("Alt+double-click on entry text jumps to that entry instead of editing inline", async ({ page }) => {
+    test("Customize section from the preview works while an entry is open in the sidebar", async ({ page }) => {
         await openExampleInEditor(page);
-        const editable = page.locator('.resume-page [data-nav-section="experience"][data-nav-kind="entry"] [data-editable-field]').first();
-        await expect(editable).toBeVisible();
+        const project = page.locator('.resume-page [data-nav-section="experience"][data-nav-kind="entry"]').first();
+        await project.scrollIntoViewIfNeeded();
 
-        await editable.dblclick({ modifiers: ["Alt"] });
-
+        // Open the entry in the sidebar, then ask to customize its section from the preview.
+        await project.click();
+        await menuButton(page, "Go to entry").click();
         await expect(page.getByRole("heading", { name: /^Edit entry in/ })).toBeVisible();
-        await expect(page.locator('.resume-page [contenteditable="true"]')).toHaveCount(0);
-        await expect(menuButton(page, "Customize section")).toHaveCount(0);
-    });
+        await project.click();
+        await menuButton(page, "Customize section").click();
 
-    test("double-clicking the empty area of an entry jumps to that entry", async ({ page }) => {
-        await openExampleInEditor(page);
-        const entry = page.locator('.resume-page [data-nav-section="experience"][data-nav-kind="entry"]').first();
-        await expect(entry).toBeVisible();
-        const box = await entry.boundingBox();
-        if (!box) throw new Error("entry not measurable");
-
-        // The far right edge of the entry row is padding, not editable text.
-        await page.mouse.dblclick(box.x + box.width - 2, box.y + box.height / 2);
-
-        await expect(page.getByRole("heading", { name: /^Edit entry in/ })).toBeVisible();
+        await expect(page.getByRole("heading", { name: /^Edit entry in/ })).toHaveCount(0);
+        await expect(page.getByText("Current section", { exact: true }).first()).toBeVisible();
     });
 });
 
 test.describe("going to an entry when an earlier entry is hidden", () => {
-    test("double-click and Go to entry open the entry that was clicked, not the hidden one above it", async ({ page }) => {
+    test("Go to entry opens the entry that was clicked, not the hidden one above it", async ({ page }) => {
         await openExampleInEditor(page);
         const entries = page.locator('.resume-page [data-nav-section="experience"][data-nav-kind="entry"]');
         const before = await entries.count();
@@ -143,7 +133,8 @@ test.describe("going to an entry when an earlier entry is hidden", () => {
         await page.getByText("Back", { exact: true }).first().click();
         const shown = entries.first();
         const shownText = (await shown.innerText()).trim();
-        await shown.locator("[data-editable-field]").first().dblclick({ modifiers: ["Alt"] });
+        await shown.click();
+        await menuButton(page, "Go to entry").click();
 
         const opened = await page.getByTestId("entry-input-position").inputValue();
         expect(opened, "opened the hidden entry instead of the one clicked").not.toBe(hiddenPosition);

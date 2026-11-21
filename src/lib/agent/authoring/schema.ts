@@ -511,6 +511,7 @@ const designSchema = z.object({
 
 export const authoringV1Schema = z.object({
     format: z.literal(AUTHORING_FORMAT).describe("Format marker. Always this exact value."),
+    edited_by: z.string().describe("Optional. The name of the agent or tool that wrote this file, for example Claude Code. EngineCV shows it in notifications. Never put anything else here.").optional(),
     design: designSchema.describe("Optional design hints. Unknown values are ignored.").optional(),
     basics: z.object(basicsShape).catchall(z.unknown()).describe("Name, contact and personal details.").optional(),
     summary: z.string().describe("Profile summary in Markdown.").optional(),

@@ -58,6 +58,40 @@ describe("ImportDataDialog", () => {
         expect(screen.getByTestId("import-hub-review")).toBeDisabled();
     });
 
+    it("shows one source at a time on its own tab, and arrow keys move between the tabs", () => {
+        setup();
+        const tabs = screen.getAllByRole("tab");
+        expect(tabs).toHaveLength(7);
+        expect(screen.getByTestId("import-hub-source-enginecv")).toHaveAttribute("aria-selected", "true");
+        expect(screen.getByRole("tabpanel")).toHaveAccessibleName("EngineCV file");
+        expect(screen.queryByTestId("paste-from-ai-input")).toBeNull();
+
+        fireEvent.keyDown(screen.getByTestId("import-hub-source-enginecv"), { key: "ArrowDown" });
+        expect(screen.getByTestId("import-hub-source-jsonresume")).toHaveAttribute("aria-selected", "true");
+        fireEvent.keyDown(screen.getByTestId("import-hub-source-jsonresume"), { key: "End" });
+        expect(screen.getByTestId("import-hub-source-github")).toHaveAttribute("aria-selected", "true");
+        fireEvent.keyDown(screen.getByTestId("import-hub-source-github"), { key: "ArrowDown" });
+        expect(screen.getByTestId("import-hub-source-enginecv")).toHaveAttribute("aria-selected", "true");
+    });
+
+    it("opens on the tab a deep link names and shows its own instructions", () => {
+        setup({ initialSource: "linkedin" });
+        expect(screen.getByTestId("import-hub-source-linkedin")).toHaveAttribute("aria-selected", "true");
+        expect(screen.getByTestId("import-hub-linkedin-guide")).toBeInTheDocument();
+        cleanup();
+        setup({ initialSource: "europass" });
+        expect(screen.getByTestId("import-hub-europass-guide")).toBeInTheDocument();
+        expect(screen.queryByTestId("import-hub-linkedin-guide")).toBeNull();
+    });
+
+    it("counts what was added in the footer and on the source's tab", async () => {
+        setup();
+        expect(screen.getByTestId("import-hub-footer-summary")).toHaveTextContent("Nothing added yet");
+        await addFiles(authoringFile({ experience: [job()] }, "ai.json"));
+        expect(screen.getByTestId("import-hub-footer-summary")).toHaveTextContent("1 source added");
+        expect(screen.getByTestId("import-hub-source-authoring")).toHaveTextContent("1");
+    });
+
     it("stages a detected file and shows what it holds", async () => {
         setup();
         await addFiles(authoringFile({ experience: [job()] }, "ai.json"));
@@ -219,6 +253,7 @@ describe("ImportDataDialog", () => {
 
     it("stages a pasted AI answer", async () => {
         setup();
+        fireEvent.click(screen.getByTestId("import-hub-source-paste-ai"));
         fireEvent.change(screen.getByLabelText("Paste the answer here"), {
             target: { value: JSON.stringify({ format: "enginecv.authoring/v1", basics: { name: "Jane Doe" }, experience: [job()] }) },
         });

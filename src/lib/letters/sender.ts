@@ -55,3 +55,14 @@ export const REQUIRED_SENDER_KEYS: readonly SenderKey[] = ["name", "email"];
 export function missingSenderKeys(sender: Sender): SenderKey[] {
     return REQUIRED_SENDER_KEYS.filter((key) => !sender[key].trim());
 }
+
+/** The sender of a letter that has no CV: what the person typed, and nothing else. The signature follows the name. */
+export function resolveStandaloneSender(overrides: SenderOverrides = {}): Sender {
+    const sender: Sender = { name: "", headline: "", email: "", phone: "", address: "", website: "", signatureName: "" };
+    for (const key of SENDER_KEYS) {
+        const value = overrides[key];
+        if (value !== undefined) sender[key] = value;
+    }
+    if (overrides.signatureName === undefined) sender.signatureName = sender.name;
+    return sender;
+}

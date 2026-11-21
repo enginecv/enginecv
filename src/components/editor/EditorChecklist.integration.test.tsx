@@ -105,35 +105,3 @@ describe("EditorChecklist", () => {
         expect(screen.getByTestId("editor-checklist-progress")).toHaveTextContent("0 von 4 erledigt");
     });
 });
-
-describe("EditorChecklist: linking a file", () => {
-    afterEach(() => {
-        delete (window as { showOpenFilePicker?: unknown }).showOpenFilePicker;
-        delete (window as { showSaveFilePicker?: unknown }).showSaveFilePicker;
-        useResumeStore.getState().resetLinkedFile();
-    });
-
-    it("leaves the step out where the browser cannot link a file", () => {
-        render(<EditorChecklist />);
-        expect(screen.queryByTestId("editor-checklist-link")).not.toBeInTheDocument();
-        expect(screen.getByTestId("editor-checklist-progress")).toHaveTextContent("0 of 4 done");
-    });
-
-    it("offers it where linking works, opens the link panel from it, and ticks once a file is linked", () => {
-        window.showOpenFilePicker = (() => Promise.resolve([])) as never;
-        window.showSaveFilePicker = (() => Promise.reject(new Error("unused"))) as never;
-        render(<EditorChecklist />);
-        expect(screen.getByTestId("editor-checklist-progress")).toHaveTextContent("0 of 5 done");
-        expect(screen.getByTestId("editor-checklist-link")).toHaveTextContent("AI agent");
-
-        let opened = 0;
-        const listener = () => { opened += 1; };
-        window.addEventListener("enginecv:open-linked-file", listener);
-        fireEvent.click(screen.getByTestId("editor-checklist-link").querySelector("button")!);
-        window.removeEventListener("enginecv:open-linked-file", listener);
-        expect(opened).toBe(1);
-
-        act(() => useResumeStore.getState().setLinkedFile({ status: "in-sync", fileName: "a.enginecv.json" }));
-        expect(done("link")).toBe(true);
-    });
-});

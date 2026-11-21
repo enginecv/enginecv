@@ -20,9 +20,9 @@ This article describes how they behave, so you know what to expect when you writ
 
 Open the dashboard and you will find a Letters tab next to your CVs and templates. Letters are grouped under the CV they belong to, each group showing the CV's title and the number of letters in it. You can search by company, role or title.
 
-A letter needs a CV, because the CV supplies your details and your design. If you have none yet, the tab says so and offers to create one first. If you have one or more, you start a letter by choosing which CV it should follow.
+Most letters follow a CV, because the CV supplies your details and your design. When you start a letter and have CVs, you choose which one it should follow from a grid that shows each CV's first page, or you pick "Start without a CV". If you have no CV at all, New letter starts a letter without one straight away.
 
-The relationship is fixed: a letter has exactly one CV at a time, and a CV can have as many letters as you like. The reasoning behind that rule is explained in [one CV, many cover letters](/blog/one-cv-many-cover-letters).
+A linked letter has exactly one CV at a time, and a CV can have as many letters as you like. The reasoning behind that rule is explained in [one CV, many cover letters](/blog/one-cv-many-cover-letters). A letter written without a CV is called standalone, and it gets its own group on the dashboard, separate from letters whose CV was deleted.
 
 ## What a draft takes from the CV
 
@@ -44,6 +44,16 @@ Sometimes a letter needs a detail that differs from the CV: a work address for o
 Any sender field can be overridden for a single letter. The overridden field is marked as differing from the CV, keeps its value when the CV changes and can be reset with one action to follow the CV again. The fields you did not override keep following it. Overrides never change the CV.
 
 Overrides stay with the letter when you move or copy it, and you are told which ones were kept. That is deliberate: a value chosen for one application should not silently vanish, and should not silently reach letters under a different CV.
+
+## Writing a letter without a CV
+
+A standalone letter has no CV to read from, so you type the sender block yourself and the fields are simply what you enter. The only token that works is `{{name}}`, which uses the sender name you typed. The other three need a CV, and a letter that uses them is flagged before export, the same way an empty value would be.
+
+You can attach a standalone draft to a CV at any time with "Link to a CV". From then on it follows that CV. Whatever you typed stays as a visible override, so nothing is silently replaced, and you can reset each field to follow the CV. A standalone letter can also be marked as sent without a CV, which freezes the sender and design it had.
+
+## Design for every letter
+
+Each letter has a Design section with the same fonts, sliders and colour pickers as the CV editor: font family, size, line height, margins, text and accent colour, and the heading font, weight and capitals. A letter linked to a CV starts from the CV's design, and you change only what you want for that one letter. Each change is marked, can be reset on its own or all at once, and never touches the CV. A standalone letter starts from a clean default design and works the same way.
 
 ## Photo, paper size and layout
 
@@ -108,6 +118,8 @@ Drafts export with the live CV data, sent letters with their frozen data. If som
 ## Privacy and backup
 
 Letters are stored in your browser on your device, like your CVs. They are not sent to any server, and they appear in the same "what is stored" overview and the same delete-all control as the rest of your data. The feature works offline.
+
+If you connect the optional workspace folder (Chromium browsers only), letters are also written there as plain files. Those files stay on your computer but sit outside the browser's storage, so the delete-all control does not remove them.
 
 Because everything is local, the data export is your backup. It includes letters, their links to CVs, their sent snapshots and your saved paragraphs. When you import it, links are restored. If a letter points to a CV that is not in the file, you are told and the letter goes through the same choice as a CV deletion, so it is attached elsewhere or kept as a snapshot instead of being dropped. Existing letters are not overwritten without your choice. More about what is stored is on the [privacy page](/privacy).
 

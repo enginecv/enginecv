@@ -7,7 +7,7 @@ describe("devtoolsPath", () => {
     it.each([
         [{ location: "indexeddb-database", name: "EngineCVDatabase" }, ["Application", "IndexedDB", "EngineCVDatabase"]],
         [{ location: "indexeddb-table", name: "resumes", database: "EngineCVDatabase" }, ["Application", "IndexedDB", "EngineCVDatabase", "resumes"]],
-        [{ location: "indexeddb-table", name: "linkedFiles", database: "EngineCVDatabase" }, ["Application", "IndexedDB", "EngineCVDatabase", "linkedFiles"]],
+        [{ location: "indexeddb-table", name: "workspaceDocs", database: "EngineCVDatabase" }, ["Application", "IndexedDB", "EngineCVDatabase", "workspaceDocs"]],
         [{ location: "local-storage", name: "enginecv-preferences" }, ["Application", "Local storage", origin, "enginecv-preferences"]],
         [{ location: "session-storage", name: "k" }, ["Application", "Session storage", origin, "k"]],
         [{ location: "cookie", name: "enginecv-locale" }, ["Application", "Cookies", origin, "enginecv-locale"]],

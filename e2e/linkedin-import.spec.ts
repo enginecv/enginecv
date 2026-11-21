@@ -45,7 +45,8 @@ test("imports a LinkedIn archive into a new resume entirely offline from LinkedI
     const externalRequests = await blockExternalRequests(page);
     await openLinkedinImport(page);
 
-    await page.getByTestId("import-hub-linkedin-guide").locator("summary").click();
+    // The LinkedIn tab shows its guide straight away.
+    await expect(page.getByTestId("import-hub-source-linkedin")).toHaveAttribute("aria-selected", "true");
     await expect(page.getByTestId("linkedin-import-guide")).toBeVisible();
     await expect(page.getByTestId("linkedin-export-link")).toHaveAttribute(
         "href",

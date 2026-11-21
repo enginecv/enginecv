@@ -1,7 +1,6 @@
 "use client";
 
 import { useResumeStore } from "@/lib/store";
-import { renameLinkedCv } from "@/lib/linked-file/rename";
 import { markCustomizeSeen } from "@/lib/preferences/onboarding";
 import { EditorChecklist } from "./EditorChecklist";
 import { resolveSkillsSection } from "@/lib/skills/levels";
@@ -200,7 +199,7 @@ function BasicsForm({ onBack }: { onBack: () => void }) {
     };
 
     const saveMetaEdits = async () => {
-        let nextTitle = draftMetaTitle.trim();
+        const nextTitle = draftMetaTitle.trim();
         const nextDescription = draftMetaDescription.trim();
 
         if (
@@ -211,16 +210,6 @@ function BasicsForm({ onBack }: { onBack: () => void }) {
             return;
         }
 
-        // A linked CV is named after its file, so a new name is refused (rename the file and relink).
-        const activeId = useResumeStore.getState().activeResumeId;
-        if (activeId && nextTitle !== (resume.meta.title || "")) {
-            const renamed = await renameLinkedCv(activeId, nextTitle);
-            if (!renamed.ok) {
-                setMetaError(t("linkedFile.error.renameLinked"));
-                return;
-            }
-            nextTitle = renamed.title;
-        }
         updateMeta({
             title: nextTitle,
             description: nextDescription,
@@ -3655,7 +3644,7 @@ export function EditorSidebar({ onMobilePreview }: EditorSidebarProps = {}) {
     );
 
     // If active section is 'basics', render the form without tabs visible
-    if (activeTab !== "json" && activeSection === "basics") {
+    if (activeTab === "content" && activeSection === "basics") {
         return (
             <div className="flex h-full min-h-0 flex-col text-strong">
                 <div className="min-h-0 flex-1">
@@ -3666,7 +3655,7 @@ export function EditorSidebar({ onMobilePreview }: EditorSidebarProps = {}) {
         );
     }
 
-    if (activeTab !== "json" && activeSection) {
+    if (activeTab === "content" && activeSection) {
         return (
             <div className="flex h-full min-h-0 flex-col text-strong">
                 <div className="min-h-0 flex-1">

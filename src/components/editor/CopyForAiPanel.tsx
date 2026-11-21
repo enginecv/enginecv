@@ -116,7 +116,7 @@ export function CopyForAiPanel({ resume }: { resume: Resume }) {
                     data-testid="export-agent-help-toggle"
                     className="text-xs text-accent underline-offset-2 hover:underline"
                 >
-                    {t("linkedFile.agentHelp")}
+                    {t("agentHelp.toggle")}
                 </button>
                 {helpOpen && (
                     <div id={helpId} className="mt-2">

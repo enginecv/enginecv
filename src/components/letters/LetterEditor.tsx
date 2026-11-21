@@ -5,6 +5,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
+import { ensureWorkspace } from "@/lib/workspace/controller";
 import { Group, Panel, Separator } from "react-resizable-panels";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { LanguageSwitcher } from "@/components/ui/LanguageSwitcher";
@@ -12,10 +13,12 @@ import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { db } from "@/lib/db";
 import { useTranslation } from "@/lib/i18n";
 import { createId } from "@/lib/id";
+import { DEFAULT_LETTER_DESIGN, pickLetterDesign } from "@/lib/letters/design";
 import { sendWarnings } from "@/lib/letters/freeze";
 import { senderFromCv } from "@/lib/letters/sender";
 import { convertToSnapshot, duplicateLetter, markSent, repointLetter, unfreeze } from "@/lib/letters/store";
 import { useLetter } from "@/lib/letters/use-letter";
+import { DesignPane } from "./DesignPane";
 import { LayoutPane } from "./LayoutPane";
 import { LetterExportMenu } from "./LetterExportMenu";
 import { LetterPreview } from "./LetterPreview";
@@ -25,6 +28,7 @@ import { ParagraphLibrary } from "./ParagraphLibrary";
 import { RecipientPane } from "./RecipientPane";
 import { RepointDialog } from "./RepointDialog";
 import { SenderPane } from "./SenderPane";
+import { DocStateBadge } from "@/components/workspace/DocStateBadge";
 import { StatusPane } from "./StatusPane";
 import { warningText } from "./warnings";
 
@@ -63,6 +67,11 @@ export function LetterEditor({ letterId }: { letterId: string }) {
     const [busy, setBusy] = useState(false);
     const [actionError, setActionError] = useState(false);
     const cvChoices = useLiveQuery(async () => (await db.resumes.toArray()).map((row) => ({ id: row.id as string, label: row.meta?.title?.trim() || row.basics?.name?.trim() || t("dashboard.untitled") })), [t]) ?? [];
+
+    // A connected workspace folder keeps syncing after a reload or a direct link to this letter.
+    useEffect(() => {
+        void ensureWorkspace();
+    }, []);
 
     // The same breakpoint as the CV editor: below it, one pane at a time with a footer to switch.
     useEffect(() => {
@@ -114,7 +123,8 @@ export function LetterEditor({ letterId }: { letterId: string }) {
             <StatusPane
                 letter={letter}
                 busy={busy}
-                canDuplicate={Boolean(letter.cvId)}
+                canDuplicate={Boolean(letter.cvId) || letter.standalone}
+                onLinkCv={() => setDialog("link")}
                 onMarkSent={() => setDialog("send")}
                 onUnfreeze={() => setDialog("unfreeze")}
                 onDuplicate={() => void act(async () => {
@@ -126,6 +136,16 @@ export function LetterEditor({ letterId }: { letterId: string }) {
             <RecipientPane letter={letter} onChange={update} readOnly={readOnly} />
             <LetterTextPane letter={letter} tokenValues={resolved?.tokenValues ?? { name: "", role: "", location: "", skills: "" }} onChange={update} readOnly={readOnly} />
             <LayoutPane letter={letter} onChange={update} readOnly={readOnly} />
+            {resolved && (
+                <DesignPane
+                    design={resolved.design}
+                    baseDesign={cv && !letter.standalone ? pickLetterDesign(cv.settings) : DEFAULT_LETTER_DESIGN}
+                    overridden={resolved.designOverridden}
+                    standalone={letter.standalone}
+                    onChange={update}
+                    readOnly={readOnly}
+                />
+            )}
             <ParagraphLibrary
                 readOnly={readOnly}
                 onInsert={(markdown) => update((current) => ({ ...current, paragraphs: [...current.paragraphs, { id: createId(), markdown, prompt: "" }] }))}
@@ -133,7 +153,8 @@ export function LetterEditor({ letterId }: { letterId: string }) {
             {resolved && (
                 <SenderPane
                     sender={resolved.sender}
-                    cvSender={cv ? senderFromCv(cv) : null}
+                    cvSender={cv && !letter.standalone ? senderFromCv(cv) : null}
+                    standalone={letter.standalone}
                     overridden={resolved.overridden}
                     onChange={update}
                     readOnly={readOnly}
@@ -182,6 +203,7 @@ export function LetterEditor({ letterId }: { letterId: string }) {
                             />
                             <Pencil className="pointer-events-none h-3 w-3 shrink-0 text-faint opacity-0 transition-opacity group-hover:opacity-100" />
                         </label>
+                        <DocStateBadge docId={letter.id} />
                         <span role="status" aria-live="polite" className={`flex min-w-0 shrink items-center truncate text-[11px] ${saveState === "error" ? "text-danger" : saveState === "saving" ? "text-info" : "text-faint"}`} data-testid="letter-save-state">
                             {saveState === "saving" ? (
                                 <><Loader2 className="w-3 h-3 mr-1 shrink-0 animate-spin" /> {t("dashboard.saving")}</>
@@ -265,7 +287,7 @@ export function LetterEditor({ letterId }: { letterId: string }) {
             <ConfirmModal
                 open={dialog === "unfreeze"}
                 title={t("letters.unfreeze.title")}
-                description={t("letters.unfreeze.body")}
+                description={t(letter.standalone ? "letters.unfreeze.bodyStandalone" : "letters.unfreeze.body")}
                 confirmLabel={t("letters.unfreeze.confirm")}
                 onConfirm={() => void act(async () => { await unfreeze(letter.id); })}
                 onCancel={() => setDialog(null)}

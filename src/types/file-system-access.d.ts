@@ -23,6 +23,12 @@ interface OpenFilePickerOptions extends FilePickerOptionsBase {
     multiple?: boolean;
 }
 
+interface DirectoryPickerOptions {
+    id?: string;
+    mode?: FileSystemPermissionMode;
+    startIn?: "desktop" | "documents" | "downloads" | "music" | "pictures" | "videos" | FileSystemHandle;
+}
+
 interface SaveFilePickerOptions extends FilePickerOptionsBase {
     suggestedName?: string;
 }
@@ -40,4 +46,5 @@ interface FileSystemFileHandle {
 interface Window {
     showOpenFilePicker?(options?: OpenFilePickerOptions): Promise<FileSystemFileHandle[]>;
     showSaveFilePicker?(options?: SaveFilePickerOptions): Promise<FileSystemFileHandle>;
+    showDirectoryPicker?(options?: DirectoryPickerOptions): Promise<FileSystemDirectoryHandle>;
 }

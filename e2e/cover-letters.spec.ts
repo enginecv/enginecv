@@ -62,12 +62,14 @@ test("a letter follows its CV and keeps the text the person wrote", async ({ pag
 
 test("the Cover Letters tab asks for a CV first, then creates a letter", async ({ page }) => {
     await page.goto("/dashboard?tab=letters");
-    await expect(page.getByTestId("letters-no-cvs")).toBeVisible();
+    await expect(page.getByTestId("letters-empty")).toBeVisible();
+    await expect(page.getByTestId("letters-create-cv")).toBeVisible();
 
     await createBlankResume(page);
     await page.goto("/dashboard?tab=letters");
     await expect(page.getByTestId("letters-empty")).toBeVisible();
     await page.getByTestId("letter-new").click();
+    await page.getByTestId("letters-cv-create").click(); // the first CV is preselected
     await expect(page).toHaveURL(/\/letters\/[^/]+$/);
     await expect(page.getByTestId("letter-editor")).toBeVisible();
 });
@@ -86,7 +88,7 @@ test("letters are grouped under their CV, can be duplicated and moved to another
     await page.goto("/dashboard?tab=letters");
     for (let count = 0; count < 2; count++) {
         await page.getByTestId("letter-new").click();
-        await page.getByTestId("letters-cv-select").selectOption(firstCv);
+        await page.getByTestId(`letters-cv-option-${firstCv}`).click();
         await page.getByTestId("letters-cv-create").click();
         await expect(page).toHaveURL(/\/letters\/[^/]+$/, { timeout: 30_000 });
         await page.goto("/dashboard?tab=letters");
@@ -100,7 +102,7 @@ test("letters are grouped under their CV, can be duplicated and moved to another
 
     // Move one to the second CV.
     await group.getByTestId("letter-action-repoint").first().click();
-    await page.getByTestId("letter-repoint-select").selectOption(secondCv);
+    await page.getByTestId(`letter-repoint-option-${secondCv}`).click();
     await page.getByTestId("letter-repoint-confirm").click();
     await expect(page.getByTestId(`letters-group-${secondCv}`).getByTestId("letter-card")).toHaveCount(1);
     await expect(group.getByTestId("letter-card")).toHaveCount(2);
@@ -157,7 +159,7 @@ test("deleting a CV with letters never deletes a letter: drafts are moved or fro
     await page.goto("/dashboard?tab=letters");
     for (let count = 0; count < 2; count++) {
         await page.getByTestId("letter-new").click();
-        await page.getByTestId("letters-cv-select").selectOption(doomed);
+        await page.getByTestId(`letters-cv-option-${doomed}`).click();
         await page.getByTestId("letters-cv-create").click();
         await expect(page).toHaveURL(/\/letters\/[^/]+$/, { timeout: 30_000 });
         if (count === 1) {
@@ -351,6 +353,7 @@ test("a CV that fails strict validation (an invalid email) still gets a letter",
 
     await page.goto("/dashboard?tab=letters");
     await page.getByTestId("letter-new").click();
+    await page.getByTestId("letters-cv-create").click(); // the first CV is preselected
     await expect(page).toHaveURL(/\/letters\/[^/]+$/, { timeout: 30_000 });
     await expect(firstPage(page)).toContainText("Master Person");
 });
@@ -395,4 +398,57 @@ test("paragraphs are a list: start with one, add more, reorder and remove", asyn
 
     await page.getByTestId("letter-paragraph-remove-1").click();
     await expect(page.getByTestId(/^letter-paragraph-card-\d+$/)).toHaveCount(2);
+});
+
+test("a CV card starts a letter, shows how many it has and opens them filtered", async ({ page }) => {
+    await createBlankResume(page);
+    await page.goto("/dashboard");
+    await expect(page.getByTestId("dashboard-resume-letters")).toHaveCount(0);
+
+    await page.getByRole("button", { name: "Write a cover letter for this CV" }).first().click();
+    await expect(page).toHaveURL(/\/letters\/[^/]+$/);
+
+    await page.goto("/dashboard");
+    const chip = page.getByTestId("dashboard-resume-letters").first();
+    await expect(chip).toHaveText("1");
+    await chip.click();
+    await expect(page.getByTestId("letters-filter")).toBeVisible();
+    await expect(page.getByTestId("letter-card")).toHaveCount(1);
+    await page.getByTestId("letters-filter-clear").click();
+    await expect(page.getByTestId("letters-filter")).toHaveCount(0);
+});
+
+test("a letter can be written without a CV, styled on its own, and sent", async ({ page }) => {
+    // No CV at all: New letter starts a standalone letter.
+    await page.goto("/dashboard?tab=letters");
+    await page.getByTestId("letter-new").click();
+    await expect(page).toHaveURL(/\/letters\/[^/]+$/, { timeout: 30_000 });
+    await expect(page.getByTestId("letter-status-text")).toContainText("no CV");
+
+    // The person types the sender block; only the name token is offered.
+    await page.getByTestId("letter-sender-name").fill("Sam Sender");
+    await page.getByTestId("letter-sender-email").fill("sam@example.com");
+    await expect(firstPage(page)).toContainText("Sam Sender");
+    await expect(page.getByTestId("letter-token-name")).toBeVisible();
+    await expect(page.getByTestId("letter-token-role")).toHaveCount(0);
+
+    // Design controls mark what changed and can be reset.
+    await expect(page.getByTestId("letter-design-changed-headerTextTransform")).toHaveCount(0);
+    await page.getByTestId("letter-design-caps").click();
+    await page.getByText("UPPERCASE", { exact: true }).click();
+    await expect(page.getByTestId("letter-design-changed-headerTextTransform")).toBeVisible();
+    await page.getByTestId("letter-design-reset-all").click();
+    await expect(page.getByTestId("letter-design-changed-headerTextTransform")).toHaveCount(0);
+    await expect(page.getByTestId("letter-save-state")).toContainText(/Saved/);
+
+    // It sits in its own group on the dashboard, without a "needs a CV" warning.
+    await page.goto("/dashboard?tab=letters");
+    await expect(page.getByTestId("letters-group-standalone")).toBeVisible();
+    await expect(page.getByTestId("letter-needs-cv")).toHaveCount(0);
+
+    // Sending needs no CV.
+    await page.getByTestId("letter-card").first().getByRole("button", { name: /^Open / }).click();
+    await page.getByTestId("letter-mark-sent").click();
+    await page.getByTestId("letter-send-confirm").click();
+    await expect(page.getByTestId("letter-status-chip")).toContainText(/Sent/i);
 });

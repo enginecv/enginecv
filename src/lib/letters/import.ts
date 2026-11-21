@@ -45,7 +45,8 @@ export function remapLetters(letters: readonly LetterDocument[], idMap: Readonly
     const remapped = letters.map((letter) => {
         const target = letter.cvId ? idMap.get(letter.cvId) : undefined;
         let cvId: string | null;
-        if (target) cvId = target;
+        if (letter.standalone) cvId = null;
+        else if (target) cvId = target;
         else if (letter.status === "draft") {
             cvId = `${MISSING_CV_PREFIX}${letter.cvId ?? ""}`;
             orphanedDrafts += 1;

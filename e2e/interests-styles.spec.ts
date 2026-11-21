@@ -118,7 +118,7 @@ test.describe("interest icons", () => {
     async function openInterestEntries(page: Page) {
         await openJsonFixture(page, false);
         await expect(interestsHeading(page)).toBeVisible();
-        // The section card (reached by double-clicking the heading) has no entry
+        // The section card (reached from the heading menu) has no entry
         // list; an entry form opens from the preview menu's "Go to entry".
         const firstEntry = page.locator('.resume-page [data-nav-section="interests"][data-nav-kind="entry"]').first();
         await firstEntry.scrollIntoViewIfNeeded();

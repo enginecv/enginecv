@@ -7,6 +7,7 @@ import { createLetterRecord } from "@/lib/letters/store";
 import dynamic from "next/dynamic";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useResumeStore } from "@/lib/store";
+import { ensureWorkspace } from "@/lib/workspace/controller";
 import { db } from "@/lib/db";
 import { createId } from "@/lib/id";
 import { getRelativeHistorySelection, loadResumeHistory, parseHistoryResume, recordResumeHistory } from "@/lib/history";
@@ -22,10 +23,6 @@ import { copyResumeToClipboard } from "@/lib/export-clipboard";
 import { toDocumentModel } from "@/lib/document-model";
 import { HistoryPanel } from "@/components/editor/HistoryPanel";
 import { CvTitleInput } from "@/components/editor/CvTitleInput";
-import { LinkedFileControl } from "@/components/editor/LinkedFileControl";
-import { LinkedFileNotice } from "@/components/editor/LinkedFileNotice";
-import { useLinkedFile } from "@/hooks/useLinkedFile";
-import { OPEN_LINKED_FILE_PANEL_EVENT } from "@/lib/linked-file/types";
 import { hideChecklist, showChecklistAgain } from "@/lib/preferences/onboarding";
 import { SaveAsTemplateDialog } from "@/components/editor/SaveAsTemplateDialog";
 const ShortcutsOverlay = dynamic(() => import("@/components/editor/ShortcutsOverlay").then(module => module.ShortcutsOverlay), { ssr: false });
@@ -197,8 +194,11 @@ export default function EditorPage({ params }: { params: Promise<{ id: string }>
     const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
     const [isPaletteOpen, setIsPaletteOpen] = useState(false);
     const [isLoaded, setIsLoaded] = useState(false);
+    // A connected workspace folder keeps syncing after a reload or a direct link to this CV.
+    useEffect(() => {
+        void ensureWorkspace();
+    }, []);
     const checklistHidden = useClientPreferencesStore((state) => state.preferences.onboarding.checklistHidden);
-    useLinkedFile(isLoaded ? activeResumeId : null, true);
     const [showHistoryPanel, setShowHistoryPanel] = useState(false);
     const [isMobileLayout, setIsMobileLayout] = useState(false);
     const [mobilePane, setMobilePane] = useState<"content" | "preview" | "history">("content");
@@ -475,10 +475,10 @@ export default function EditorPage({ params }: { params: Promise<{ id: string }>
     const handleCreateBlankResume = useCallback(async () => {
         requestJsonEditorLeave(async () => {
         await handleManualSave();
-        const resumeId = await createNewResume();
+        const resumeId = await createNewResume({ language: locale });
         router.push(`/editor/${resumeId}`);
         });
-    }, [createNewResume, handleManualSave, router]);
+    }, [createNewResume, handleManualSave, locale, router]);
 
     const handleDuplicateCurrentResume = useCallback(async () => {
         requestJsonEditorLeave(async () => {
@@ -634,22 +634,11 @@ export default function EditorPage({ params }: { params: Promise<{ id: string }>
         return () => window.removeEventListener("enginecv:panel-layout", handlePanelLayout);
     }, [showHistoryPanel]);
 
-    /**
-     * Drop the caret into the live preview on the first editable field, which is
-     * where the arrow-key / hjkl field navigation takes over. Two frames so the
-     * mobile pane switch has painted before we go looking for the field.
-     */
-    const goToPreviewFields = useCallback(() => {
+    /** Brings the live preview into view: switches the pane on a phone, scrolls the first page up on a desktop. */
+    const goToPreview = useCallback(() => {
         if (isMobileLayout) setMobilePane("preview");
         requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-                const field = document.querySelector<HTMLElement>(
-                    ".resume-document [data-editable-field]",
-                );
-                if (!field) return;
-                field.focus();
-                field.scrollIntoView({ block: "center", behavior: "smooth" });
-            });
+            document.querySelector<HTMLElement>(".resume-document")?.scrollIntoView({ block: "start", behavior: "smooth" });
         });
     }, [isMobileLayout]);
 
@@ -1499,8 +1488,8 @@ export default function EditorPage({ params }: { params: Promise<{ id: string }>
             group: t("palette.group.goTo"),
             label: t("palette.goToPreview"),
             icon: Eye,
-            keywords: ["preview", "editor", "fields", "resume", "page", "canvas"],
-            run: goToPreviewFields,
+            keywords: ["preview", "resume", "page", "canvas"],
+            run: goToPreview,
         },
         {
             id: "json-editor-open",
@@ -1647,7 +1636,7 @@ export default function EditorPage({ params }: { params: Promise<{ id: string }>
     }, [
         autoSaveEnabled,
         checklistHidden,
-        goToPreviewFields,
+        goToPreview,
         handleManualSave,
         isDirty,
         isFocusMode,
@@ -1787,17 +1776,6 @@ export default function EditorPage({ params }: { params: Promise<{ id: string }>
         url.searchParams.delete("json-editor");
         window.history.replaceState(window.history.state, "", url.href);
     }, [isLoaded, isMobileLayout, setSidebarTab]);
-
-    // Arrived from the import dialog's "Open and link to a file": show the link panel once.
-    useEffect(() => {
-        if (!isLoaded) return;
-        const url = new URL(window.location.href);
-        if (url.searchParams.get("link") !== "1") return;
-        url.searchParams.delete("link");
-        window.history.replaceState(window.history.state, "", url.href);
-        const timer = setTimeout(() => window.dispatchEvent(new Event(OPEN_LINKED_FILE_PANEL_EVENT)), 300);
-        return () => clearTimeout(timer);
-    }, [isLoaded]);
 
     useEffect(() => {
         const handleSaveShortcut =(event: KeyboardEvent) => {
@@ -1978,7 +1956,6 @@ export default function EditorPage({ params }: { params: Promise<{ id: string }>
                     <div className="h-5 w-px shrink-0 bg-edge" />
                     <div className="flex min-w-0 flex-1 items-center gap-2">
                         <CvTitleInput />
-                        {isLoaded && activeResumeId && <LinkedFileControl resumeId={activeResumeId} />}
                         {isSaving ? (
                             <span className="flex min-w-0 shrink items-center truncate text-[11px] text-info">
                                 <Loader2 className="w-3 h-3 mr-1 shrink-0 animate-spin" /> {t("dashboard.saving")}
@@ -2137,7 +2114,6 @@ export default function EditorPage({ params }: { params: Promise<{ id: string }>
                 )}
             </header>
 
-            {isLoaded && activeResumeId && !isFocusMode && <LinkedFileNotice resumeId={activeResumeId} />}
 
             <ExportDialog
                 open={isExportDialogOpen}

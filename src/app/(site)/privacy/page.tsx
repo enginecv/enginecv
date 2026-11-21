@@ -30,8 +30,8 @@ export default function PrivacyPage() {
                     local data can be removed. Keep your own exports or encrypted JSON backups.
                 </p>
                 <p>
-                    A CV can also be kept in a file on your computer if you choose to link one (section 5). That file is outside
-                    the browser&apos;s storage.
+                    Your CVs and letters can also be kept as files in a workspace folder on your computer if you choose to
+                    connect one (section 5). Those files are outside the browser&apos;s storage.
                 </p>
                 <DataMapDiagram detailed />
             </LegalSection>
@@ -88,7 +88,10 @@ export default function PrivacyPage() {
                         <strong>GitHub import.</strong> When you create a CV from a GitHub profile, or add GitHub repositories as
                         projects to an existing CV, your browser asks GitHub&apos;s public API (<code>api.github.com</code>) and{" "}
                         <code>avatars.githubusercontent.com</code> for the profile or repository, its public repositories,
-                        languages, and avatar. These requests go directly from your device to GitHub; no EngineCV server sits in
+                        languages, and avatar. If you also tick the optional extras on the GitHub tab, your browser reads your
+                        profile README and the README and dependency files (such as <code>package.json</code>) of the repositories
+                        you picked from <code>raw.githubusercontent.com</code>, and makes one more search request to the API for
+                        your merged pull requests. These requests go directly from your device to GitHub; no EngineCV server sits in
                         between or sees them. GitHub receives the username or repository name, your IP address, and browser
                         details. EngineCV never signs you in to GitHub and sends no GitHub token or cookie, so only public data
                         is read and private repositories are never included, even if you are signed in to GitHub in the same
@@ -121,27 +124,33 @@ export default function PrivacyPage() {
                 </p>
             </LegalSection>
 
-            <LegalSection title="5. Linked files and AI agents">
+            <LegalSection title="5. Workspace folder and AI agents">
                 <p>
-                    In Chromium browsers (Chrome, Edge and similar) you can link a CV to a file on your computer, so a local AI
-                    agent or any text editor can change it and the editor follows. You choose where the file lives. It holds the
-                    CV as plain JSON, including your contact details, and your browser writes it only after you picked it, only
-                    for that CV, and only while the link exists. EngineCV keeps the file&apos;s name and your browser&apos;s
-                    permission to open it in a local database table (<code>linkedFiles</code>) on this device. The file is never
-                    uploaded and linking sends nothing to EngineCV or any third party.
+                    In Chromium browsers you can also connect a <strong>workspace folder</strong>. EngineCV then writes your CVs
+                    and cover letters into that folder as plain files (including your contact details unless you turn on
+                    &quot;leave contact details out&quot;), plus a few instruction and index files for AI agents and a small
+                    activity log, and it reads your edits back. You choose the folder, your browser asks for permission first,
+                    and EngineCV only touches the files it made. The folder and its files stay on your computer: nothing in them
+                    is uploaded to EngineCV or any third party. EngineCV keeps the folder&apos;s permission and a per-document
+                    sync state, with no document text, in local database tables on this device.
                 </p>
                 <p>
-                    What happens to the file outside the browser is up to you. An AI agent that reads it may send its contents,
-                    including your contact details, to its model provider, and other programs or people with access to your
-                    computer can read it too. Only use agents you trust with that information. EngineCV asks you to confirm this
-                    the first time you link a file.
+                    Where else those files go is decided by your own tools. If the folder is inside OneDrive, Dropbox, iCloud or
+                    similar, that service copies it. An AI agent you point at the folder may send what it reads to its model
+                    provider, and other programs or people with access to your computer can read the files too. Disconnecting
+                    leaves the files and your documents in place, and &quot;Delete all my data&quot; does not delete files in
+                    the folder.
                 </p>
                 <p>
-                    The file is a copy outside the browser&apos;s storage. Clearing browser data and &quot;Delete all my data&quot;
-                    do not delete it, and the data download on <Link href="/your-data" className="underline">Your data</Link>{" "}
-                    lists its name but does not include it. Unlink the CV in the editor to stop syncing, and delete the file
-                    yourself to remove it. <Link href="/linked-files" className="underline">How linked files work</Link> explains
-                    the details.
+                    You can read and change the files with any text editor. Only use agents you trust with your contact details:
+                    EngineCV asks you to confirm this before it writes the first file. The data download on{" "}
+                    <Link href="/your-data" className="underline">Your data</Link> does not include the folder&apos;s files, and
+                    you delete them yourself in your file manager.
+                </p>
+                <p>
+                    There is also an experimental setting, off by default, that lets an AI assistant built into your browser read
+                    and change your documents through EngineCV. If you turn it on, what that assistant reads goes to its
+                    provider under the provider&apos;s own policy, not through EngineCV.
                 </p>
             </LegalSection>
 

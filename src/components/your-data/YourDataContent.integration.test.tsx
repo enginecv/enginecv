@@ -95,12 +95,12 @@ describe("cookie policy", () => {
     });
 });
 
-describe("Your data page: linked files", () => {
+describe("Your data page: workspace folder files", () => {
     beforeEach(() => {
         inventorySource.overrides = {
             readEngineCvContent: async () => ({
                 resumes: [], resumeHistory: [], templates: [],
-                linkedFiles: [{ resumeId: "cv-1", fileName: "My CV.enginecv.json", linkedAt: 1 }],
+                workspace: [{ id: "current" }],
             }),
         };
         inventorySource.fail = false;
@@ -108,14 +108,13 @@ describe("Your data page: linked files", () => {
     });
     afterEach(cleanup);
 
-    it("lists the link and says the files stay on the computer", async () => {
+    it("lists the workspace table and says the files stay on the computer", async () => {
         render(<YourDataContent />);
         const table = await screen.findByTestId("your-data-inventory");
-        expect(within(table).getAllByText("linkedFiles").length).toBeGreaterThan(0);
+        expect(within(table).getAllByText("workspace").length).toBeGreaterThan(0);
         const note = screen.getByTestId("your-data-files");
         expect(note.textContent).toMatch(/not in this browser/);
         expect(note.textContent).toMatch(/does not delete them/);
-        expect(screen.getByRole("link", { name: "How linked files work" })).toHaveAttribute("href", "/linked-files");
     });
 
     it("says it in German too", async () => {

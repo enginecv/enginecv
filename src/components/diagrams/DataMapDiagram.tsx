@@ -9,7 +9,7 @@ const BROWSER_CODES = {
     cvs: "IndexedDB › resumes, resumeHistory",
     templates: "IndexedDB › templates",
     settings: "localStorage › enginecv-preferences · cookie › enginecv-locale",
-    links: "IndexedDB › linkedFiles",
+    links: "IndexedDB › workspace, workspaceDocs",
 };
 
 /** Where a CV lives, and the only ways it leaves the device. */

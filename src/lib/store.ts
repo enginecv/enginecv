@@ -21,9 +21,9 @@ import {
 } from "./templates/template-schema";
 import { getBuiltinTemplateById, getTemplatePreviewOptions, isBuiltinTemplateId } from "./templates/enginecv-templates";
 import { createNewResume, DEFAULT_TEMPLATE_ID } from "./templates/default-design";
+import { getDefaultCvDateFormat, isCvLanguage } from "./cv-language";
 import { applyTemplateToResume } from "./templates/template-apply";
 import { getSampleResumeForTemplatePreview } from "./templates/template-preview";
-import { INITIAL_LINKED_FILE_STATE, type LinkedFileState } from "./linked-file/types";
 import { mergeCustomizationValue, withoutSectionStyleOverride } from "./customization";
 import { rememberTemplate } from "./analytics/export-event";
 
@@ -87,7 +87,6 @@ interface ResumeStore {
     previewSectionPlacements: Record<string, "left" | "right" | "full">;
     autoSaveEnabled: boolean;
     /** The file this CV is linked to (feature 089). Ephemeral: reset whenever another CV opens. */
-    linkedFile: LinkedFileState;
     /** Set while "delete all my data" runs (in any tab); nothing may be saved until reload. */
     persistenceSuspended: boolean;
 
@@ -103,8 +102,6 @@ interface ResumeStore {
     // Actions
     setActiveResumeId: (id: string | null) => void;
     setResume: (resume: Resume) => void;
-    setLinkedFile: (patch: Partial<LinkedFileState>) => void;
-    resetLinkedFile: () => void;
     updatePaperSize: (size: 'a4' | 'letter') => void;
     setAIChatMode: (mode: AIChatMode) => void;
     setSidebarTab: (tab: SidebarTab) => void;
@@ -176,7 +173,8 @@ interface ResumeStore {
     // DB Sync
     loadFromDb: (id: string) => Promise<void>;
     saveToDb: (trigger?: ResumeHistoryTrigger) => Promise<void>;
-    createNew: () => Promise<string>;
+    /** A blank resume; `language` is the app language it starts in (the CV language and its date format). */
+    createNew: (options?: { language?: string }) => Promise<string>;
 
     // Template mode actions
     loadTemplateFromDb: (id: string) => Promise<TemplateDocument | null>;
@@ -218,7 +216,6 @@ function createResumeEditorSessionState(resume: Resume, activeResumeId: string) 
         isDirty: false,
         lastSavedAt: resume.updatedAt,
         aiProposals: [],
-        linkedFile: INITIAL_LINKED_FILE_STATE,
         ...createEditorSurfaceState(),
     };
 }
@@ -233,7 +230,6 @@ export const useResumeStore = create<ResumeStore>((set, get) => ({
     aiProposals: [],
     aiChatMode: "auto",
     autoSaveEnabled: true,
-    linkedFile: INITIAL_LINKED_FILE_STATE,
     persistenceSuspended: false,
     pendingEditorNav: null,
     previewCommandSequence: 0,
@@ -247,8 +243,6 @@ export const useResumeStore = create<ResumeStore>((set, get) => ({
 
     setActiveResumeId: (id) => set({ activeResumeId: id }),
 
-    setLinkedFile: (patch) => set((state) => ({ linkedFile: { ...state.linkedFile, ...patch } })),
-    resetLinkedFile: () => set({ linkedFile: INITIAL_LINKED_FILE_STATE }),
 
     setResume: (resume) => set({
         resume,
@@ -950,10 +944,15 @@ export const useResumeStore = create<ResumeStore>((set, get) => ({
         }
     },
 
-    createNew: async () => {
+    createNew: async (options) => {
         // A blank resume starts from the default template, not the bare schema
         // defaults, so the first thing a user sees is a finished design.
         const newResume = createNewResume();
+        // It starts in the app language when the CV supports it, so a German app does not open an English CV.
+        if (options?.language && isCvLanguage(options.language)) {
+            newResume.settings.language = options.language;
+            newResume.settings.dateFormat = getDefaultCvDateFormat(options.language);
+        }
         const id = createId();
         const now = Date.now();
         newResume.id = id;

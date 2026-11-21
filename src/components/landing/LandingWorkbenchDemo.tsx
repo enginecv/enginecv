@@ -2,7 +2,7 @@
 
 import { ChevronLeft, ChevronRight, LayoutTemplate, Maximize2, X } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Carousel, CarouselContent, CarouselItem, type CarouselApi } from "@/components/ui/carousel";
 import { useTemplateResume } from "@/components/templates/useTemplateResume";
 import { Button } from "@/components/ui/button";
@@ -41,6 +41,7 @@ function PreviewPicture({
     name,
     sizes,
     eager,
+    priority,
     full,
     className,
 }: {
@@ -48,6 +49,8 @@ function PreviewPicture({
     name: string;
     sizes: string;
     eager?: boolean;
+    /** Fetch before the others (the first slide). */
+    priority?: boolean;
     /** Use the full-size PNG only, for the enlarged view. */
     full?: boolean;
     className?: string;
@@ -67,6 +70,7 @@ function PreviewPicture({
                 width={794}
                 height={1123}
                 loading={eager ? "eager" : "lazy"}
+                fetchPriority={priority ? "high" : eager ? "low" : "auto"}
                 decoding="async"
                 draggable={false}
                 className={className ?? "h-full w-full object-cover object-top"}
@@ -74,6 +78,68 @@ function PreviewPicture({
         </picture>
     );
 }
+
+/**
+ * One slide of the hero carousel. Memoised so a slide change re-renders only the two slides whose
+ * state changed instead of the whole demo, which kept each slide change within a frame.
+ */
+const TemplateSlide = memo(function TemplateSlide({
+    template,
+    index,
+    total,
+    active,
+    onGoTo,
+    onEnlarge,
+}: {
+    template: TemplateDocument;
+    index: number;
+    total: number;
+    active: boolean;
+    onGoTo: (index: number) => void;
+    onEnlarge: (rect: DOMRect) => void;
+}) {
+    const { t } = useTranslation();
+    const slideName = templateDisplayMeta(template, t).name;
+    return (
+        <CarouselItem
+            aria-label={`${index + 1} / ${total}`}
+            className="basis-[70%] pl-3 sm:basis-[46%] sm:pl-6 lg:basis-[38%] xl:basis-[46%]"
+        >
+            <button
+                type="button"
+                aria-label={active ? `${t("templates.showcase.enlarge")}: ${slideName}` : slideName}
+                data-testid={active ? "landing-template-preview" : undefined}
+                data-template-id={active ? template.id : undefined}
+                data-template-theme={active ? template.settings.theme : undefined}
+                data-template-accent={active ? template.settings.colors.accent : undefined}
+                onClick={(event) => {
+                    if (active) onEnlarge(event.currentTarget.getBoundingClientRect());
+                    else onGoTo(index);
+                }}
+                className={`group relative mx-auto block w-full origin-center overflow-hidden rounded-md border border-edge bg-white shadow-xl shadow-black/20 will-change-[transform,opacity] transition-[transform,opacity] duration-[600ms] ease-[cubic-bezier(0.22,0.61,0.36,1)] motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface-1 ${
+                    active ? "scale-100 opacity-100" : "scale-[0.84] cursor-pointer opacity-45 hover:opacity-70"
+                }`}
+                style={{ aspectRatio: "794 / 1123" }}
+            >
+                <PreviewPicture
+                    template={template}
+                    name={slideName}
+                    sizes="(min-width: 1280px) 400px, (min-width: 1024px) 38vw, (min-width: 640px) 46vw, 70vw"
+                    eager
+                    priority={index === 0}
+                />
+                {active && (
+                    <span
+                        aria-hidden="true"
+                        className="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full bg-black/55 text-white opacity-0 backdrop-blur transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100"
+                    >
+                        <Maximize2 className="h-4 w-4" />
+                    </span>
+                )}
+            </button>
+        </CarouselItem>
+    );
+});
 
 /**
  * Full-size view of one template. It grows out of the card that was clicked,
@@ -277,11 +343,13 @@ export function LandingWorkbenchDemo() {
     const goPrevious = useCallback(() => goTo(getPreviousTemplateIndex(selectedIndex, total)), [goTo, selectedIndex, total]);
     const goNext = useCallback(() => goTo(getNextTemplateIndex(selectedIndex, total)), [goTo, selectedIndex, total]);
 
-    const openLightbox = (rect: DOMRect) => {
-        originIndexRef.current = selectedIndex;
+    const selectedRef = useRef(selectedIndex);
+    selectedRef.current = selectedIndex;
+    const openLightbox = useCallback((rect: DOMRect) => {
+        originIndexRef.current = selectedRef.current;
         setOriginRect(rect);
         setEnlarged(true);
-    };
+    }, []);
 
     if (!selectedTemplate) {
         return (
@@ -316,58 +384,30 @@ export function LandingWorkbenchDemo() {
             onFocus={() => setHovered(true)}
             onBlur={() => setHovered(false)}
         >
+            {/* A CSS mask on a scrolling layer is repainted every frame, which made the slide stutter; the edges fade with plain overlays instead. */}
+            <div className="relative">
+            <div aria-hidden="true" className="pointer-events-none absolute inset-y-0 left-0 z-10 w-[10%] bg-gradient-to-r from-surface-1 to-transparent" />
+            <div aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-0 z-10 w-[10%] bg-gradient-to-l from-surface-1 to-transparent" />
             <Carousel
                 opts={{ loop: true, align: "center", duration: reducedMotion ? 0 : SLIDE_DURATION }}
                 setApi={setApi}
                 aria-label={t("nav.templates")}
-                className="[mask-image:linear-gradient(to_right,transparent,black_10%,black_90%,transparent)]"
             >
                 <CarouselContent className="-ml-3 pb-5 sm:-ml-6">
-                    {templates.map((template, index) => {
-                        const active = index === selectedIndex;
-                        const slideName = templateDisplayMeta(template, t).name;
-                        return (
-                            <CarouselItem
-                                key={template.id}
-                                aria-label={`${index + 1} / ${total}`}
-                                className="basis-[70%] pl-3 sm:basis-[46%] sm:pl-6 lg:basis-[38%] xl:basis-[46%]"
-                            >
-                                <button
-                                    type="button"
-                                    aria-label={active ? `${t("templates.showcase.enlarge")}: ${slideName}` : slideName}
-                                    data-testid={active ? "landing-template-preview" : undefined}
-                                    data-template-id={active ? template.id : undefined}
-                                    data-template-theme={active ? template.settings.theme : undefined}
-                                    data-template-accent={active ? template.settings.colors.accent : undefined}
-                                    onClick={(event) => {
-                                        if (active) openLightbox(event.currentTarget.getBoundingClientRect());
-                                        else goTo(index);
-                                    }}
-                                    className={`group relative mx-auto block w-full origin-center overflow-hidden rounded-md border border-edge bg-white shadow-xl shadow-black/20 transition-[transform,opacity,box-shadow] duration-500 ease-out motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface-1 ${
-                                        active ? "scale-100 opacity-100" : "scale-[0.84] cursor-pointer opacity-45 hover:opacity-70"
-                                    }`}
-                                    style={{ aspectRatio: "794 / 1123" }}
-                                >
-                                    <PreviewPicture
-                                        template={template}
-                                        name={slideName}
-                                        sizes="(min-width: 1280px) 400px, (min-width: 1024px) 38vw, (min-width: 640px) 46vw, 70vw"
-                                        eager={index === 0}
-                                    />
-                                    {active && (
-                                        <span
-                                            aria-hidden="true"
-                                            className="absolute right-3 top-3 inline-flex h-9 w-9 items-center justify-center rounded-full bg-black/55 text-white opacity-0 backdrop-blur transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100"
-                                        >
-                                            <Maximize2 className="h-4 w-4" />
-                                        </span>
-                                    )}
-                                </button>
-                            </CarouselItem>
-                        );
-                    })}
+                    {templates.map((template, index) => (
+                        <TemplateSlide
+                            key={template.id}
+                            template={template}
+                            index={index}
+                            total={total}
+                            active={index === selectedIndex}
+                            onGoTo={goTo}
+                            onEnlarge={openLightbox}
+                        />
+                    ))}
                 </CarouselContent>
             </Carousel>
+            </div>
 
             <div className="mx-auto mt-2 flex max-w-5xl flex-col gap-5 px-5 sm:flex-row sm:items-end sm:justify-between sm:px-8">
                 <div className="min-w-0 text-center sm:text-left">

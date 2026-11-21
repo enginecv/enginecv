@@ -1,50 +1,73 @@
 "use client";
 
 import { useLiveQuery } from "dexie-react-hooks";
-import { Grid2X2, Grid3X3, LayoutGrid, Loader2, Mail, Plus, Search } from "lucide-react";
+import { Grid2X2, Grid3X3, LayoutGrid, Link2, Loader2, Mail, Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { CvChoiceGrid, type CvChoice } from "@/components/letters/CvChoiceGrid";
 import { RepointDialog } from "@/components/letters/RepointDialog";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
+import { DeleteDocumentDialog } from "@/components/workspace/DeleteDocumentDialog";
+import { useHasWorkspaceFile } from "@/components/workspace/useHasWorkspaceFile";
+import { retireBeforeDelete } from "@/lib/workspace/controller";
+import type { RetireChoice } from "@/lib/workspace/lifecycle";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useDialogFocus } from "@/hooks/useDialogFocus";
 import { db } from "@/lib/db";
 import { useTranslation } from "@/lib/i18n";
 import type { LetterDocument } from "@/lib/letters/schema";
-import { createLetterRecord, deleteLetter, duplicateLetter, listLetters, repointLetter, restoreLetter } from "@/lib/letters/store";
+import type { Resume } from "@/lib/schema";
+import { pageOf } from "@/lib/letters/paging";
+import { createLetterRecord, createStandaloneLetterRecord, deleteLetter, duplicateLetter, listLetters, repointLetter, restoreLetter } from "@/lib/letters/store";
 import { LetterCard, letterDisplayTitle } from "./LetterCard";
+import { LiveResumeThumbnail } from "./LiveResumeThumbnail";
+import { Pager } from "./ListControls";
+import { NavSearch } from "./NavSearch";
+import { DASHBOARD_CONTENT_CLASS, DASHBOARD_NAV_CLASS } from "./layout";
 
 const UNDO_WINDOW_MS = 8000;
 type Density = "large" | "normal" | "compact";
 
-interface CvOption {
-    id: string;
-    label: string;
-}
+/** Two rows of cards at the widest layout; a longer group opens on its own page behind "Show all". */
+const COLLAPSED_LETTERS: Record<Density, number> = { large: 4, normal: 6, compact: 8 };
+/** Letters per page once one group is open, so even hundreds of letters render a bounded number of cards. */
+const FOCUSED_LETTERS: Record<Density, number> = { large: 12, normal: 18, compact: 24 };
+/** CV groups (each with a CV preview) per page of the overview. */
+const GROUPS_PER_PAGE = 5;
+
+type CvOption = CvChoice;
+
+const groupKey = (group: LetterGroup) => (group.standalone ? "standalone" : (group.cvId ?? "none"));
+
+/** Stands in for the CV id of letters written without one, so they get a group of their own. */
+const STANDALONE_KEY = "__standalone__";
+const NO_CV = "__no-cv__";
 
 interface LetterGroup {
     cvId: string | null;
+    /** Letters written without a CV; not the same as letters whose CV was deleted. */
+    standalone?: boolean;
+    resume?: Resume;
     title: string;
     letters: LetterDocument[];
 }
 
-function CvPickerDialog({ cvs, onPick, onClose, busy, error }: { cvs: CvOption[]; onPick: (cvId: string) => void; onClose: () => void; busy: boolean; error: boolean }) {
+function CvPickerDialog({ cvs, onPick, onClose, busy, error }: { cvs: CvOption[]; onPick: (cvId: string | null) => void; onClose: () => void; busy: boolean; error: boolean }) {
     const { t } = useTranslation();
     const ref = useDialogFocus<HTMLDivElement>(true, onClose);
-    const [cvId, setCvId] = useState(cvs[0]?.id ?? "");
+    const [cvId, setCvId] = useState(cvs[0]?.id ?? NO_CV);
+    const choices = useMemo<CvOption[]>(() => [...cvs, { id: NO_CV, label: t("dashboard.letters.pickNoCv"), detail: t("dashboard.letters.pickNoCvHint") }], [cvs, t]);
     return (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-surface-2/80 backdrop-blur-md" onClick={onClose} />
-            <div ref={ref} role="dialog" aria-modal="true" aria-label={t("dashboard.letters.pickCv")} className="glass-panel relative w-full max-w-md rounded-2xl p-6 shadow-2xl" data-testid="letters-cv-picker">
+            <div ref={ref} role="dialog" aria-modal="true" aria-label={t("dashboard.letters.pickCv")} className="glass-panel relative w-full max-w-2xl rounded-2xl p-6 shadow-2xl" data-testid="letters-cv-picker">
                 <h2 className="text-lg font-bold text-strong">{t("dashboard.letters.pickCv")}</h2>
                 <p className="mt-2 text-sm text-mid">{t("dashboard.letters.pickCvHint")}</p>
-                <select value={cvId} onChange={(event) => setCvId(event.target.value)} aria-label={t("dashboard.letters.pickCv")} data-testid="letters-cv-select" className="mt-4 w-full rounded-xl border border-edge bg-surface-1 px-4 py-2.5 text-sm text-strong">
-                    {cvs.map((cv) => <option key={cv.id} value={cv.id}>{cv.label}</option>)}
-                </select>
+                <CvChoiceGrid choices={choices} value={cvId} onChange={setCvId} name="letters-cv" testIdPrefix="letters-cv" />
                 {error && <p role="alert" className="mt-3 text-sm text-danger" data-testid="letters-cv-picker-error">{t("dashboard.letters.createError")}</p>}
                 <div className="mt-5 flex justify-end gap-2">
                     <button type="button" onClick={onClose} className="rounded-xl border border-edge bg-surface-4 px-4 py-2 text-sm font-bold text-mid hover:border-faint hover:text-strong">{t("dashboard.cancel")}</button>
-                    <button type="button" disabled={busy || !cvId} onClick={() => onPick(cvId)} data-testid="letters-cv-create" className="flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-bold text-surface-2 hover:bg-accent-soft disabled:opacity-60">
+                    <button type="button" disabled={busy || !cvId} onClick={() => onPick(cvId === NO_CV ? null : cvId)} data-testid="letters-cv-create" className="flex items-center gap-2 rounded-xl bg-accent px-4 py-2 text-sm font-bold text-surface-2 hover:bg-accent-soft disabled:opacity-60">
                         {busy && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
                         {t("dashboard.letters.create")}
                     </button>
@@ -61,26 +84,38 @@ const DENSITY_LABEL_KEY = { large: "palette.optionLarge", normal: "palette.optio
  * The Cover Letters tab: letters grouped by the CV they follow, with search, density,
  * and per-letter actions. A letter needs a CV, so with none the person is sent to create one.
  */
-export function LettersTab({ onCreateCv, gridClass = "grid-cols-1 md:grid-cols-2 xl:grid-cols-3", density = "normal", onDensityChange }: {
+export function LettersTab({ onCreateCv, gridClass = "grid-cols-1 md:grid-cols-2 xl:grid-cols-3", density = "normal", onDensityChange, navLead, navTrail, cvFilter = null, onClearCvFilter }: {
     onCreateCv: () => void;
     /** Tailwind grid-column classes for the card grid (shared with the other tabs). */
     gridClass?: string;
     density?: Density;
     onDensityChange?: (density: Density) => void;
+    /** Limit the list to the letters of one CV (set from a CV card). */
+    cvFilter?: string | null;
+    onClearCvFilter?: () => void;
+    /** Left end of the toolbar (the sidebar trigger on narrow screens). */
+    navLead?: ReactNode;
+    /** Right end of the toolbar (theme and language controls). */
+    navTrail?: ReactNode;
 }) {
-    const { t } = useTranslation();
+    const { t, locale } = useTranslation();
     const router = useRouter();
     const letters = useLiveQuery(() => listLetters(), []);
     const cvs = useLiveQuery(async (): Promise<CvOption[]> => {
         const rows = await db.resumes.toArray();
-        return rows.map((row) => ({ id: row.id as string, label: row.meta?.title?.trim() || row.basics?.name?.trim() || t("dashboard.untitled") }));
+        return rows.map((row) => ({ id: row.id as string, label: row.meta?.title?.trim() || row.basics?.name?.trim() || t("dashboard.untitled"), resume: row, detail: row.basics?.headline?.trim() || undefined }));
     }, [t]);
     const [picking, setPicking] = useState(false);
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [query, setQuery] = useState("");
+    const [groupPage, setGroupPage] = useState(1);
+    const [focusPage, setFocusPage] = useState(1);
+    /** The one group opened with "Show all" (its group key), or null for the overview. */
+    const [focus, setFocus] = useState<string | null>(null);
     const [dialog, setDialog] = useState<{ mode: "repoint" | "duplicate"; letter: LetterDocument } | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<LetterDocument | null>(null);
+    const deleteHasFile = useHasWorkspaceFile(deleteTarget?.id);
     const [undoRow, setUndoRow] = useState<LetterDocument | null>(null);
     const undoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -91,23 +126,44 @@ export function LettersTab({ onCreateCv, gridClass = "grid-cols-1 md:grid-cols-2
     const groups = useMemo<LetterGroup[]>(() => {
         if (!letters || !cvs) return [];
         const needle = query.trim().toLowerCase();
+        const inScope = cvFilter ? letters.filter((letter) => letter.cvId === cvFilter) : letters;
         const matches = needle
-            ? letters.filter((letter) => [letter.title, letter.company, letter.role, letter.recipient.name].some((field) => field.toLowerCase().includes(needle)))
-            : letters;
+            ? inScope.filter((letter) => [letter.title, letter.company, letter.role, letter.recipient.name].some((field) => field.toLowerCase().includes(needle)))
+            : inScope;
         const byId = new Map(cvs.map((cv) => [cv.id, cv.label]));
+        const resumeById = new Map(cvs.map((cv) => [cv.id, cv.resume]));
         const grouped = new Map<string | null, LetterDocument[]>();
         for (const letter of matches) {
-            const key = letter.cvId && byId.has(letter.cvId) ? letter.cvId : null;
+            const key = letter.standalone ? STANDALONE_KEY : letter.cvId && byId.has(letter.cvId) ? letter.cvId : null;
             grouped.set(key, [...(grouped.get(key) ?? []), letter]);
         }
         const result: LetterGroup[] = [...grouped.entries()]
-            .filter(([key]) => key !== null)
-            .map(([key, items]) => ({ cvId: key, title: byId.get(key as string) ?? "", letters: items }))
+            .filter(([key]) => key !== null && key !== STANDALONE_KEY)
+            .map(([key, items]) => ({ cvId: key, title: byId.get(key as string) ?? "", resume: resumeById.get(key as string), letters: items }))
             .sort((a, b) => a.title.localeCompare(b.title));
+        const standalone = grouped.get(STANDALONE_KEY);
+        if (standalone) result.push({ cvId: null, standalone: true, title: t("dashboard.letters.standaloneGroup"), letters: standalone });
         const orphans = grouped.get(null);
         if (orphans) result.push({ cvId: null, title: t("dashboard.letters.noCvGroup"), letters: orphans });
         return result;
-    }, [letters, cvs, query, t]);
+    }, [letters, cvs, query, cvFilter, t]);
+
+    /** A CV chosen from its card wins over a group opened here. */
+    const activeFocus = cvFilter ?? focus;
+    const clearFocus = () => {
+        setFocus(null);
+        setFocusPage(1);
+        onClearCvFilter?.();
+    };
+    const openGroup = (group: LetterGroup) => {
+        setFocus(groupKey(group));
+        setFocusPage(1);
+    };
+    const changeQuery = (value: string) => {
+        setQuery(value);
+        setGroupPage(1);
+        setFocusPage(1);
+    };
 
     const run = async (action: () => Promise<void>) => {
         setBusy(true);
@@ -122,11 +178,11 @@ export function LettersTab({ onCreateCv, gridClass = "grid-cols-1 md:grid-cols-2
     };
 
     /** Creates a letter and opens it. Returns false (and says why) when it could not be created. */
-    const create = async (cvId: string): Promise<boolean> => {
+    const create = async (cvId: string | null): Promise<boolean> => {
         setBusy(true);
         setError(null);
         try {
-            const letter = await createLetterRecord(cvId);
+            const letter = cvId ? await createLetterRecord(cvId) : await createStandaloneLetterRecord({ language: locale });
             router.push(`/letters/${letter.id}`);
             return true;
         } catch (cause) {
@@ -139,13 +195,15 @@ export function LettersTab({ onCreateCv, gridClass = "grid-cols-1 md:grid-cols-2
     };
 
     const startNew = () => {
-        if (!cvs || cvs.length === 0) return;
-        if (cvs.length === 1) void create(cvs[0].id);
+        if (!cvs) return;
+        // With no CV there is nothing to choose: write a standalone letter.
+        if (cvs.length === 0) void create(null);
         else setPicking(true);
     };
 
-    const confirmDelete = async () => {
+    const confirmDelete = async (fileChoice: RetireChoice = "keep-file") => {
         if (!deleteTarget) return;
+        await retireBeforeDelete(deleteTarget.id, fileChoice).catch(() => undefined);
         const row = await deleteLetter(deleteTarget.id);
         setDeleteTarget(null);
         if (!row) return;
@@ -161,56 +219,73 @@ export function LettersTab({ onCreateCv, gridClass = "grid-cols-1 md:grid-cols-2
         setUndoRow(null);
     };
 
+    /** The toolbar every dashboard tab has, then the tab's content in the shared page column. */
+    const frame = (content: ReactNode, controls?: ReactNode) => (
+        <>
+            <nav className={DASHBOARD_NAV_CLASS} data-testid="letters-nav">
+                <div className="relative mx-auto flex h-full w-full max-w-7xl items-center gap-2 px-4 py-3 sm:px-6 md:py-0 lg:px-8">
+                    {navLead}
+                    {controls}
+                    <div className="ml-auto flex items-center gap-2">
+                        {cvs && (
+                            <button type="button" onClick={startNew} disabled={busy} data-testid="letter-new" title={t("dashboard.letters.new")} aria-label={t("dashboard.letters.new")} className="flex h-10 items-center gap-2 rounded-xl bg-accent px-3 text-sm font-medium text-surface-2 transition-colors hover:bg-accent-soft disabled:opacity-60">
+                                <Plus className="h-4 w-4" aria-hidden="true" />
+                                <span className="hidden sm:inline">{t("dashboard.letters.new")}</span>
+                            </button>
+                        )}
+                        {navTrail}
+                    </div>
+                </div>
+            </nav>
+            <div className={`${DASHBOARD_CONTENT_CLASS} pt-8`}>{content}</div>
+        </>
+    );
+
     if (letters === undefined || cvs === undefined) {
-        return (
+        return frame(
             <div className={`grid ${gridClass} gap-5`} data-testid="letters-loading">
                 {Array.from({ length: 3 }).map((_, index) => <Skeleton key={index} className="h-36 w-full rounded-2xl" />)}
-            </div>
+            </div>,
         );
     }
 
-    if (cvs.length === 0 && letters.length === 0) {
-        return (
-            <div className="flex flex-col items-center gap-3 rounded-[1.25rem] border border-dashed border-edge p-12 text-center text-faint" data-testid="letters-no-cvs">
-                <Mail className="h-10 w-10" aria-hidden="true" />
-                <p className="text-sm font-medium text-strong">{t("dashboard.letters.noCvs")}</p>
-                <p className="max-w-md text-xs">{t("dashboard.letters.noCvsHint")}</p>
-                <button type="button" onClick={onCreateCv} data-testid="letters-create-cv" className="rounded-xl bg-accent px-4 py-2 text-sm font-bold text-surface-2 hover:bg-accent-soft">{t("dashboard.letters.createCv")}</button>
-            </div>
-        );
-    }
+    const focusedGroup = activeFocus ? groups.find((group) => groupKey(group) === activeFocus) : undefined;
+    const groupsPageData = pageOf(groups, groupPage, GROUPS_PER_PAGE);
+    const focusData = focusedGroup ? pageOf(focusedGroup.letters, focusPage, FOCUSED_LETTERS[density]) : null;
+    const shownGroups = activeFocus ? (focusedGroup ? [focusedGroup] : []) : groupsPageData.items;
+    /** Cards drawn for a group: a page of them when it is open, else the first two rows. */
+    const lettersShown = (group: LetterGroup) => (focusData && group === focusedGroup ? focusData.items : group.letters.slice(0, COLLAPSED_LETTERS[density]));
 
     const dialogName = deleteTarget ? letterDisplayTitle(deleteTarget, t("letters.editor.untitled")) : "";
 
-    return (
+    const controls = (
+        <>
+            {letters.length > 0 && (
+                <NavSearch value={query} onChange={changeQuery} placeholder={t("dashboard.letters.search")} testId="letters-search" />
+            )}
+            {onDensityChange && letters.length > 0 && (
+                <div className="hidden items-center gap-1 rounded-xl border border-edge bg-surface-4 p-1 sm:flex" data-testid="letters-density">
+                    {(["large", "normal", "compact"] as const).map((value) => {
+                        const Icon = DENSITY_ICONS[value];
+                        return (
+                            <button key={value} type="button" onClick={() => onDensityChange(value)} aria-pressed={density === value} title={t("dashboard.densityTitle", { density: t(DENSITY_LABEL_KEY[value]) })} aria-label={t("dashboard.densityTitle", { density: t(DENSITY_LABEL_KEY[value]) })} data-testid={`letters-density-${value}`} className={`flex h-8 w-8 items-center justify-center rounded-lg transition-all ${density === value ? "bg-edge text-accent shadow-sm" : "text-faint hover:text-strong"}`}>
+                                <Icon className="h-4 w-4" aria-hidden="true" />
+                            </button>
+                        );
+                    })}
+                </div>
+            )}
+        </>
+    );
+
+    return frame(
         <div className="space-y-6" data-testid="letters-tab">
-            <div className="flex flex-wrap items-center gap-3">
-                <h2 className="mr-auto text-lg font-semibold text-strong">{t("dashboard.tabCoverLetters")}</h2>
-                {letters.length > 0 && (
-                    <label className="flex h-10 items-center gap-2 rounded-xl border border-edge bg-surface-4 px-3 text-sm text-mid focus-within:border-faint">
-                        <Search className="h-4 w-4 shrink-0" aria-hidden="true" />
-                        <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={t("dashboard.letters.search")} aria-label={t("dashboard.letters.search")} data-testid="letters-search" className="w-40 bg-transparent text-strong placeholder:text-faint focus:outline-none sm:w-56" />
-                    </label>
-                )}
-                {onDensityChange && letters.length > 0 && (
-                    <div className="flex items-center gap-1 rounded-xl border border-edge bg-surface-4 p-1" data-testid="letters-density">
-                        {(["large", "normal", "compact"] as const).map((value) => {
-                            const Icon = DENSITY_ICONS[value];
-                            return (
-                                <button key={value} type="button" onClick={() => onDensityChange(value)} aria-pressed={density === value} title={t("dashboard.densityTitle", { density: t(DENSITY_LABEL_KEY[value]) })} aria-label={t("dashboard.densityTitle", { density: t(DENSITY_LABEL_KEY[value]) })} data-testid={`letters-density-${value}`} className={`flex h-8 w-8 items-center justify-center rounded-lg transition-all ${density === value ? "bg-edge text-accent shadow-sm" : "text-faint hover:text-strong"}`}>
-                                    <Icon className="h-4 w-4" aria-hidden="true" />
-                                </button>
-                            );
-                        })}
-                    </div>
-                )}
-                {cvs.length > 0 && (
-                    <button type="button" onClick={startNew} disabled={busy} data-testid="letter-new" className="flex h-10 items-center gap-2 rounded-xl bg-accent px-3 text-sm font-medium text-surface-2 transition-colors hover:bg-accent-soft disabled:opacity-60">
-                        <Plus className="h-4 w-4" aria-hidden="true" />
-                        {t("dashboard.letters.new")}
-                    </button>
-                )}
-            </div>
+            {activeFocus && (
+                <div className="flex items-center gap-2 text-sm text-mid" data-testid="letters-filter">
+                    <span>{t("dashboard.letters.filteredBy", { cv: focusedGroup?.title ?? cvs.find((cv) => cv.id === activeFocus)?.label ?? "" })}</span>
+                    <button type="button" onClick={clearFocus} data-testid="letters-filter-clear" className="rounded-lg border border-edge bg-surface-4 px-2 py-1 text-xs font-medium text-strong transition-colors hover:border-faint">{t("dashboard.letters.clearFilter")}</button>
+                </div>
+            )}
 
             {error && <p role="alert" className="text-sm text-danger" data-testid="letters-error">{error}</p>}
 
@@ -218,44 +293,78 @@ export function LettersTab({ onCreateCv, gridClass = "grid-cols-1 md:grid-cols-2
                 <div className="flex flex-col items-center gap-2 rounded-[1.25rem] border border-dashed border-edge p-10 text-center text-faint" data-testid="letters-empty">
                     <Mail className="h-8 w-8" aria-hidden="true" />
                     <p className="text-sm font-medium text-strong">{t("dashboard.letters.empty")}</p>
-                    <p className="text-xs">{t("dashboard.letters.emptyHint")}</p>
+                    <p className="max-w-md text-xs">{t(cvs.length === 0 ? "dashboard.letters.emptyHintNoCv" : "dashboard.letters.emptyHint")}</p>
+                    {cvs.length === 0 && (
+                        <button type="button" onClick={onCreateCv} data-testid="letters-create-cv" className="mt-2 rounded-xl border border-edge bg-surface-4 px-4 py-2 text-sm font-bold text-strong hover:border-faint">{t("dashboard.letters.createCv")}</button>
+                    )}
                 </div>
-            ) : groups.length === 0 ? (
+            ) : shownGroups.length === 0 ? (
                 <div className="rounded-[1.25rem] border border-dashed border-edge p-10 text-center text-sm text-faint" data-testid="letters-no-match">
                     {t("dashboard.letters.noMatch", { query })}
                 </div>
             ) : (
-                groups.map((group) => (
-                    <section key={group.cvId ?? "none"} data-testid={`letters-group-${group.cvId ?? "none"}`} aria-label={group.title} className="space-y-3">
+                shownGroups.map((group) => (
+                    <section key={groupKey(group)} data-testid={`letters-group-${groupKey(group)}`} aria-label={group.title} className="space-y-3">
                         <h3 className="flex items-center gap-2 text-sm font-semibold text-strong">
                             {group.title}
                             <span className="rounded-md bg-surface-1 px-1.5 py-0.5 text-[11px] font-semibold text-mid" data-testid="letters-group-count">{group.letters.length}</span>
                         </h3>
-                        <div className={`grid ${gridClass} gap-5`}>
-                            {group.letters.map((letter) => (
-                                <LetterCard
-                                    key={letter.id}
-                                    letter={letter}
-                                    needsCv={letter.status === "draft" && group.cvId === null}
-                                    onOpen={() => router.push(`/letters/${letter.id}`)}
-                                    actions={{
-                                        onDuplicate: () => void run(async () => {
-                                            // A letter whose CV is gone needs a CV to copy onto: ask which.
-                                            if (!letter.cvId || !cvs.some((cv) => cv.id === letter.cvId)) {
-                                                setDialog({ mode: "duplicate", letter });
-                                                return;
-                                            }
-                                            await duplicateLetter(letter.id, { copyLabel: t("dashboard.copy") });
-                                        }),
-                                        onDuplicateInto: () => setDialog({ mode: "duplicate", letter }),
-                                        onRepoint: () => setDialog({ mode: "repoint", letter }),
-                                        onDelete: () => setDeleteTarget(letter),
-                                    }}
-                                />
-                            ))}
+                        <div className="flex items-start gap-5">
+                            {group.resume && group.cvId && (
+                                <div className="hidden items-stretch self-start md:sticky md:top-20 md:flex">
+                                    <button type="button" onClick={() => router.push(`/editor/${group.cvId}`)} title={t("dashboard.letters.openNamed", { name: group.title })} aria-label={t("dashboard.letters.openNamed", { name: group.title })} data-testid="letter-group-thumb" className="block aspect-[210/297] w-48 shrink-0 xl:w-64 overflow-hidden rounded-md border border-edge bg-white shadow-md transition-all hover:-translate-y-0.5 hover:border-accent/50 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+                                        <span className="pointer-events-none block h-full w-full" aria-hidden="true">
+                                            <LiveResumeThumbnail resume={group.resume} />
+                                        </span>
+                                    </button>
+                                    <div className="relative flex w-10 shrink-0 items-center justify-center" aria-hidden="true" data-testid="letter-group-link">
+                                        <span className="absolute inset-x-0 top-1/2 border-t border-dashed border-edge-strong" />
+                                        <span className="relative flex h-7 w-7 items-center justify-center rounded-full border border-edge bg-surface-4 text-accent shadow-sm">
+                                            <Link2 className="h-3.5 w-3.5" />
+                                        </span>
+                                    </div>
+                                </div>
+                            )}
+                            <div className="min-w-0 flex-1 space-y-4">
+                                <div className={`grid ${gridClass} gap-5`}>
+                                    {lettersShown(group).map((letter) => (
+                                        <LetterCard
+                                            key={letter.id}
+                                            letter={letter}
+                                            needsCv={letter.status === "draft" && group.cvId === null && !letter.standalone}
+                                            onOpen={() => router.push(`/letters/${letter.id}`)}
+                                            actions={{
+                                                onDuplicate: () => void run(async () => {
+                                                    // A letter whose CV is gone needs a CV to copy onto: ask which.
+                                                    if (!letter.standalone && (!letter.cvId || !cvs.some((cv) => cv.id === letter.cvId))) {
+                                                        setDialog({ mode: "duplicate", letter });
+                                                        return;
+                                                    }
+                                                    await duplicateLetter(letter.id, { copyLabel: t("dashboard.copy") });
+                                                }),
+                                                onDuplicateInto: () => setDialog({ mode: "duplicate", letter }),
+                                                onRepoint: () => setDialog({ mode: "repoint", letter }),
+                                                onDelete: () => setDeleteTarget(letter),
+                                            }}
+                                        />
+                                    ))}
+                                </div>
+                                {!activeFocus && group.letters.length > COLLAPSED_LETTERS[density] && (
+                                    <button type="button" onClick={() => openGroup(group)} data-testid="letters-group-toggle" className="rounded-xl border border-edge bg-surface-4 px-3 py-2 text-sm font-medium text-strong transition-colors hover:border-faint">
+                                        {t("dashboard.letters.showAll", { count: group.letters.length })}
+                                    </button>
+                                )}
+                                {focusData && group === focusedGroup && (
+                                    <Pager page={focusData.page} pageCount={focusData.pageCount} onChange={setFocusPage} testId="letters-focus-pager" />
+                                )}
+                            </div>
                         </div>
                     </section>
                 ))
+            )}
+
+            {!activeFocus && (
+                <Pager page={groupsPageData.page} pageCount={groupsPageData.pageCount} onChange={setGroupPage} testId="letters-groups-pager" />
             )}
 
             {undoRow && (
@@ -282,8 +391,17 @@ export function LettersTab({ onCreateCv, gridClass = "grid-cols-1 md:grid-cols-2
                 />
             )}
 
+            {!!deleteTarget && deleteHasFile && (
+                <DeleteDocumentDialog
+                    name={dialogName}
+                    description={deleteTarget.status === "draft" ? t("dashboard.letters.deleteConfirm", { name: dialogName }) : t("dashboard.letters.deleteConfirmSent", { name: dialogName })}
+                    confirmLabel={t("dashboard.letters.deleteLetter")}
+                    onConfirm={(choice) => void confirmDelete(choice)}
+                    onCancel={() => setDeleteTarget(null)}
+                />
+            )}
             <ConfirmModal
-                open={!!deleteTarget}
+                open={!!deleteTarget && !deleteHasFile}
                 title={t("dashboard.letters.deleteTitle")}
                 description={deleteTarget?.status === "draft" ? t("dashboard.letters.deleteConfirm", { name: dialogName }) : t("dashboard.letters.deleteConfirmSent", { name: dialogName })}
                 confirmLabel={t("dashboard.letters.deleteLetter")}
@@ -291,6 +409,7 @@ export function LettersTab({ onCreateCv, gridClass = "grid-cols-1 md:grid-cols-2
                 onConfirm={() => void confirmDelete()}
                 onCancel={() => setDeleteTarget(null)}
             />
-        </div>
+        </div>,
+        controls,
     );
 }

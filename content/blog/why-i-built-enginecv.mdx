@@ -210,9 +210,9 @@ Files are read in your browser and are not uploaded. The GitHub import sends wha
 ## What It Deliberately Does Not Do
 
 - **No accounts.** There is nothing to sign up for or log in to.
-- **No sync.** Your CV does not travel between devices on its own.
+- **No sync of its own.** Your CV does not travel between devices on its own. (If you connect the optional workspace folder and keep it inside OneDrive, Dropbox or similar, that tool syncs the files. EngineCV does not.)
 - **No server copy.** Nobody, including me, can restore a CV you have lost.
-- **No AI features yet.** See the FAQ below.
+- **No built-in AI yet.** EngineCV has no AI of its own. See the FAQ below for how to use your own assistant.
 
 Each of these is a trade-off. They are what keeps your data on your device, and they are also the reason you need to look after your own backups.
 
@@ -223,6 +223,8 @@ Each of these is a trade-off. They are what keeps your data on your device, and 
 Your CVs are saved in your browser's local database, on your device. That is what keeps them private, and it is also the catch.
 
 If you clear your site data, switch browsers or lose the device without having exported, the CVs are gone, because there is no server copy to restore from. Export a JSON backup after any edit that matters, and before you clear your browser data.
+
+In Chrome, Edge and other Chromium browsers you can also connect an optional **workspace folder**. Your CVs and letters then exist as plain files in that folder on your computer too. They stay on your machine, but they are outside the browser's storage: clearing site data and "Delete all my data" do not delete them, and anything you point at the folder (a sync tool, an AI agent) can read them.
 
 The **Your data** page shows what EngineCV stores in your browser, lets you download a copy of it and lets you delete all of it. It is the place to go if you want to check the claims on this page for yourself.
 
@@ -278,7 +280,7 @@ By default:
 
 > **On your device (in your browser).**
 
-Nowhere else. There is no sync and no server copy of your resume.
+Nowhere else. There is no sync and no server copy of your resume. The one exception is a workspace folder you connect yourself (optional, Chromium browsers only): then your CVs and letters are also plain files in that folder on your computer.
 
 To move to another device, export your CV and import it there. An encrypted JSON backup is available if you want one.
 
@@ -298,7 +300,7 @@ Yes.
 
 Editing, import, every export format and every template are free, with no paid plan.
 
-AI features are not live yet. If you want an AI assistant to help, the "Paste from AI" import lets any chat assistant write your CV, and you paste its answer into EngineCV. Nothing you paste is sent anywhere.
+EngineCV has no built-in AI yet. If you want an AI assistant to help, you can connect a workspace folder and let a local agent such as Claude Code or Codex edit the files (EngineCV uploads nothing, but the agent may send them to its own provider), or use the "Paste from AI" import: any chat assistant writes your CV and you paste its answer into EngineCV. Nothing you paste is sent anywhere.
 
 ---
 

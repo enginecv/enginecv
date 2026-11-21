@@ -5,6 +5,7 @@ import { ChevronDown, Printer } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
 import { markPrintTipSeen } from "@/lib/preferences/onboarding";
 import { useClientPreferencesStore } from "@/lib/preferences/store";
+import { useWorkspaceStore } from "@/lib/workspace/controller";
 
 const TIP_KEYS = [
     "onboarding.printTip.chrome",
@@ -20,6 +21,8 @@ const TIP_KEYS = [
  */
 export function PrintPathTip() {
     const { t } = useTranslation();
+    // With a workspace folder connected, the printed file can go straight into its exports folder.
+    const workspaceConnected = useWorkspaceStore((state) => state.phase === "connected");
     const seen = useClientPreferencesStore((state) => state.preferences.onboarding.printTipSeen);
     const [expanded, setExpanded] = useState(false);
     const contentId = useId();
@@ -31,6 +34,7 @@ export function PrintPathTip() {
             <p className="text-strong">{t("onboarding.printTip.lead")}</p>
             <ul className="list-disc space-y-1 pl-4">
                 {TIP_KEYS.map((key) => <li key={key}>{t(key)}</li>)}
+                {workspaceConnected && <li data-testid="print-tip-workspace">{t("onboarding.printTip.workspace")}</li>}
             </ul>
         </div>
     );

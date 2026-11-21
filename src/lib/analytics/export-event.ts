@@ -60,7 +60,7 @@ const LOCALE_PREFIX = /^\/(?:de|bs|fr|es)(?=\/|$)/;
 const SEGMENT_PATTERN = /^[a-z0-9-]{1,60}$/;
 const TEMPLATE_PATTERN = /^[a-z0-9][a-z0-9-]{0,39}$/;
 /** Routes whose second segment is a private id: only the route itself is kept. */
-const PRIVATE_ROOTS = new Set(["editor", "dashboard", "internal", "linked-files"]);
+const PRIVATE_ROOTS = new Set(["editor", "dashboard", "internal"]);
 
 /** "/de/cv-examples/nurse?x=1" -> "/cv-examples/nurse"; ids and odd paths are dropped or truncated. */
 export function normalizeLandingPath(raw: unknown): string | null {

@@ -111,8 +111,8 @@ export function exportToJson(data: unknown, filename: string = "resume.json") {
     downloadBlob(blob, filename);
 }
 
-function getPageNodes() {
-    const nodes = document.querySelectorAll<HTMLElement>(".resume-page");
+function getPageNodes(root: ParentNode = document) {
+    const nodes = root.querySelectorAll<HTMLElement>(".resume-page");
     if (nodes.length === 0) {
         console.error("No .resume-page elements found for export.");
     }
@@ -735,9 +735,11 @@ export interface SelfContainedHtml {
  */
 export async function buildSelfContainedHtmlDocument(
     paperSize: "a4" | "letter" = "a4",
-    filename: string = "resume.html"
+    filename: string = "resume.html",
+    /** Take the pages from this subtree instead of the whole document (a render that is not on screen). */
+    root?: ParentNode
 ): Promise<SelfContainedHtml | null> {
-    const pageNodes = getPageNodes();
+    const pageNodes = getPageNodes(root);
     if (pageNodes.length === 0) return null;
 
     const { width: pageWidthPx, height: pageHeightPx } = getIntrinsicPageSize(pageNodes[0]);

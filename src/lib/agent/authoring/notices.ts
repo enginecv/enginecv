@@ -28,6 +28,7 @@ export const NOTICE_CODES = [
     "section-renamed",
     "unknown-key-to-custom",
     "photo-ignored",
+    "contact-ignored",
     // Entries and values
     "field-renamed",
     "unknown-field-to-description",

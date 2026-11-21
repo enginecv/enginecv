@@ -37,11 +37,11 @@ describe("Hero template showcase", () => {
     });
 
     it.each([
-        ["en", "The free résumé builder that doesn't hold your CV hostage.", ["No Account", "No Paywall", "PDF export is free"]],
-        ["bs", "Besplatan alat za životopis koji ne drži vaš CV kao taoca.", ["Bez računa", "Bez naplate", "PDF izvoz je besplatan"]],
-        ["de", "Der kostenlose Lebenslauf-Builder, der deinen Lebenslauf nicht als Geisel hält.", ["Ohne Konto", "Ohne Paywall", "PDF-Export ist kostenlos"]],
-        ["fr", "Le créateur de CV gratuit qui ne prend pas votre CV en otage.", ["Sans compte", "Sans paywall", "L'export PDF est gratuit"]],
-        ["es", "El creador de currículums gratuito que no secuestra tu CV.", ["Sin cuenta", "Sin muro de pago", "La exportación a PDF es gratis"]],
+        ["en", "The résumé builder that doesn't hold your CV hostage.", ["No Account", "No Paywall", "PDF export is free"]],
+        ["bs", "Alat za životopis koji ne drži vaš CV kao taoca.", ["Bez računa", "Bez naplate", "PDF izvoz je besplatan"]],
+        ["de", "Der Lebenslauf-Builder, der deinen Lebenslauf nicht als Geisel hält.", ["Ohne Konto", "Ohne Paywall", "PDF-Export ist kostenlos"]],
+        ["fr", "Le créateur de CV qui ne prend pas votre CV en otage.", ["Sans compte", "Sans paywall", "L'export PDF est gratuit"]],
+        ["es", "El creador de currículums que no secuestra tu CV.", ["Sin cuenta", "Sin muro de pago", "La exportación a PDF es gratis"]],
     ] as const)("renders a static free-first headline and proof line in %s", (locale, headline, claims) => {
         useI18nStore.setState({ locale, _hydrated: true });
 

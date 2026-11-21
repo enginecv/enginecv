@@ -43,6 +43,82 @@ describe("LettersTab groups and actions", () => {
         expect(within(design).getAllByTestId("letter-card").map((element) => element.getAttribute("data-letter-id"))).toEqual(["a2", "a1", "a3"]);
     });
 
+    it("limits the list to one CV when opened from that CV's card, and can show all again", async () => {
+        await seed();
+        const onClear = vi.fn();
+        const { rerender } = render(<LettersTab onCreateCv={vi.fn()} cvFilter="cv-b" onClearCvFilter={onClear} />);
+        await screen.findByTestId("letters-group-cv-b");
+        expect(screen.queryByTestId("letters-group-cv-a")).toBeNull();
+        expect(screen.getByTestId("letters-filter")).toHaveTextContent("Research CV");
+        fireEvent.click(screen.getByTestId("letters-filter-clear"));
+        expect(onClear).toHaveBeenCalled();
+        rerender(<LettersTab onCreateCv={vi.fn()} cvFilter={null} onClearCvFilter={onClear} />);
+        expect(await screen.findByTestId("letters-group-cv-a")).toBeInTheDocument();
+        expect(screen.queryByTestId("letters-filter")).toBeNull();
+    });
+
+    it("shows a preview of the CV in each group header that opens the CV", async () => {
+        await seed();
+        render(<LettersTab onCreateCv={vi.fn()} />);
+        const design = await screen.findByTestId("letters-group-cv-a");
+        const thumb = within(design).getByTestId("letter-group-thumb");
+        expect(thumb).toHaveAccessibleName(/Design CV/);
+        fireEvent.click(thumb);
+        expect(push).toHaveBeenCalledWith("/editor/cv-a");
+    });
+
+    it("shows two rows of a long group, and opens the whole group on its own pages behind Show all", async () => {
+        await db.resumes.put(makeCv({ id: "cv-a", title: "Design CV" }));
+        await db.coverLetters.bulkPut(Array.from({ length: 20 }, (_, index) => makeLetter({ id: `m${index}`, cvId: "cv-a", company: `Firm ${index}`, updatedAt: index })));
+        render(<LettersTab onCreateCv={vi.fn()} />);
+        const group = await screen.findByTestId("letters-group-cv-a");
+        expect(within(group).getAllByTestId("letter-card")).toHaveLength(6); // two rows of three
+        fireEvent.click(within(group).getByTestId("letters-group-toggle"));
+
+        const open = await screen.findByTestId("letters-group-cv-a");
+        expect(screen.getByTestId("letters-filter")).toHaveTextContent("Design CV");
+        expect(within(open).getAllByTestId("letter-card")).toHaveLength(18); // one page, never all 20
+        expect(screen.queryByTestId("letters-groups-pager")).toBeNull();
+
+        fireEvent.click(screen.getByTestId("letters-focus-pager-next"));
+        expect(within(screen.getByTestId("letters-group-cv-a")).getAllByTestId("letter-card")).toHaveLength(2);
+
+        fireEvent.click(screen.getByTestId("letters-filter-clear"));
+        expect(within(await screen.findByTestId("letters-group-cv-a")).getAllByTestId("letter-card")).toHaveLength(6);
+    });
+
+    it("keeps the cap while searching, so a broad search cannot render hundreds of cards", async () => {
+        await db.resumes.put(makeCv({ id: "cv-a", title: "Design CV" }));
+        await db.coverLetters.bulkPut(Array.from({ length: 12 }, (_, index) => makeLetter({ id: `m${index}`, cvId: "cv-a", company: `Firm ${index}`, updatedAt: index })));
+        render(<LettersTab onCreateCv={vi.fn()} />);
+        await screen.findByTestId("letters-group-cv-a");
+        fireEvent.change(screen.getByTestId("letters-search"), { target: { value: "Firm" } });
+        expect(within(screen.getByTestId("letters-group-cv-a")).getAllByTestId("letter-card")).toHaveLength(6);
+        expect(screen.getByTestId("letters-group-toggle")).toHaveTextContent("Show all 12");
+    });
+
+    it("pages the CV groups, five at a time, drawing only that page's CV previews", async () => {
+        await db.resumes.bulkPut(Array.from({ length: 7 }, (_, index) => makeCv({ id: `cv-${index}`, title: `CV ${String(index).padStart(2, "0")}` })));
+        await db.coverLetters.bulkPut(Array.from({ length: 7 }, (_, index) => makeLetter({ id: `l${index}`, cvId: `cv-${index}`, company: `Co ${index}` })));
+        render(<LettersTab onCreateCv={vi.fn()} />);
+        await screen.findByTestId("letters-group-cv-0");
+        expect(screen.getAllByTestId(/^letters-group-cv-/)).toHaveLength(5);
+        expect(screen.getAllByTestId("letter-group-thumb")).toHaveLength(5);
+        expect(screen.getByTestId("letters-groups-pager-status")).toHaveTextContent("1");
+
+        fireEvent.click(screen.getByTestId("letters-groups-pager-next"));
+        expect(await screen.findByTestId("letters-group-cv-5")).toBeInTheDocument();
+        expect(screen.getAllByTestId(/^letters-group-cv-/)).toHaveLength(2);
+        expect(screen.queryByTestId("letters-group-cv-0")).toBeNull();
+    });
+
+    it("links each CV preview to its letters with a link icon between them", async () => {
+        await seed();
+        render(<LettersTab onCreateCv={vi.fn()} />);
+        const design = await screen.findByTestId("letters-group-cv-a");
+        expect(within(design).getByTestId("letter-group-link")).toBeInTheDocument();
+    });
+
     it("puts letters whose CV is gone in their own group instead of hiding them", async () => {
         await seed();
         await db.resumes.delete("cv-b");
@@ -91,14 +167,14 @@ describe("LettersTab groups and actions", () => {
 
         fireEvent.click(within(card("a1")).getByTestId("letter-action-duplicate-into"));
         let dialog = await screen.findByTestId("letter-repoint-dialog");
-        fireEvent.change(within(dialog).getByTestId("letter-repoint-select"), { target: { value: "cv-b" } });
+        fireEvent.click(within(dialog).getByTestId("letter-repoint-option-cv-b"));
         fireEvent.click(within(dialog).getByTestId("letter-repoint-confirm"));
         await waitFor(async () => expect((await db.coverLetters.toArray()).some((letter) => letter.id !== "a1" && letter.cvId === "cv-b" && letter.company === "Acme")).toBe(true), { timeout: 4000 });
 
         fireEvent.click(within(card("b1")).getByTestId("letter-action-repoint"));
         dialog = await screen.findByTestId("letter-repoint-dialog");
         // A move offers only the other CV, and says which overrides stay.
-        expect(within(dialog).getAllByRole("option")).toHaveLength(1);
+        expect(within(dialog).getAllByRole("radio")).toHaveLength(1);
         expect(within(dialog).getByTestId("letter-repoint-kept")).toHaveTextContent("Email");
         fireEvent.click(within(dialog).getByTestId("letter-repoint-confirm"));
         await waitFor(async () => expect((await db.coverLetters.get("b1"))?.cvId).toBe("cv-a"), { timeout: 4000 });
@@ -111,8 +187,8 @@ describe("LettersTab groups and actions", () => {
         await screen.findByTestId("letters-group-cv-a");
         fireEvent.click(within(card("a1")).getByTestId("letter-action-repoint"));
         const dialog = await screen.findByTestId("letter-repoint-dialog");
-        expect(within(dialog).getAllByRole("combobox")).toHaveLength(1);
-        expect(dialog.querySelector("select[multiple]")).toBeNull();
+        expect(within(dialog).getByRole("radiogroup")).toBeInTheDocument();
+        expect(dialog.querySelector("input[type=checkbox]")).toBeNull();
     });
 
     it("cannot move a sent letter", async () => {

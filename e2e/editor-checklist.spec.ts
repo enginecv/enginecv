@@ -15,7 +15,7 @@ test("a new user sees the checklist, it ticks, it can be skipped and brought bac
     await newBlankCv(page);
     const card = page.getByTestId("editor-checklist");
     await expect(card).toBeVisible();
-    await expect(page.getByTestId("editor-checklist-progress")).toHaveText("0 of 5 done");
+    await expect(page.getByTestId("editor-checklist-progress")).toHaveText("0 of 4 done");
     await expectNoA11yViolations(page, { include: ['[data-testid="editor-checklist"]'], label: "checklist" });
 
     // The step leads to the field, and typing ticks it.
@@ -28,7 +28,7 @@ test("a new user sees the checklist, it ticks, it can be skipped and brought bac
     await page.getByTestId("sidebar-tab-customize").click();
     await page.getByTestId("sidebar-tab-content").click();
     await expect(page.getByTestId("editor-checklist-customize")).toHaveAttribute("data-done", "true");
-    await expect(page.getByTestId("editor-checklist-progress")).toHaveText("2 of 5 done");
+    await expect(page.getByTestId("editor-checklist-progress")).toHaveText("2 of 4 done");
 
     // Skip it: it stays gone after a reload.
     await page.getByTestId("editor-checklist-hide").click();

@@ -9,7 +9,7 @@ import { db } from "@/lib/db";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useResumeStore } from "@/lib/store";
 import {
-    ArrowLeft, FileText, Plus, Trash2, X, AlertTriangle, Search, Edit2, Check, Copy, Download, LayoutTemplate, Upload, Mail, ListFilter, Grid2X2, Grid3X3, LayoutGrid, Radiation, ShieldCheck, type LucideIcon,
+    ArrowLeft, FileText, Plus, Trash2, X, AlertTriangle, Search, Edit2, Check, Copy, Download, LayoutTemplate, Upload, Mail, ListFilter, Grid2X2, Grid3X3, LayoutGrid, Radiation, ShieldCheck, FolderSync, type LucideIcon,
 } from "lucide-react";
 import { exportTemplateToJson, importTemplateFromJsonText } from "@/lib/templates/template-io";
 import { templateDocumentSchema, type TemplateDocument } from "@/lib/templates/template-schema";
@@ -29,11 +29,23 @@ import { LiveResumeThumbnail } from "@/components/dashboard/LiveResumeThumbnail"
 import { DashboardCard, LastUpdatedTooltipContent } from "@/components/dashboard/DashboardCard";
 import { DashboardTemplateCard } from "@/components/dashboard/DashboardTemplateCard";
 import { LettersTab } from "@/components/dashboard/LettersTab";
+import { NavSearch } from "@/components/dashboard/NavSearch";
+import { OPEN_WORKSPACE_ACTIVITY_EVENT } from "@/components/workspace/DocStateChip";
+import { DeleteDocumentDialog } from "@/components/workspace/DeleteDocumentDialog";
+import { useWorkspaceMembership } from "@/components/workspace/useWorkspaceMembership";
+import { useHasWorkspaceFile } from "@/components/workspace/useHasWorkspaceFile";
+import { WorkspacePanel } from "@/components/workspace/WorkspacePanel";
+import type { SourceId } from "@/lib/import/sources";
+import { ensureWorkspace, retireBeforeDelete, useWorkspaceStore } from "@/lib/workspace/controller";
+import type { RetireChoice } from "@/lib/workspace/lifecycle";
+import { DASHBOARD_CONTENT_CLASS, DASHBOARD_NAV_CLASS } from "@/components/dashboard/layout";
 import { CopyLettersDialog } from "@/components/letters/CopyLettersDialog";
 import { DeleteCvDialog } from "@/components/letters/DeleteCvDialog";
 import type { DeletionDecision } from "@/lib/letters/deletion";
 import type { LetterDocument } from "@/lib/letters/schema";
-import { copyLettersToCv, deleteCvWithLetters, importDataExport, listLettersForCv } from "@/lib/letters/store";
+import { UndoToast, useUndoSlot } from "@/components/dashboard/UndoToast";
+import { restoreDeletedCv, restoreDeletedTemplate, snapshotCvForUndo, snapshotTemplateForUndo, type DeletedCvSnapshot } from "@/lib/cv-undo";
+import { copyLettersToCv, createLetterRecord, deleteCvWithLetters, importDataExport, listLettersForCv } from "@/lib/letters/store";
 import type { DataExportExtras } from "@/lib/import/staging/types";
 import { CreateModal } from "@/components/dashboard/CreateModal";
 import { StartPanel } from "@/components/dashboard/StartPanel";
@@ -89,8 +101,6 @@ type DashboardNavItem = {
 };
 
 const EMPTY_TEMPLATES: TemplateDocument[] = [];
-const DASHBOARD_CONTENT_CLASS = "mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8";
-const DASHBOARD_NAV_CLASS = "sticky top-0 z-30 border-b border-edge bg-surface-2 md:h-[68px] md:max-h-[68px]";
 
 /** One block of the templates overview: a title, a few cards, and a button to see the rest. */
 function TemplateOverviewSection({
@@ -224,147 +234,6 @@ function TemplateFilterMenu({
                 })}
             </PopoverContent>
         </Popover>
-    );
-}
-
-// ---------------------------------------------
-// Nav Search (overlay)
-// ---------------------------------------------
-
-/**
- * Toolbar search control. On md+ the toolbar has room for a persistent
- * (moderately wide) search field. On narrow screens it collapses to a lens
- * button that opens an overlay search across the toolbar instead of pushing
- * the surrounding controls. `overlayContent` rides next to the field while
- * the overlay is open (e.g. the filter button). Requires a positioned parent.
- */
-function NavSearch({
-    value,
-    onChange,
-    placeholder,
-    testId,
-    overlayContent,
-}: {
-    value: string;
-    onChange: (value: string) => void;
-    placeholder: string;
-    testId?: string;
-    overlayContent?: ReactNode;
-}) {
-    const { t } = useTranslation();
-    const [open, setOpen] = useState(false);
-    const inputRef = useRef<HTMLInputElement>(null);
-
-    return (
-        <>
-            {/* Persistent field — md+ toolbars have room for it. */}
-            <div className="hidden h-10 w-56 shrink-0 items-center rounded-xl border border-edge bg-surface-4 transition-colors focus-within:border-faint md:flex">
-                <span
-                    className="flex h-10 w-10 shrink-0 items-center justify-center text-faint"
-                    aria-hidden="true"
-                >
-                    <Search className="h-4 w-4" />
-                </span>
-                <input
-                    type="text"
-                    value={value}
-                    onChange={(event) => onChange(event.target.value)}
-                    onKeyDown={(event) => {
-                        if (event.key === "Escape") {
-                            event.preventDefault();
-                            onChange("");
-                        }
-                    }}
-                    placeholder={placeholder}
-                    data-testid={testId}
-                    className="h-full min-w-0 flex-1 bg-transparent text-sm text-strong outline-none placeholder:text-faint/50"
-                />
-                {value && (
-                    <button
-                        type="button"
-                        onClick={() => onChange("")}
-                        aria-label={t("dashboard.clearSearch")}
-                        title={t("dashboard.clearSearch")}
-                        className="flex h-10 w-9 shrink-0 items-center justify-center text-faint transition-colors hover:text-strong"
-                    >
-                        <X className="h-3.5 w-3.5" aria-hidden="true" />
-                    </button>
-                )}
-            </div>
-
-            {/* Compact trigger — narrow screens collapse to a lens button. */}
-            <button
-                type="button"
-                onClick={() => {
-                    setOpen(true);
-                    requestAnimationFrame(() => inputRef.current?.focus());
-                }}
-                aria-label={placeholder}
-                aria-expanded={open}
-                className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-edge bg-surface-4 text-faint transition-colors hover:border-faint hover:text-strong md:hidden"
-            >
-                <Search className="h-4 w-4" aria-hidden="true" />
-                {value.trim() && (
-                    <span
-                        className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-accent"
-                        aria-hidden="true"
-                    />
-                )}
-            </button>
-
-            {open && (
-                <>
-                    {/* Tap anywhere outside the field to collapse the search. */}
-                    <div
-                        className="fixed inset-0 z-10 md:hidden"
-                        aria-hidden="true"
-                        onClick={() => setOpen(false)}
-                    />
-                    <div className="absolute inset-0 z-20 flex items-center gap-2 bg-surface-2 px-4 sm:px-6 md:hidden">
-                        <div className="flex h-10 min-w-0 flex-1 items-center rounded-xl border border-edge bg-surface-4 transition-colors focus-within:border-faint">
-                            <span
-                                className="flex h-10 w-10 shrink-0 items-center justify-center text-faint"
-                                aria-hidden="true"
-                            >
-                                <Search className="h-4 w-4" />
-                            </span>
-                            <input
-                                ref={inputRef}
-                                type="text"
-                                value={value}
-                                onChange={(event) => onChange(event.target.value)}
-                                onKeyDown={(event) => {
-                                    if (event.key === "Escape") {
-                                        event.preventDefault();
-                                        onChange("");
-                                        setOpen(false);
-                                    }
-                                }}
-                                placeholder={placeholder}
-                                className="h-full min-w-0 flex-1 bg-transparent text-sm text-strong outline-none placeholder:text-faint/50"
-                            />
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    if (value) {
-                                        onChange("");
-                                        inputRef.current?.focus();
-                                    } else {
-                                        setOpen(false);
-                                    }
-                                }}
-                                aria-label={value ? t("dashboard.clearSearch") : t("dashboard.closeSearch")}
-                                title={value ? t("dashboard.clearSearch") : t("dashboard.closeSearch")}
-                                className="flex h-10 w-10 shrink-0 items-center justify-center text-faint transition-colors hover:text-strong"
-                            >
-                                <X className="h-4 w-4" aria-hidden="true" />
-                            </button>
-                        </div>
-                        {overlayContent}
-                    </div>
-                </>
-            )}
-        </>
     );
 }
 
@@ -505,20 +374,25 @@ function getResumeExportFilename(resume: Resume) {
 function ResumeCard({
     resume,
     onSaveMeta,
-    linkedFileName,
     onOpen,
     onDelete,
     onDuplicate,
     onDownload,
+    letterCount = 0,
+    onShowLetters,
+    onWriteLetter,
 }: {
     resume: Resume;
-    /** Resolves to a message when the save was refused (a linked file could not be renamed). */
+    /** Resolves to a message when the save was refused. */
     onSaveMeta: (meta: Resume["meta"]) => Promise<string | void> | string | void;
-    linkedFileName?: string;
     onOpen: () => void;
     onDelete: () => void;
     onDuplicate: () => void;
     onDownload: () => void;
+    /** Cover letters that follow this CV. */
+    letterCount?: number;
+    onShowLetters: () => void;
+    onWriteLetter: () => void;
 }) {
     const { t } = useTranslation();
     const [isEditingMeta, setIsEditingMeta] = useState(false);
@@ -602,6 +476,7 @@ function ResumeCard({
         setIsEditingMeta(false);
     };
 
+    const membership = useWorkspaceMembership(resume.id);
     const title = resume.meta.title || fallbackCvLabel;
     const description = resume.meta.description || resume.basics.headline || undefined;
     const openLabel = `Open ${title}`;
@@ -618,7 +493,7 @@ function ResumeCard({
     return (
         <DashboardCard
             testId="dashboard-resume-card"
-            preview={preview}
+            preview={<>{preview}{membership.dialog}</>}
             title={title}
             description={description}
             tags={existingTags}
@@ -626,13 +501,28 @@ function ResumeCard({
             infoContent={<LastUpdatedTooltipContent label={updatedAtLabel} timestamp={resume.updatedAt} />}
             openLabel={openLabel}
             onOpen={onOpen}
-            linkedFileName={linkedFileName}
+            docId={resume.id}
+            meta={letterCount > 0 ? (
+                <button
+                    type="button"
+                    onClick={onShowLetters}
+                    data-testid="dashboard-resume-letters"
+                    title={t("dashboard.letterChipLabel", { count: letterCount })}
+                    aria-label={t("dashboard.letterChipLabel", { count: letterCount })}
+                    className="inline-flex items-center gap-1 rounded-lg border border-edge bg-surface-1/50 px-2 py-0.5 text-[11px] font-medium text-mid transition-colors hover:border-accent/40 hover:text-accent"
+                >
+                    <Mail className="h-3 w-3" aria-hidden="true" />
+                    {letterCount}
+                </button>
+            ) : undefined}
             errorMessage={saveError}
             actions={[
                 { label: t("dashboard.editMeta"), icon: Edit2, onClick: startEditingMeta },
+                { label: t("dashboard.writeLetter"), icon: Mail, onClick: onWriteLetter },
                 { label: t("dashboard.duplicateResume"), icon: Copy, onClick: onDuplicate },
                 { label: t("templates.actions.download"), icon: Download, onClick: onDownload },
-                { label: t("dashboard.deleteResume"), icon: Trash2, onClick: onDelete, variant: "danger" },
+                ...(membership.item ? [{ label: membership.item.label, icon: FolderSync, onClick: membership.item.onClick }] : []),
+                { label: t("dashboard.deleteResume"), icon: Trash2, onClick: onDelete, variant: "danger" as const },
             ]}
         >
             {isEditingMeta ? (
@@ -755,13 +645,17 @@ function DashboardSidebar({
     activeTab,
     onSelectTab,
     onCreateResume,
+    onOpenWorkspace,
 }: {
     items: DashboardNavItem[];
     activeTab: DashboardTab;
     onSelectTab: (tab: DashboardTab) => void;
     onCreateResume: () => void;
+    onOpenWorkspace: () => void;
 }) {
     const { t, locale } = useTranslation();
+    const workspacePhase = useWorkspaceStore((state) => state.phase);
+    const workspaceOtherTab = useWorkspaceStore((state) => state.phase === "connected" && !state.isLeader);
     const { isMobile, open, setOpenMobile } = useSidebar();
     const sidebarExpanded = open || isMobile;
 
@@ -845,6 +739,20 @@ function DashboardSidebar({
             <SidebarFooter className="space-y-2">
                 {/* The delete runs on the Your data page, which holds no live database queries. */}
                 <div className={`flex gap-1 ${sidebarExpanded ? "flex-col" : "flex-col items-center"}`}>
+                    <button
+                        type="button"
+                        onClick={onOpenWorkspace}
+                        data-testid="dashboard-sidebar-workspace"
+                        title={workspaceOtherTab ? t("workspace.otherTabShort") : !sidebarExpanded ? t("workspace.title") : undefined}
+                        aria-label={!sidebarExpanded ? t("workspace.title") : undefined}
+                        className={`relative flex items-center gap-2 rounded-lg px-3 py-1.5 text-xs text-faint transition-colors hover:text-strong ${sidebarExpanded ? "justify-start" : "justify-center px-2"}`}
+                    >
+                        <FolderSync className="h-4 w-4 shrink-0" aria-hidden="true" />
+                        {sidebarExpanded && t("workspace.title")}
+                        {workspacePhase === "connected" && !workspaceOtherTab && <span className="h-1.5 w-1.5 rounded-full bg-success" aria-hidden="true" data-testid="workspace-dot" />}
+                        {(workspacePhase === "needs-permission" || workspaceOtherTab) && <span className="h-1.5 w-1.5 rounded-full bg-accent" aria-hidden="true" data-testid="workspace-dot" />}
+                    </button>
+                    {workspaceOtherTab && sidebarExpanded && <p role="status" className="px-3 text-[11px] leading-snug text-accent" data-testid="workspace-other-tab-note">{t("workspace.otherTabShort")}</p>}
                     <Link
                         href="/your-data"
                         data-testid="dashboard-sidebar-your-data"
@@ -898,7 +806,7 @@ export default function DashboardPage() {
 }
 
 function Dashboard() {
-    const { t, tn } = useTranslation();
+    const { t, tn, locale } = useTranslation();
     const router = useRouter();
     const searchParams = useSearchParams();
     const tabQueryParam = searchParams?.get("tab") ?? null;
@@ -908,23 +816,36 @@ function Dashboard() {
         return rows.map((row) => normalizeDashboardResume(row));
     });
 
-    const linkedFileNames = useLiveQuery(async () => {
-        const links = await db.linkedFiles.toArray();
-        return Object.fromEntries(links.map((link) => [link.resumeId, link.fileName]));
-    });
-
     const [showCreateModal, setShowCreateModal] = useState(false);
+    const [showWorkspace, setShowWorkspace] = useState(false);
+    const [activityDocId, setActivityDocId] = useState<string | null>(null);
+    useEffect(() => {
+        const open = (event: Event) => {
+            setActivityDocId((event as CustomEvent<{ docId?: string }>).detail?.docId ?? null);
+            setShowWorkspace(true);
+        };
+        window.addEventListener(OPEN_WORKSPACE_ACTIVITY_EVENT, open);
+        return () => window.removeEventListener(OPEN_WORKSPACE_ACTIVITY_EVENT, open);
+    }, []);
+
+    // Restores a connected workspace folder (or says why there is none) once the dashboard is up.
+    useEffect(() => {
+        void ensureWorkspace();
+    }, []);
     const [showExamplePicker, setShowExamplePicker] = useState(false);
     // The Import data window, with a file or source it should start from.
-    const [hub, setHub] = useState<{ files?: File[]; source?: "github" } | null>(null);
+    const [hub, setHub] = useState<{ files?: File[]; source?: SourceId } | null>(null);
     const [fileDragActive, setFileDragActive] = useState(false);
     // The start path whose action is running (blank creation), and where focus goes for `?start=json`.
     const [pendingStart, setPendingStart] = useState<StartPathId | null>(null);
     const [startError, setStartError] = useState<string | null>(null);
     const [startFocusId, setStartFocusId] = useState<StartPathId | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+    const cvUndo = useUndoSlot<{ snapshot: DeletedCvSnapshot; fileKept: boolean }>();
+    const templateUndo = useUndoSlot<NonNullable<Awaited<ReturnType<typeof snapshotTemplateForUndo>>>>();
     // The letters linked to the CV being deleted; when there are any, a dialog decides what happens to them.
     const [deleteLetters, setDeleteLetters] = useState<LetterDocument[]>([]);
+    const deleteHasFile = useHasWorkspaceFile(deleteTarget?.id);
     const [deleteBusy, setDeleteBusy] = useState(false);
     const [deleteFailed, setDeleteFailed] = useState(false);
     // A CV that was just duplicated and has letters: the person may copy them onto the new one.
@@ -983,7 +904,7 @@ function Dashboard() {
         setStartError(null);
         setPendingStart("blank");
         try {
-            const id = await createNewResume();
+            const id = await createNewResume({ language: locale });
             // A `?start=blank` link replaces its history entry, so Back cannot create a second resume.
             if (options?.replace) router.replace(`/editor/${id}`);
             else router.push(`/editor/${id}`);
@@ -992,21 +913,22 @@ function Dashboard() {
             setStartError(t("onboarding.panel.error"));
             setPendingStart(null);
         }
-    }, [createNewResume, router, setShowCreateModal, t]);
+    }, [createNewResume, locale, router, setShowCreateModal, t]);
 
     const handleOpenGithubImport = useCallback(() => {
         setShowCreateModal(false);
         setHub({ source: "github" });
     }, [setHub, setShowCreateModal]);
 
-    // LinkedIn, Europass and paste-from-AI all start in the same window: drop the file or paste the text.
-    const handleOpenImportHub = useCallback(() => {
+    // LinkedIn, Europass and paste-from-AI start in the same window, each on its own tab.
+    const openImportHub = useCallback((source?: SourceId) => {
         setShowCreateModal(false);
-        setHub({});
+        setHub(source ? { source } : {});
     }, [setHub, setShowCreateModal]);
-    const handleOpenLinkedinImport = handleOpenImportHub;
-    const handleOpenEuropassImport = handleOpenImportHub;
-    const handleOpenPasteFromAi = handleOpenImportHub;
+    const handleOpenImportHub = useCallback(() => openImportHub(), [openImportHub]);
+    const handleOpenLinkedinImport = useCallback(() => openImportHub("linkedin"), [openImportHub]);
+    const handleOpenEuropassImport = useCallback(() => openImportHub("europass"), [openImportHub]);
+    const handleOpenPasteFromAi = useCallback(() => openImportHub("paste-ai"), [openImportHub]);
 
     const handleOpenExamplePicker = useCallback(() => {
         setShowCreateModal(false);
@@ -1058,26 +980,14 @@ function Dashboard() {
             return;
         }
 
-        // A linked CV is named after its file, so a new name is refused (rename the file and relink).
-        let nextMeta = meta;
-        if (meta.title !== (currentResume.meta.title || "")) {
-            // Loaded on demand: the sync code is only needed once a rename touches a linked CV.
-            const { renameLinkedCv } = await import("@/lib/linked-file/rename");
-            const renamed = await renameLinkedCv(resumeId, meta.title);
-            if (!renamed.ok) {
-                return t("linkedFile.error.renameLinked");
-            }
-            nextMeta = { ...meta, title: renamed.title };
-        }
-
         const now = Date.now();
         await db.resumes.put({
             ...currentResume,
-            meta: nextMeta,
+            meta,
             createdAt: currentResume.createdAt || now,
             updatedAt: now,
         });
-    }, [resumes, t]);
+    }, [resumes]);
 
     const handleDuplicate = useCallback(async (sourceResume: Resume) => {
         const duplicateId = await duplicateResume(sourceResume, t("dashboard.copy"));
@@ -1128,7 +1038,10 @@ function Dashboard() {
         setDeleteBusy(true);
         setDeleteFailed(false);
         try {
+            const snapshot = await snapshotCvForUndo(deleteTarget.id);
+            await retireBeforeDelete(deleteTarget.id, "keep-file").catch(() => undefined);
             await deleteCvWithLetters(deleteTarget.id, decisions);
+            if (snapshot) cvUndo.offer({ snapshot, fileKept: true });
             cancelDelete();
         } catch {
             // Nothing was changed: the CV and every letter are as they were.
@@ -1136,22 +1049,32 @@ function Dashboard() {
         } finally {
             setDeleteBusy(false);
         }
-    }, [deleteTarget, cancelDelete]);
+    }, [deleteTarget, cancelDelete, cvUndo]);
 
     const handleDownloadResume = useCallback((resume: Resume) => {
         exportToJson(resume, getResumeExportFilename(resume));
     }, []);
 
-    const handleDelete = useCallback(async () => {
+    const handleDelete = useCallback(async (fileChoice: RetireChoice = "keep-file") => {
         if (!deleteTarget) return;
         try {
+            const snapshot = await snapshotCvForUndo(deleteTarget.id);
+            await retireBeforeDelete(deleteTarget.id, fileChoice).catch(() => undefined);
             await deleteCvWithLetters(deleteTarget.id, []);
+            if (snapshot) cvUndo.offer({ snapshot, fileKept: fileChoice === "keep-file" });
             cancelDelete();
         } catch {
             // A draft appeared since the question was asked: show the letters dialog instead.
             setDeleteLetters(await listLettersForCv(deleteTarget.id));
         }
-    }, [deleteTarget, cancelDelete]);
+    }, [deleteTarget, cancelDelete, cvUndo]);
+
+    const handleUndoCvDelete = useCallback(async () => {
+        const pending = cvUndo.item;
+        if (!pending) return;
+        cvUndo.clear();
+        await restoreDeletedCv(pending.snapshot, pending.fileKept).catch(() => undefined);
+    }, [cvUndo]);
 
     const resumeCount = resumes?.length ?? 0;
     const hasResumes = resumeCount > 0;
@@ -1190,6 +1113,15 @@ function Dashboard() {
     }, [runStartLink]);
 
     const letterCount = useLiveQuery(() => db.coverLetters.count(), []);
+    const letterCountsByCv = useLiveQuery(async () => {
+        const counts: Record<string, number> = {};
+        await db.coverLetters.each((letter) => {
+            if (letter.cvId) counts[letter.cvId] = (counts[letter.cvId] ?? 0) + 1;
+        });
+        return counts;
+    }, []);
+    /** The CV whose letters the Letters tab is limited to, set from a CV card. */
+    const [letterCvFilter, setLetterCvFilter] = useState<string | null>(null);
     const userTemplates = useLiveQuery(async () => {
         const all = await db.templates.toArray();
         return all.sort((a, b) => b.updatedAt - a.updatedAt);
@@ -1303,11 +1235,27 @@ function Dashboard() {
 
     const setActiveDashboardTab = (tab: DashboardTab) => {
         setStartLinkActive(false);
+        if (tab !== "letters") setLetterCvFilter(null);
         updateClientPreferenceSection("dashboard", { activeTab: tab });
         const next = urlAfterDashboardTabSelect(window.location, tab);
         if (!next) return;
         setDismissedTabPin(new URLSearchParams(window.location.search).get("tab"));
         window.history.replaceState(window.history.state, "", next);
+    };
+
+    const showLettersFor = (cvId: string) => {
+        setLetterCvFilter(cvId);
+        setActiveDashboardTab("letters");
+    };
+
+    const handleWriteLetter = async (cvId: string) => {
+        try {
+            const letter = await createLetterRecord(cvId);
+            router.push(`/letters/${letter.id}`);
+        } catch (cause) {
+            console.error("[EngineCV] Could not create a cover letter.", cause);
+            setImportError(t("dashboard.letters.createError"));
+        }
     };
 
     const dashboardTabs: DashboardNavItem[] = [
@@ -1323,9 +1271,18 @@ function Dashboard() {
 
     const handleDeleteTemplate = useCallback(async () => {
         if (!templateDeleteTarget) return;
+        const row = await snapshotTemplateForUndo(templateDeleteTarget.id);
         await db.templates.delete(templateDeleteTarget.id);
+        if (row) templateUndo.offer(row);
         setTemplateDeleteTarget(null);
-    }, [setTemplateDeleteTarget, templateDeleteTarget]);
+    }, [setTemplateDeleteTarget, templateDeleteTarget, templateUndo]);
+
+    const handleUndoTemplateDelete = useCallback(async () => {
+        const row = templateUndo.item;
+        if (!row) return;
+        templateUndo.clear();
+        await restoreDeletedTemplate(row).catch(() => undefined);
+    }, [templateUndo]);
 
     const handleDuplicateTemplate = useCallback(async (template: TemplateDocument) => {
         const id = createId();
@@ -1379,14 +1336,11 @@ function Dashboard() {
                 activeTab={activeDashboardTab}
                 onSelectTab={setActiveDashboardTab}
                 onCreateResume={() => setShowCreateModal(true)}
+                onOpenWorkspace={() => { setActivityDocId(null); setShowWorkspace(true); }}
             />
+            {showWorkspace && <WorkspacePanel initialActivityDocId={activityDocId} onClose={() => { setShowWorkspace(false); setActivityDocId(null); }} />}
 
             <SidebarInset className="relative bg-surface-2">
-                {/* Resumes and Templates tabs carry an inline sidebar trigger. */}
-                {activeDashboardTab === "letters" && (
-                    <SidebarTrigger className="fixed left-4 top-4 z-50 md:hidden" />
-                )}
-
                 <div className="w-full pb-8">
 
                     <main className="min-w-0">
@@ -1577,10 +1531,12 @@ function Dashboard() {
                                                     key={resume.id}
                                                     resume={resume}
                                                     onSaveMeta={(meta) => handleSaveMeta(resume.id!, meta)}
-                                                    linkedFileName={linkedFileNames?.[resume.id!]}
                                                     onOpen={() => router.push(`/editor/${resume.id}`)}
                                                     onDuplicate={() => handleDuplicate(resume)}
                                                     onDownload={() => handleDownloadResume(resume)}
+                                                    letterCount={letterCountsByCv?.[resume.id!] ?? 0}
+                                                    onShowLetters={() => showLettersFor(resume.id!)}
+                                                    onWriteLetter={() => void handleWriteLetter(resume.id!)}
                                                     onDelete={() =>
                                                         void requestDeleteResume({
                                                             id: resume.id!,
@@ -1613,11 +1569,16 @@ function Dashboard() {
 
                         {/* Cover Letters tab */}
                         {activeDashboardTab === "letters" && (
-                            <>
-                                <div className={`${DASHBOARD_CONTENT_CLASS} pt-8`}>
-                                    <LettersTab onCreateCv={() => setShowCreateModal(true)} gridClass={GRID_DENSITY_CLASS[gridDensity]} density={gridDensity} onDensityChange={setGridDensity} />
-                                </div>
-                            </>
+                            <LettersTab
+                                onCreateCv={() => setShowCreateModal(true)}
+                                gridClass={GRID_DENSITY_CLASS[gridDensity]}
+                                density={gridDensity}
+                                onDensityChange={setGridDensity}
+                                cvFilter={letterCvFilter}
+                                onClearCvFilter={() => setLetterCvFilter(null)}
+                                navLead={<SidebarTrigger className="h-10 w-10 shrink-0 rounded-xl md:hidden" />}
+                                navTrail={<><ThemeToggle /><LanguageSwitcher compact /></>}
+                            />
                         )}
 
                         {/* Templates tab */}
@@ -1970,14 +1931,23 @@ function Dashboard() {
 
             {/* Delete confirmation */}
             <ConfirmModal
-                open={!!deleteTarget && deleteLetters.length === 0}
+                open={!!deleteTarget && deleteLetters.length === 0 && !deleteHasFile}
                 title={t("dashboard.deleteTitle")}
                 description={t("dashboard.deleteConfirm", { name: deleteTarget?.name ?? "" })}
                 confirmLabel={t("dashboard.deletePermanently")}
                 destructive
-                onConfirm={handleDelete}
+                onConfirm={() => void handleDelete()}
                 onCancel={cancelDelete}
             />
+            {!!deleteTarget && deleteLetters.length === 0 && deleteHasFile && (
+                <DeleteDocumentDialog
+                    name={deleteTarget.name}
+                    description={t("dashboard.deleteConfirm", { name: deleteTarget.name })}
+                    confirmLabel={t("dashboard.deletePermanently")}
+                    onConfirm={(choice) => void handleDelete(choice)}
+                    onCancel={cancelDelete}
+                />
+            )}
 
             {/* The CV has letters: nothing is deleted with it; each draft is moved or frozen first. */}
             {deleteTarget && deleteLetters.length > 0 && (
@@ -2006,6 +1976,9 @@ function Dashboard() {
                 onConfirm={handleDeleteTemplate}
                 onCancel={() => setTemplateDeleteTarget(null)}
             />
+
+            {cvUndo.item && <UndoToast message={t("dashboard.resumeDeleted")} undoLabel={t("dashboard.undo")} onUndo={() => void handleUndoCvDelete()} testId="cv-undo" />}
+            {templateUndo.item && <UndoToast message={t("dashboard.templateDeleted")} undoLabel={t("dashboard.undo")} onUndo={() => void handleUndoTemplateDelete()} testId="template-undo" />}
 
             </SidebarInset>
         </SidebarProvider>
