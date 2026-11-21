@@ -417,6 +417,7 @@ test.describe("10. privacy and data", () => {
 
         await openPanel(page);
         await page.getByTestId("workspace-hide-contact").click();
+        await page.getByTestId("workspace-hide-confirm-yes").click();
         await expect(page.getByTestId("workspace-hide-contact")).toBeChecked();
         await expect.poll(async () => (await readFile(page, file)) ?? "", { timeout: 15_000 }).not.toContain("amina@example.com");
         expect(await appHas(page, "amina@example.com")).toBe(true); // the app keeps it
