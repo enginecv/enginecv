@@ -18,6 +18,7 @@ import { checkShrink, pendingReviewFor, removedEntryTitles } from "./shrink-guar
 import { importUnclaimed } from "./discover";
 import { processRequests } from "./request-processor";
 import { MACHINE_DIR } from "./agent-files";
+import { EXTENSIONS, safeStem } from "./names";
 import { ensureMachineFiles, refreshIndex } from "./machine-files";
 import { REQUESTS_DIR } from "./requests";
 import type { DocKind, DocReason, DocState, PendingReview, WorkspaceDocRecord } from "./types";
@@ -142,6 +143,33 @@ export function createWorkspaceRuntime(options: RuntimeOptions): WorkspaceRuntim
         engines.delete(docId);
     }
 
+    /**
+     * A file renamed outside the app renames the document too: the title becomes the new file stem, so the
+     * app and the folder agree. Returns the title now in use (to remember as the one the file name came from),
+     * or null when nothing changed. A sent letter keeps its title.
+     */
+    async function adoptTitleFromFileName(docId: string, kind: "cv" | "letter", fileName: string): Promise<string | null> {
+        const suffix = EXTENSIONS[kind];
+        const stem = (fileName.toLowerCase().endsWith(suffix) ? fileName.slice(0, -suffix.length) : fileName).trim();
+        if (!stem) return null;
+        try {
+            if (kind === "cv") {
+                const row = await db.resumes.get(docId);
+                if (!row) return null;
+                if (safeStem(row.meta?.title || row.basics?.name || "") === stem) return null;
+                await db.resumes.put({ ...row, meta: { ...row.meta, title: stem }, updatedAt: Math.max(Date.now(), (row.updatedAt ?? 0) + 1) });
+                return stem;
+            }
+            const row = await db.coverLetters.get(docId);
+            if (!row || row.status !== "draft") return null;
+            if (safeStem(row.title || "") === stem) return null;
+            await db.coverLetters.put({ ...row, title: stem, updatedAt: Math.max(Date.now(), (row.updatedAt ?? 0) + 1) });
+            return stem;
+        } catch {
+            return null;
+        }
+    }
+
     /** Compares the folder with the documents: follows renames, detaches missing files, flags duplicates, reports strays. */
     async function reconcileFolder() {
         const workspace = await getWorkspace();
@@ -152,7 +180,8 @@ export function createWorkspaceRuntime(options: RuntimeOptions): WorkspaceRuntim
 
         for (const rename of result.renames) {
             detach(rename.docId);
-            await patchDocRow(rename.docId, { fileName: rename.to, state: "in-sync", reason: null });
+            const followedTitle = await adoptTitleFromFileName(rename.docId, rename.kind, rename.to);
+            await patchDocRow(rename.docId, { fileName: rename.to, state: "in-sync", reason: null, ...(followedTitle !== null ? { fileTitle: followedTitle } : {}) });
             await appendLog(options.adapter, { at: Date.now(), doc: rename.docId, file: `${rename.kind === "cv" ? "cvs" : "letters"}/${rename.to}`, outcome: "info", detail: "renamed" }).catch(() => undefined);
             const fresh = (await listDocRows()).find((candidate) => candidate.docId === rename.docId);
             if (fresh) await attach(fresh);
