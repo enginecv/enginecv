@@ -115,6 +115,7 @@ describe("WorkspacePanel", () => {
 
         const box = screen.getByTestId("workspace-hide-contact") as HTMLInputElement;
         fireEvent.click(box);
+        fireEvent.click(await screen.findByTestId("workspace-hide-confirm-yes"));
         await waitFor(() => expect(screen.getByTestId("workspace-hide-contact")).toBeChecked());
         await waitFor(async () => expect(await folder.readExternal("cvs/Master CV.cv.json")).not.toContain("amina@example.com"));
         expect((await db.workspace.toArray())[0].hideContact).toBe(true);

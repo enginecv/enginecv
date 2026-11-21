@@ -35,6 +35,7 @@ export function WorkspacePanel({ onClose, initialActivityDocId }: { onClose: () 
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [confirmDisconnect, setConfirmDisconnect] = useState(false);
+    const [confirmHide, setConfirmHide] = useState(false);
     // Experimental: only offered where the browser has the assistant API at all.
     const toolsSupported = typeof window !== "undefined" && isBrowserToolsSupported();
     const [toolsOn, setToolsOn] = useState(() => isBrowserToolsEnabled());
@@ -161,13 +162,22 @@ export function WorkspacePanel({ onClose, initialActivityDocId }: { onClose: () 
                                 </span>
                             </label>
                             <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-edge bg-surface-1 p-3">
-                                <input type="checkbox" checked={state.hideContact} disabled={!!state.rewriting} onChange={(event) => void applyHideContact(event.target.checked)} data-testid="workspace-hide-contact" className="mt-1" />
+                                <input type="checkbox" checked={state.hideContact} disabled={!!state.rewriting} onChange={(event) => { if (event.target.checked) setConfirmHide(true); else void applyHideContact(false); }} data-testid="workspace-hide-contact" className="mt-1" />
                                 <span className="min-w-0">
                                     <span className="block text-sm font-medium text-strong">{t("workspace.warning.hide")}</span>
                                     <span className="block text-xs text-mid">{state.hideContact ? t("workspace.panel.hideOnNote") : t("workspace.warning.hideHint")}</span>
                                     {state.rewriting && <span role="status" className="block text-xs text-accent" data-testid="workspace-rewriting">{t("workspace.panel.rewriting", { done: state.rewriting.done, total: state.rewriting.total })}</span>}
                                 </span>
                             </label>
+                            {confirmHide && !state.hideContact && (
+                                <div role="alertdialog" className="space-y-2 rounded-xl border border-accent/30 bg-surface-1 p-3 text-sm" data-testid="workspace-hide-confirm">
+                                    <p className="text-mid">{t("workspace.panel.hideConfirm")}</p>
+                                    <div className="flex gap-2">
+                                        <button type="button" onClick={() => { setConfirmHide(false); void applyHideContact(true); }} data-testid="workspace-hide-confirm-yes" className={primary}>{t("workspace.panel.hideConfirmYes")}</button>
+                                        <button type="button" onClick={() => setConfirmHide(false)} data-testid="workspace-hide-confirm-no" className={button}>{t("workspace.panel.hideConfirmNo")}</button>
+                                    </div>
+                                </div>
+                            )}
                             {attention.length > 0 && (
                                 <ul className="space-y-1" data-testid="workspace-doc-list">
                                     {attention.map((row) => (
