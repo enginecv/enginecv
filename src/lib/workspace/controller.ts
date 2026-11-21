@@ -121,6 +121,8 @@ function noteStateChange(docId: string, state: DocState, code: string | null) {
     const before = lastReported.get(docId);
     lastReported.set(docId, state);
     if (state !== "blocked" || before === "blocked" || !code || REFUSAL_CODES_TO_SKIP.has(code)) return;
+    // The toast points here: the reason code and position only, never document text.
+    console.warn("[EngineCV workspace] change refused:", { docId, code });
     notify(docId, async (title, docKind) => ({ kind: "refused", docId, docKind, title, code }));
 }
 
