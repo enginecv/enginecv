@@ -59,6 +59,8 @@ next-env.d.ts
 /specs/
 CLAUDE.md
 AGENTS.md
+# The generated public copy of the folder instructions is served and tested, so it is committed.
+!/public/agent/enginecv/folder/AGENTS.md
 /.codex/
 /.claude/
 /.agents/
