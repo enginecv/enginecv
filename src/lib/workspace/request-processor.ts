@@ -107,7 +107,11 @@ async function handle(deps: ProcessorDeps, request: ExportRequest, written: Set<
         if (error instanceof ExportUnavailableError) await answer(deps, ctx, { ok: false, code: error.reason, message: error.message });
         else if ((error as { code?: string })?.code === "permission") await answer(deps, ctx, { ok: false, code: "permission", message: "EngineCV may not write to the folder right now." });
         else if ((error as { code?: string })?.code === "busy") await answer(deps, ctx, { ok: false, code: "file-busy", message: "The export file is in use by another program. Ask again in a moment." });
-        else await answer(deps, ctx, { ok: false, code: "export-failed", message: "The export could not be made." });
+        else {
+            // The cause goes to the console only (never into the result file), so a failed export can be diagnosed.
+            console.error("[EngineCV workspace] export failed:", error instanceof Error ? `${error.name}: ${error.message}` : error);
+            await answer(deps, ctx, { ok: false, code: "export-failed", message: "The export could not be made. Open the browser console for the reason." });
+        }
     }
 }
 

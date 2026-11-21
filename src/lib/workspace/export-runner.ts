@@ -73,8 +73,8 @@ async function withOffscreenRender<T>(element: ReturnType<typeof createElement>,
 }
 
 /** Bytes of a Blob; older environments (and test DOMs) lack `Blob.arrayBuffer`. */
-async function blobBytes(blob: Blob): Promise<Uint8Array> {
-    if (typeof blob.arrayBuffer === "function") return await blobBytes(blob);
+export async function blobBytes(blob: Blob): Promise<Uint8Array> {
+    if (typeof blob.arrayBuffer === "function") return new Uint8Array(await blob.arrayBuffer());
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => resolve(new Uint8Array(reader.result as ArrayBuffer));
