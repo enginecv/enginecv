@@ -34,8 +34,9 @@ export function LetterCard({ letter, onOpen, actions, needsCv = false }: { lette
     const canRepoint = letter.status === "draft";
     const membership = useWorkspaceMembership(letter.id);
     return (
-        <article data-testid="letter-card" data-letter-id={letter.id} className="group flex h-full flex-col rounded-2xl border border-edge bg-surface-4/80 p-4 transition-all duration-300 hover:border-accent/30 hover:bg-surface-5">
-            <button type="button" onClick={onOpen} aria-label={t("dashboard.letters.openNamed", { name: title })} className="flex flex-1 flex-col gap-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent">
+        <article data-testid="letter-card" data-letter-id={letter.id} className="group relative flex h-full flex-col rounded-2xl border border-edge bg-surface-4/80 p-4 transition-all duration-300 hover:border-accent/30 hover:bg-surface-5">
+            {/* The title button stretches over the whole card (after:inset-0); the chip and the actions sit above it, so no button is nested in another. */}
+            <div className="flex flex-1 flex-col gap-3">
                 <div className="flex items-start justify-between gap-3">
                     <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-surface-1 text-faint" aria-hidden="true"><Mail className="h-4 w-4" /></span>
                     <span className="flex flex-wrap justify-end gap-1.5">
@@ -46,13 +47,15 @@ export function LetterCard({ letter, onOpen, actions, needsCv = false }: { lette
                     </span>
                 </div>
                 <div className="min-w-0">
-                    <h3 className="truncate text-base font-semibold text-strong">{title}</h3>
-                    <div className="mt-1 empty:hidden"><DocStateBadge docId={letter.id} interactive /></div>
+                    <h3 className="truncate text-base font-semibold text-strong">
+                        <button type="button" onClick={onOpen} aria-label={t("dashboard.letters.openNamed", { name: title })} className="max-w-full truncate text-left after:absolute after:inset-0 after:content-[''] focus-visible:outline-none focus-visible:after:ring-2 focus-visible:after:ring-accent focus-visible:after:rounded-2xl">{title}</button>
+                    </h3>
+                    <div className="relative z-10 mt-1 empty:hidden"><DocStateBadge docId={letter.id} interactive /></div>
                     {detail && <p className="mt-1 truncate text-sm text-mid">{detail}</p>}
                 </div>
                 <p className="mt-auto text-xs text-faint">{t("dashboard.letters.updated", { date: new Date(letter.updatedAt).toLocaleDateString() })}</p>
-            </button>
-            <div className="mt-3 flex items-center gap-1.5 border-t border-edge pt-3">
+            </div>
+            <div className="relative z-10 mt-3 flex items-center gap-1.5 border-t border-edge pt-3">
                 <ActionButton icon={Copy} label={t("dashboard.letters.duplicate")} onClick={actions.onDuplicate} testId="letter-action-duplicate" />
                 <ActionButton icon={CopyPlus} label={t("dashboard.letters.duplicateInto")} onClick={actions.onDuplicateInto} testId="letter-action-duplicate-into" />
                 <ActionButton icon={ArrowRightLeft} label={t("dashboard.letters.repoint")} onClick={actions.onRepoint} testId="letter-action-repoint" disabled={!canRepoint} />
