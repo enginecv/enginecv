@@ -1680,6 +1680,15 @@ export const de: Translations = {
   "export.supportPrompt.link": "Spendiere mir einen Kaffee auf Ko-fi",
   "export.supportPrompt.close": "Schließen",
   "export.supportPrompt.dontShowAgain": "Nicht mehr anzeigen",
+  "export.ratingPrompt.message": "Wie war dieser Export? Dieser eine Tipp wird anonym gezählt: nur das Format und deine Antwort, sonst nichts.",
+  "export.ratingPrompt.up": "Gut",
+  "export.ratingPrompt.down": "Nicht gut",
+  "export.ratingPrompt.close": "Schließen",
+  "export.ratingPrompt.dontAskAgain": "Nicht mehr fragen",
+  "export.ratingPrompt.commentLabel": "Möchtest du noch etwas ergänzen? (optional)",
+  "export.ratingPrompt.commentHint": "Bitte keine persönlichen Daten oder Lebenslauftexte angeben.",
+  "export.ratingPrompt.commentSend": "Senden",
+  "export.ratingPrompt.commentSkip": "Nein danke",
 
   // AI Chat
   "aiChat.greeting": "Hallo! Ich bin dein AI-Lebenslauf-Assistent. Erzähl mir von deinem Hintergrund, der Stelle, die du suchst, oder bitte mich, bestimmte Abschnitte für dich zu erstellen.",

@@ -77,6 +77,7 @@ describe("export support prompt preferences", () => {
         expect(useClientPreferencesStore.getState().preferences.support).toEqual({
             successfulExportCount: 5,
             exportPromptDismissed: true,
+            exportRatingDone: false,
         });
     });
 
@@ -88,6 +89,7 @@ describe("export support prompt preferences", () => {
         expect(clientPreferencesSchema.parse({}).support).toEqual({
             successfulExportCount: 0,
             exportPromptDismissed: false,
+            exportRatingDone: false,
         });
     });
 });

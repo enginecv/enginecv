@@ -1680,6 +1680,15 @@ export const en: Translations = {
   "export.supportPrompt.link": "Buy me a coffee on Ko-fi",
   "export.supportPrompt.close": "Close",
   "export.supportPrompt.dontShowAgain": "Don't show again",
+  "export.ratingPrompt.message": "How was that export? This one tap is counted anonymously: only the format and your answer, nothing else.",
+  "export.ratingPrompt.up": "Good",
+  "export.ratingPrompt.down": "Not good",
+  "export.ratingPrompt.close": "Close",
+  "export.ratingPrompt.dontAskAgain": "Don't ask again",
+  "export.ratingPrompt.commentLabel": "Anything you'd like to add? (optional)",
+  "export.ratingPrompt.commentHint": "Please don't include personal details or resume text.",
+  "export.ratingPrompt.commentSend": "Send",
+  "export.ratingPrompt.commentSkip": "No thanks",
 
   // AI Chat
   "aiChat.greeting": "Hi! I am your AI resume assistant. Tell me about your background, the job you want, or ask me to generate specific sections for you.",

@@ -197,3 +197,30 @@ test("asks for Ko-fi support after the first export without stealing focus", asy
         '"exportPromptDismissed":true',
     );
 });
+
+test("asks for an optional thumbs rating and comment on the second export", async ({ page }) => {
+    const events: Record<string, unknown>[] = [];
+    await page.route("**/api/e", async (route) => {
+        events.push(JSON.parse(route.request().postData() ?? "{}"));
+        await route.fulfill({ status: 204 });
+    });
+    await createResume(page);
+
+    await exportAs(page, "docx");
+    await expect(page.getByTestId("export-rating-card")).toBeHidden();
+    await page.getByTestId("export-support-close").click();
+
+    await exportAs(page, "docx");
+    const card = page.getByTestId("export-rating-card");
+    await expect(card).toBeVisible();
+    await card.getByTestId("export-rating-down").click();
+    await card.getByTestId("export-rating-comment").fill("fonts looked off, mail me a@b.co");
+    await card.getByTestId("export-rating-comment-send").click();
+    await expect(card).toBeHidden();
+
+    expect(events.find((event) => event.event === "export_rating")).toMatchObject({ rating: "down", format: "docx" });
+    expect(events.find((event) => event.event === "export_comment")).toMatchObject({ rating: "down", format: "docx" });
+
+    // Answered once: it does not come back on the next milestone.
+    await expect.poll(() => page.evaluate(() => localStorage.getItem("enginecv-preferences") ?? "")).toContain('"exportRatingDone":true');
+});

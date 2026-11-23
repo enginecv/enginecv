@@ -1680,6 +1680,15 @@ export const fr: Translations = {
   "export.supportPrompt.link": "Offrez-moi un café sur Ko-fi",
   "export.supportPrompt.close": "Fermer",
   "export.supportPrompt.dontShowAgain": "Ne plus afficher",
+  "export.ratingPrompt.message": "Cet export s'est-il bien passé ? Ce simple appui est compté anonymement : seulement le format et votre réponse, rien d'autre.",
+  "export.ratingPrompt.up": "Bien",
+  "export.ratingPrompt.down": "Pas bien",
+  "export.ratingPrompt.close": "Fermer",
+  "export.ratingPrompt.dontAskAgain": "Ne plus demander",
+  "export.ratingPrompt.commentLabel": "Souhaitez-vous ajouter quelque chose ? (facultatif)",
+  "export.ratingPrompt.commentHint": "Merci de ne pas inclure de données personnelles ni de texte de votre CV.",
+  "export.ratingPrompt.commentSend": "Envoyer",
+  "export.ratingPrompt.commentSkip": "Non merci",
 
   // AI Chat
   "aiChat.greeting": "Bonjour ! Je suis votre assistant AI pour les CV. Parlez-moi de votre parcours, du poste que vous visez, ou demandez-moi de générer des sections spécifiques pour vous.",

@@ -1680,6 +1680,15 @@ export const bs: Translations = {
   "export.supportPrompt.link": "Častite me kafom na Ko-fi",
   "export.supportPrompt.close": "Zatvori",
   "export.supportPrompt.dontShowAgain": "Ne prikazuj ponovo",
+  "export.ratingPrompt.message": "Kako je prošao ovaj izvoz? Ovaj jedan dodir se broji anonimno: samo format i vaš odgovor, ništa drugo.",
+  "export.ratingPrompt.up": "Dobro",
+  "export.ratingPrompt.down": "Nije dobro",
+  "export.ratingPrompt.close": "Zatvori",
+  "export.ratingPrompt.dontAskAgain": "Ne pitaj ponovo",
+  "export.ratingPrompt.commentLabel": "Želite li nešto dodati? (nije obavezno)",
+  "export.ratingPrompt.commentHint": "Molimo ne unosite lične podatke ni tekst iz CV-a.",
+  "export.ratingPrompt.commentSend": "Pošalji",
+  "export.ratingPrompt.commentSkip": "Ne, hvala",
 
   // AI Chat
   "aiChat.greeting": "Zdravo! Ja sam vaš AI asistent za životopise. Recite mi o svom iskustvu, poslu koji želite ili me zamolite da generiram specifične sekcije za vas.",

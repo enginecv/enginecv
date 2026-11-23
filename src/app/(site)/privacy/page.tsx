@@ -60,6 +60,16 @@ export default function PrivacyPage() {
                     finished CVs, not to follow anyone.
                 </p>
                 <p>
+                    Occasionally, after an export, EngineCV asks &quot;How was that export?&quot; with a thumbs up and a thumbs
+                    down. It is optional and shown at most a couple of times; you can close it or choose &quot;Don&apos;t ask
+                    again&quot;. If you answer, the same counter records the answer, the file format, your country and the
+                    source described above. After a thumb you may also write a short comment (up to 280 characters). A comment
+                    is the one free-text field EngineCV collects, so please do not put personal details or resume text in it:
+                    email addresses, links and long numbers are removed automatically, but nothing else is checked. It is
+                    stored with the same answer, format, source and country, and with no identifier. None of this is asked, or
+                    sent, if your browser sends Do Not Track or Global Privacy Control.
+                </p>
+                <p>
                     The same counter notes a click on a marked &quot;Partner link&quot; on the Resources page: which link it
                     was and the same source, nothing about you. Partner links are affiliate links: if you sign up or buy
                     after following one, the partner may pay EngineCV a commission at no extra cost to you, and the partner

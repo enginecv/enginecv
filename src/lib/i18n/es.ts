@@ -1680,6 +1680,15 @@ export const es: Translations = {
   "export.supportPrompt.link": "Invítame a un café en Ko-fi",
   "export.supportPrompt.close": "Cerrar",
   "export.supportPrompt.dontShowAgain": "No volver a mostrar",
+  "export.ratingPrompt.message": "¿Qué tal fue esta exportación? Este toque se cuenta de forma anónima: solo el formato y tu respuesta, nada más.",
+  "export.ratingPrompt.up": "Bien",
+  "export.ratingPrompt.down": "Mal",
+  "export.ratingPrompt.close": "Cerrar",
+  "export.ratingPrompt.dontAskAgain": "No volver a preguntar",
+  "export.ratingPrompt.commentLabel": "¿Quieres añadir algo? (opcional)",
+  "export.ratingPrompt.commentHint": "Por favor, no incluyas datos personales ni texto de tu currículum.",
+  "export.ratingPrompt.commentSend": "Enviar",
+  "export.ratingPrompt.commentSkip": "No, gracias",
 
   // AI Chat
   "aiChat.greeting": "¡Hola! Soy tu asistente de AI para currículums. Cuéntame sobre tu experiencia, el puesto que buscas, o pídeme que genere secciones específicas para ti.",

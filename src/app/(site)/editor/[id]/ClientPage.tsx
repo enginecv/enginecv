@@ -16,6 +16,7 @@ import { JsonEditorHost } from "@/components/editor/JsonEditorLoader";
 import { ResumePreview } from "@/components/editor/ResumePreview";
 import { EXPORT_FORMAT_ICONS, ExportDialog, ExportMenu } from "@/components/editor/ExportMenu";
 import { ExportSupportCard } from "@/components/editor/ExportSupportCard";
+import { ExportRatingCard } from "@/components/editor/ExportRatingCard";
 import { EXPORT_FORMATS } from "@/lib/export-formats";
 import { downloadBlob, hasPreviewPages, waitForPreviewPages } from "@/lib/export";
 import { getExportFormat } from "@/lib/export-formats";
@@ -2124,6 +2125,7 @@ export default function EditorPage({ params }: { params: Promise<{ id: string }>
             />
 
             <ExportSupportCard />
+            <ExportRatingCard />
 
             {isFeedbackOpen && <FeedbackDialog onClose={() => setIsFeedbackOpen(false)} />}
 

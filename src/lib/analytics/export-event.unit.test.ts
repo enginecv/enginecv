@@ -6,8 +6,11 @@ import {
     normalizeLandingPath,
     normalizeSource,
     parseAffiliateClick,
+    normalizeComment,
+    parseExportComment,
     parseExportContext,
     parseExportEvent,
+    parseExportRating,
     reportExportCompleted,
 } from "./export-event";
 
@@ -126,5 +129,51 @@ describe("browser side", () => {
         reportExportCompleted("pdf");
         Object.defineProperty(navigator, "doNotTrack", { value: null, configurable: true });
         expect(beacon).not.toHaveBeenCalled();
+    });
+});
+
+describe("parseExportRating", () => {
+    it("accepts up/down for a known format", () => {
+        expect(parseExportRating({ event: "export_rating", rating: "up", format: "pdf", source: "Reddit.com" })).toEqual({ rating: "up", format: "pdf", source: "reddit.com" });
+        expect(parseExportRating({ event: "export_rating", rating: "down", format: "docx" })?.source).toBe("direct");
+    });
+    it("drops other events, scores, free text and unknown formats", () => {
+        expect(parseExportRating({ rating: "up", format: "pdf" })).toBeNull();
+        expect(parseExportRating({ event: "export_rating", rating: 5, format: "pdf" })).toBeNull();
+        expect(parseExportRating({ event: "export_rating", rating: "great cv!", format: "pdf" })).toBeNull();
+        expect(parseExportRating({ event: "export_rating", rating: "up", format: "exe" })).toBeNull();
+        expect(parseExportRating(null)).toBeNull();
+    });
+});
+
+describe("normalizeComment", () => {
+    it("collapses whitespace, caps length and drops empties", () => {
+        expect(normalizeComment("  great \n  export  ")).toBe("great export");
+        expect(normalizeComment("x".repeat(500))).toHaveLength(280);
+        expect(normalizeComment("   ")).toBeNull();
+        expect(normalizeComment(42)).toBeNull();
+    });
+    it("removes emails, links and long numbers people paste by mistake", () => {
+        expect(normalizeComment("mail me at jane.doe@example.com thanks")).toBe("mail me at [removed] thanks");
+        expect(normalizeComment("see https://example.com/me and www.me.dev")).toBe("see [removed] and [removed]");
+        expect(normalizeComment("call +44 7700 900123 please")).toBe("call [removed] please");
+        expect(normalizeComment("page 2 of 3, 10 jobs")).toBe("page 2 of 3, 10 jobs");
+    });
+});
+
+describe("parseExportComment", () => {
+    it("accepts a comment that carries a valid thumb and format", () => {
+        expect(parseExportComment({ event: "export_comment", rating: "down", format: "pdf", comment: "fonts looked off" })).toEqual({
+            rating: "down",
+            format: "pdf",
+            source: "direct",
+            comment: "fonts looked off",
+        });
+    });
+    it("drops a missing or empty comment, a bad thumb and other events", () => {
+        expect(parseExportComment({ event: "export_comment", rating: "up", format: "pdf" })).toBeNull();
+        expect(parseExportComment({ event: "export_comment", rating: "up", format: "pdf", comment: "  " })).toBeNull();
+        expect(parseExportComment({ event: "export_comment", rating: "meh", format: "pdf", comment: "hi" })).toBeNull();
+        expect(parseExportComment({ event: "export_rating", rating: "up", format: "pdf", comment: "hi" })).toBeNull();
     });
 });

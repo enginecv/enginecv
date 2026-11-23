@@ -73,7 +73,9 @@ export const clientPreferencesSchema = z.object({
     support: z.object({
         successfulExportCount: z.number().int().min(0).catch(0).default(0),
         exportPromptDismissed: z.boolean().default(false),
-    }).default({ successfulExportCount: 0, exportPromptDismissed: false }),
+        // The optional thumbs up/down card: stops after an answer or "don't ask again".
+        exportRatingDone: z.boolean().catch(false).default(false),
+    }).default({ successfulExportCount: 0, exportPromptDismissed: false, exportRatingDone: false }),
     onboarding: z.object({
         // The export dialog explains the print dialog until the first PDF export.
         printTipSeen: z.boolean().catch(false).default(false),

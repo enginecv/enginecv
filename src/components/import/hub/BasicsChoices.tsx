@@ -2,6 +2,7 @@
 
 import { useTranslation } from "@/lib/i18n";
 import { CURRENT, NONE, type BasicsChoice, type BasicsField, type MergePlan, type Selection } from "@/lib/import/staging/types";
+import { ChoiceChips } from "./ChoiceChips";
 import { fieldLabelKey, optionLabel, shorten } from "./labels";
 
 interface BasicsChoicesProps {
@@ -18,38 +19,33 @@ export function BasicsChoices({ plan, selection, onPick }: BasicsChoicesProps) {
     const chosen = (choice: BasicsChoice) => selection.basics[choice.field] ?? choice.defaultId;
 
     return (
-        <section aria-label={t("importHub.review.details")} data-testid="import-hub-basics" className="space-y-3">
+        <section aria-label={t("importHub.review.details")} data-testid="import-hub-basics" className="space-y-4 rounded-xl border border-edge p-4">
             <div>
                 <h3 className="text-sm font-medium text-bright">{t("importHub.review.details")}</h3>
                 <p className="text-xs text-faint">{t("importHub.review.detailsHint")}</p>
             </div>
             {plan.basics.map((choice) => {
-                const name = `basics-${choice.field}`;
+                const field = t(fieldLabelKey(choice.field));
                 return (
-                    <fieldset key={choice.field} className="rounded-lg border border-edge p-3">
-                        <legend className="px-1 text-xs font-medium text-faint">{t(fieldLabelKey(choice.field))}</legend>
-                        <div className="space-y-1">
-                            {choice.options.map((option) => (
-                                <label key={option.id} className="flex min-h-11 cursor-pointer items-start gap-2 rounded-md px-1 py-2 text-sm hover:bg-surface-4">
-                                    <input
-                                        type="radio"
-                                        name={name}
-                                        value={option.id}
-                                        checked={chosen(choice) === option.id}
-                                        onChange={() => onPick(choice.field, option.id)}
-                                        aria-label={t("importHub.pick", { field: t(fieldLabelKey(choice.field)) }) + ": " + optionLabel(option.id, plan.batches, t)}
-                                        className="mt-1"
-                                    />
-                                    <span className="min-w-0 flex-1">
-                                        <span className="block text-xs text-faint">{optionLabel(option.id, plan.batches, t)}</span>
-                                        {option.id === NONE ? null : choice.field === "photo"
-                                            ? <img src={option.value} alt="" className="mt-1 h-14 w-14 rounded-md object-cover" />
-                                            : <span className="block break-words text-bright">{shorten(option.value) || t("importHub.empty")}</span>}
-                                    </span>
-                                </label>
-                            ))}
-                        </div>
-                    </fieldset>
+                    <ChoiceChips
+                        key={choice.field}
+                        legend={field}
+                        name={`basics-${choice.field}`}
+                        chosen={chosen(choice)}
+                        onPick={(optionId) => onPick(choice.field, optionId)}
+                        options={choice.options.map((option) => {
+                            const source = optionLabel(option.id, plan.batches, t);
+                            return {
+                                id: option.id,
+                                source,
+                                ariaLabel: `${t("importHub.pick", { field })}: ${source}`,
+                                value:
+                                    option.id === NONE ? null : choice.field === "photo"
+                                        ? <img src={option.value} alt="" className="mt-1 h-14 w-14 rounded-md object-cover" />
+                                        : shorten(option.value) || t("importHub.empty"),
+                            };
+                        })}
+                    />
                 );
             })}
         </section>

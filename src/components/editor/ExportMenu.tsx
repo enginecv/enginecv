@@ -19,7 +19,7 @@ import { toPlainText } from "@/lib/export-plaintext";
 import type { ClientPreferences } from "@/lib/preferences/schema";
 import { useClientPreferencesStore } from "@/lib/preferences/store";
 import { PasswordField } from "@/components/ui/PasswordField";
-import { recordSuccessfulExport, useExportSupportPromptStore } from "@/lib/preferences/export-support";
+import { recordSuccessfulExport, shouldAskExportRating, useExportRatingPromptStore, useExportSupportPromptStore } from "@/lib/preferences/export-support";
 import { markPrintTipSeen } from "@/lib/preferences/onboarding";
 import { PrintPathTip } from "@/components/editor/PrintPathTip";
 import { useDialogFocus } from "@/hooks/useDialogFocus";
@@ -245,6 +245,9 @@ export function ExportDialog({ open, onClose, resume, paperSize, onNeedPreview }
             if (format === "pdf") markPrintTipSeen();
             if ((format === "pdf" || format === "docx") && recordSuccessfulExport()) {
                 useExportSupportPromptStore.getState().show();
+            }
+            if ((format === "pdf" || format === "docx") && shouldAskExportRating()) {
+                useExportRatingPromptStore.getState().show(format);
             }
             // Keep the dialog open when the export succeeded with a caveat worth reading.
             if (fonts?.length) setFallbackFonts(fonts);

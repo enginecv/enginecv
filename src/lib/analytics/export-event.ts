@@ -110,8 +110,65 @@ export function parseAffiliateClick(body: unknown): AffiliateClick | null {
     return { id, source: normalizeSource(source) ?? (source === undefined || source === UNKNOWN_SOURCE ? UNKNOWN_SOURCE : OTHER_SOURCE) };
 }
 
+/** A thumbs up or down on a finished export: which format and which way, never who or why. */
+export const EXPORT_RATINGS = ["up", "down"] as const;
+export type ExportRatingValue = (typeof EXPORT_RATINGS)[number];
+
+export interface ExportRating {
+    rating: ExportRatingValue;
+    format: ExportEvent["format"];
+    source: string;
+}
+
+export function parseExportRating(body: unknown): ExportRating | null {
+    if (typeof body !== "object" || body === null) return null;
+    const { event, rating, format, source } = body as Record<string, unknown>;
+    if (event !== "export_rating") return null;
+    if (typeof rating !== "string" || !(EXPORT_RATINGS as readonly string[]).includes(rating)) return null;
+    if (typeof format !== "string" || !(EXPORT_FORMAT_IDS as readonly string[]).includes(format)) return null;
+    return {
+        rating: rating as ExportRatingValue,
+        format: format as ExportRating["format"],
+        source: normalizeSource(source) ?? (source === undefined || source === UNKNOWN_SOURCE ? UNKNOWN_SOURCE : OTHER_SOURCE),
+    };
+}
+
+/** Longest optional comment kept, in characters. */
+export const MAX_COMMENT_LENGTH = 280;
+
+/**
+ * Tidies an optional free-text comment: whitespace collapsed, capped, and anything
+ * that looks like an email address, a link or a long number (phone, id) removed,
+ * since people sometimes paste those. Null when nothing is left.
+ */
+export function normalizeComment(raw: unknown): string | null {
+    if (typeof raw !== "string") return null;
+    const text = raw
+        .replace(/[^\s@]+@[^\s@]+\.[^\s@]+/g, "[removed]")
+        .replace(/(?:https?:\/\/|www\.)\S+/gi, "[removed]")
+        .replace(/\+?\d[\d\s().-]{6,}\d/g, "[removed]")
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, MAX_COMMENT_LENGTH);
+    return text === "" ? null : text;
+}
+
+/** The optional words that follow a thumbs answer: same fields as the rating, plus the text. */
+export interface ExportComment extends ExportRating {
+    comment: string;
+}
+
+export function parseExportComment(body: unknown): ExportComment | null {
+    if (typeof body !== "object" || body === null) return null;
+    const { event, comment } = body as Record<string, unknown>;
+    if (event !== "export_comment") return null;
+    const rating = parseExportRating({ ...body, event: "export_rating" });
+    const text = normalizeComment(comment);
+    return rating && text ? { ...rating, comment: text } : null;
+}
+
 /** What the visitor's browser asks for: no measurement at all. */
-function optedOut(): boolean {
+export function optedOut(): boolean {
     const nav = navigator as Navigator & { globalPrivacyControl?: boolean };
     return nav.doNotTrack === "1" || nav.globalPrivacyControl === true;
 }
@@ -164,6 +221,17 @@ export function reportExportCompleted(format: ExportEvent["format"]): void {
 /** Fire and forget; counts one click on a partner link, so earnings can be matched to traffic. */
 export function reportAffiliateClick(id: string): void {
     send({ event: "affiliate_click", id });
+}
+
+/** Fire and forget; records one optional thumbs up or down for an export. */
+export function reportExportRating(rating: ExportRatingValue, format: ExportEvent["format"]): void {
+    send({ event: "export_rating", rating, format });
+}
+
+/** Fire and forget; sends the optional words after a thumbs answer. Empty text sends nothing. */
+export function reportExportComment(rating: ExportRatingValue, format: ExportEvent["format"], comment: string): void {
+    const text = normalizeComment(comment);
+    if (text) send({ event: "export_comment", rating, format, comment: text });
 }
 
 function exportContext(): Record<string, string> {
