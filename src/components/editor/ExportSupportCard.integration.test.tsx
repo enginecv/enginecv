@@ -4,7 +4,7 @@ import { useI18nStore } from "@/lib/i18n";
 import { useExportSupportPromptStore } from "@/lib/preferences/export-support";
 import { DEFAULT_CLIENT_PREFERENCES } from "@/lib/preferences/schema";
 import { useClientPreferencesStore } from "@/lib/preferences/store";
-import { getKofiUrl } from "@/lib/support";
+import { ENGINECV_REPO_URL, getKofiUrl } from "@/lib/support";
 import { ExportSupportCard } from "./ExportSupportCard";
 
 describe("ExportSupportCard", () => {
@@ -37,6 +37,17 @@ describe("ExportSupportCard", () => {
             getKofiUrl("export"),
         );
         expect(document.activeElement).toBe(before);
+    });
+
+    it("links to the GitHub repo for a star and for feedback", () => {
+        render(<ExportSupportCard />);
+        act(() => useExportSupportPromptStore.getState().show());
+
+        expect(screen.getByRole("link", { name: "Star on GitHub" })).toHaveAttribute("href", ENGINECV_REPO_URL);
+        expect(screen.getByRole("link", { name: "Share feedback" })).toHaveAttribute(
+            "href",
+            `${ENGINECV_REPO_URL}/issues/new/choose`,
+        );
     });
 
     it("persists 'Don't show again'", () => {

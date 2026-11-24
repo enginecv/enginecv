@@ -1,9 +1,12 @@
 "use client";
 
-import { Coffee, X } from "lucide-react";
+import { Star, X } from "lucide-react";
 import { useTranslation } from "@/lib/i18n";
 import { dismissExportSupportPrompt, useExportSupportPromptStore } from "@/lib/preferences/export-support";
-import { getKofiUrl } from "@/lib/support";
+import { ENGINECV_REPO_URL, getKofiUrl } from "@/lib/support";
+
+const SECONDARY_LINK =
+    "inline-flex h-8 items-center rounded-lg px-3 text-xs text-mid transition-colors hover:bg-surface-4 hover:text-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent";
 
 /**
  * Non-blocking thank-you card shown after a successful export milestone.
@@ -22,7 +25,7 @@ export function ExportSupportCard() {
                     className="fixed bottom-4 right-4 z-40 w-[min(22rem,calc(100vw-2rem))] rounded-xl border border-edge bg-surface-3 p-4 shadow-lg"
                 >
                     <div className="flex items-start gap-3">
-                        <Coffee className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
+                        <Star className="mt-0.5 h-4 w-4 shrink-0 text-accent" aria-hidden="true" />
                         <p className="text-sm leading-6 text-bright">{t("export.supportPrompt.message")}</p>
                         <button
                             type="button"
@@ -36,12 +39,32 @@ export function ExportSupportCard() {
                     </div>
                     <div className="mt-3 flex flex-wrap items-center gap-2 pl-7">
                         <a
+                            href={ENGINECV_REPO_URL}
+                            target="_blank"
+                            rel="noreferrer"
+                            onClick={hide}
+                            data-testid="export-support-star"
+                            className="inline-flex h-8 items-center rounded-lg bg-accent px-3 text-xs font-semibold text-surface-0 transition-colors hover:bg-accent-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface-3"
+                        >
+                            {t("export.supportPrompt.star")}
+                        </a>
+                        <a
+                            href={`${ENGINECV_REPO_URL}/issues/new/choose`}
+                            target="_blank"
+                            rel="noreferrer"
+                            onClick={hide}
+                            data-testid="export-support-feedback"
+                            className={SECONDARY_LINK}
+                        >
+                            {t("export.supportPrompt.feedback")}
+                        </a>
+                        <a
                             href={getKofiUrl("export")}
                             target="_blank"
                             rel="noreferrer"
                             onClick={hide}
                             data-testid="export-support-kofi"
-                            className="inline-flex h-8 items-center rounded-lg bg-accent px-3 text-xs font-semibold text-surface-0 transition-colors hover:bg-accent-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface-3"
+                            className={SECONDARY_LINK}
                         >
                             {t("export.supportPrompt.link")}
                         </a>
