@@ -163,3 +163,15 @@ test("opens shared command tree at the top of the mobile viewport", async ({ pag
         fullPage: true,
     });
 });
+
+test("opens the star, feedback and support card from the palette", async ({ page }) => {
+    await createBlankResume(page);
+
+    const { palette, input } = await openPalette(page, "github star");
+    await expect(palette.getByRole("option", { name: /Star, give feedback or support EngineCV/ })).toBeVisible();
+    await input.press("Enter");
+
+    const card = page.getByTestId("export-support-card");
+    await expect(card).toBeVisible();
+    await expect(card.getByRole("link", { name: "Star on GitHub" })).toBeVisible();
+});

@@ -16,6 +16,7 @@ import { JsonEditorHost } from "@/components/editor/JsonEditorLoader";
 import { ResumePreview } from "@/components/editor/ResumePreview";
 import { EXPORT_FORMAT_ICONS, ExportDialog, ExportMenu } from "@/components/editor/ExportMenu";
 import { ExportSupportCard } from "@/components/editor/ExportSupportCard";
+import { useExportSupportPromptStore } from "@/lib/preferences/export-support";
 import { EXPORT_FORMATS } from "@/lib/export-formats";
 import { downloadBlob, hasPreviewPages, waitForPreviewPages } from "@/lib/export";
 import { getExportFormat } from "@/lib/export-formats";
@@ -72,7 +73,7 @@ import {
     toggleContentEntryHidden,
     toggleContentSectionHidden,
 } from "@/lib/content-operations";
-import { ArrowLeft, Loader2, Bug, Eye, EyeOff, FileText, FileJson, SlidersHorizontal, Menu, X, History, Copy, BookmarkPlus, Save, RefreshCw, Download, Upload, Languages, Keyboard, Search, Sun, Moon, Monitor, Maximize2, Columns3, PanelLeftClose, PanelLeftOpen, Plus, FolderOpen, LayoutTemplate, Clock3, ListTree, FilePlus2, CopyPlus, Paintbrush, Trash2, BringToFront, SendToBack, Pin, Undo2, Redo2, RotateCcw, ZoomIn, ZoomOut, Type, ShieldCheck, Radiation, Mail } from "lucide-react";
+import { ArrowLeft, Loader2, Bug, Eye, EyeOff, FileText, FileJson, SlidersHorizontal, Menu, X, History, Copy, BookmarkPlus, Save, RefreshCw, Download, Upload, Languages, Keyboard, Search, Sun, Moon, Monitor, Maximize2, Columns3, PanelLeftClose, PanelLeftOpen, Plus, FolderOpen, LayoutTemplate, Clock3, ListTree, FilePlus2, CopyPlus, Paintbrush, Trash2, BringToFront, SendToBack, Pin, Undo2, Redo2, RotateCcw, ZoomIn, ZoomOut, Type, ShieldCheck, Radiation, Mail, Star } from "lucide-react";
 import { Group, Panel, Separator, type GroupImperativeHandle } from "react-resizable-panels";
 import Link from "next/link";
 import { localeLabels, useTranslation, type Locale } from "@/lib/i18n";
@@ -1631,6 +1632,14 @@ export default function EditorPage({ params }: { params: Promise<{ id: string }>
             icon: Bug,
             keywords: ["feedback", "bug", "report", "contact"],
             run: () => setIsFeedbackOpen(true),
+        },
+        {
+            id: "support-project",
+            group: t("palette.group.help"),
+            label: t("palette.supportProject"),
+            icon: Star,
+            keywords: ["star", "github", "feedback", "support", "ko-fi", "coffee", "donate", "repo"],
+            run: () => useExportSupportPromptStore.getState().show(),
         },
         ];
     }, [

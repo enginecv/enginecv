@@ -1,4 +1,5 @@
 export const ENGINECV_GITHUB_PROFILE_URL = "https://github.com/SafetImamovic";
+export const ENGINECV_REPO_URL = "https://github.com/enginecv/enginecv";
 export const ENGINECV_PORTFOLIO_URL = "https://safet.click";
 export const ENGINECV_KOFI_URL = "https://ko-fi.com/safetimamovic";
 export const ENGINECV_GITHUB_SPONSORS_URL = "https://github.com/sponsors/SafetImamovic";
