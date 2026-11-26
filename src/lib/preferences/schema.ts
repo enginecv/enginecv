@@ -11,7 +11,7 @@ export const dashboardDensitySchema = z.enum(["large", "normal", "compact"]);
 export const dashboardSortSchema = z.enum(["updated", "created", "name-asc", "name-desc"]);
 export const dashboardPageSizeSchema = z.enum(["12", "24", "48", "all"]);
 // "auto" until the person picks one: the board on wide screens, the list on narrow ones.
-export const jobsViewSchema = z.enum(["auto", "board", "list"]);
+export const jobsViewSchema = z.enum(["auto", "board", "list", "actions"]);
 export const commandPaletteWidthSchema = z.enum(["compact", "standard", "wide"]);
 export const commandPaletteHeightSchema = z.enum(["compact", "standard", "tall"]);
 export const resumeExportFormatSchema = z.enum(EXPORT_FORMAT_IDS);

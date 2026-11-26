@@ -1,7 +1,7 @@
 "use client";
 
 import { useLiveQuery } from "dexie-react-hooks";
-import { ArrowUpDown, Briefcase, Columns3, List, ListFilter, Plus, Trash2 } from "lucide-react";
+import { ArrowUpDown, Briefcase, Columns3, List, ListFilter, ListTodo, Plus, Trash2 } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
 import { DASHBOARD_CONTENT_CLASS, DASHBOARD_NAV_CLASS } from "@/components/dashboard/layout";
@@ -11,11 +11,10 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Skeleton } from "@/components/ui/skeleton";
 import { APPLICATION_PARAM, urlWithApplication } from "@/lib/dashboard-tab-url";
 import { useTranslation } from "@/lib/i18n";
-import { changeStage } from "@/lib/jobs/operations";
 import { listApplications } from "@/lib/jobs/repository";
-import { APPLICATION_STAGES, type ApplicationStage, type JobApplication } from "@/lib/jobs/schema";
+import { APPLICATION_STAGES, type ApplicationStage } from "@/lib/jobs/schema";
 import {
-    APPLICATION_SCOPES, APPLICATION_SORTS, DOCUMENT_FILTERS, EMPTY_FILTERS, allTags, filterApplications, groupByStage, hasActiveFilters, sortApplications, summarize,
+    APPLICATION_SCOPES, APPLICATION_SORTS, DOCUMENT_FILTERS, EMPTY_FILTERS, actionCounts, allTags, filterApplications, groupByStage, hasActiveFilters, sortApplications, summarize,
     type ApplicationFilters, type ApplicationSort,
 } from "@/lib/jobs/selectors";
 import { useClientPreferencesStore } from "@/lib/preferences/store";
@@ -23,9 +22,14 @@ import { AddJobDialog } from "./AddJobDialog";
 import { ApplicationDetails } from "./ApplicationDetails";
 import { JobBoard } from "./JobBoard";
 import { JobList } from "./JobList";
-import { BUTTON_CLASS, PRIMARY_BUTTON_CLASS, applicationTitle, runCommand, useCommandError, useStageLabel } from "./shared";
+import { NextActions } from "./NextActions";
+import { useNow, useToday } from "./useToday";
+import { useStageChange } from "./useStageChange";
+import { BUTTON_CLASS, PRIMARY_BUTTON_CLASS, applicationTitle, useStageLabel } from "./shared";
 
 const WIDE_QUERY = "(min-width: 768px)";
+const JOB_VIEWS = ["board", "list", "actions"] as const;
+const VIEW_ICONS = { board: Columns3, list: List, actions: ListTodo } as const;
 
 /** Board on wide screens, list on narrow ones, until the person picks a view. */
 function useIsWide(): boolean {
@@ -70,12 +74,12 @@ function FilterCheck({ label, checked, onChange, testId, type = "checkbox", name
 export function JobsTab({ navLead, navTrail }: { navLead?: ReactNode; navTrail?: ReactNode }) {
     const { t, locale } = useTranslation();
     const stageLabel = useStageLabel();
-    const commandError = useCommandError();
     const searchParams = useSearchParams();
     const applications = useLiveQuery(() => listApplications(), []);
     const storedView = useClientPreferencesStore((state) => state.preferences.dashboard.jobsView);
     const updateSection = useClientPreferencesStore((state) => state.updateSection);
     const isWide = useIsWide();
+    const today = useToday();
     const view = storedView === "auto" ? (isWide ? "board" : "list") : storedView;
 
     const [filters, setFilters] = useState<ApplicationFilters>(EMPTY_FILTERS);
@@ -98,18 +102,18 @@ export function JobsTab({ navLead, navTrail }: { navLead?: ReactNode; navTrail?:
     }, []);
 
     const visible = useMemo(
-        () => (applications ? sortApplications(filterApplications(applications, filters), sort, locale) : []),
-        [applications, filters, sort, locale],
+        () => (applications ? sortApplications(filterApplications(applications, filters, today), sort, locale, today) : []),
+        [applications, filters, sort, locale, today],
     );
     const groups = useMemo(() => groupByStage(visible), [visible]);
     const summary = useMemo(() => summarize(applications ?? []), [applications]);
+    // Recomputed with "today" (midnight, focus) and whenever an application changes.
+    const now = useNow();
+    const counts = useMemo(() => actionCounts(applications ?? [], today, now), [applications, today, now]);
     const tags = useMemo(() => allTags(applications ?? [], locale), [applications, locale]);
     const opened = openId && applications ? applications.find((application) => application.id === openId) : undefined;
 
-    const move = useCallback(async (application: JobApplication, stage: ApplicationStage) => {
-        const outcome = await runCommand(application, (current, ctx) => changeStage(current, stage, ctx));
-        announce(outcome.ok ? t("jobs.announce.moved", { job: applicationTitle(application), stage: stageLabel(stage) }) : commandError(outcome.reason));
-    }, [announce, commandError, stageLabel, t]);
+    const { requestStage: move, stageDialog } = useStageChange(announce);
 
     const filterCount = filters.stages.length + filters.tags.length + filters.documents.length + (filters.scope === "current" ? 0 : 1);
     const effectiveView = filters.scope === "trash" ? "list" : view;
@@ -136,6 +140,9 @@ export function JobsTab({ navLead, navTrail }: { navLead?: ReactNode; navTrail?:
                             <FilterCheck key={stage} label={stageLabel(stage)} checked={filters.stages.includes(stage)} onChange={() => setFilters((current) => ({ ...current, stages: toggle(current.stages, stage) }))} testId={`jobs-filter-stage-${stage}`} />
                         ))}
                     </FilterGroup>
+                    <FilterGroup legend={t("jobs.filters.actions")}>
+                        <FilterCheck label={t("jobs.filters.dueOnly")} checked={filters.dueOnly} onChange={() => setFilters((current) => ({ ...current, dueOnly: !current.dueOnly }))} testId="jobs-filter-due" />
+                    </FilterGroup>
                     <FilterGroup legend={t("jobs.filters.documents")}>
                         {DOCUMENT_FILTERS.map((filter) => (
                             <FilterCheck key={filter} label={t(`jobs.filters.document.${filter}`)} checked={filters.documents.includes(filter)} onChange={() => setFilters((current) => ({ ...current, documents: toggle(current.documents, filter) }))} testId={`jobs-filter-documents-${filter}`} />
@@ -156,7 +163,7 @@ export function JobsTab({ navLead, navTrail }: { navLead?: ReactNode; navTrail?:
                             ))}
                         </FilterGroup>
                         <FilterGroup legend={t("jobs.view.label")}>
-                            {(["board", "list"] as const).map((option) => (
+                            {JOB_VIEWS.map((option) => (
                                 <FilterCheck key={option} type="radio" name="jobs-view-narrow" label={t(`jobs.view.${option}`)} checked={view === option} onChange={() => updateSection("dashboard", { jobsView: option })} testId={`jobs-view-narrow-${option}`} />
                             ))}
                         </FilterGroup>
@@ -175,8 +182,8 @@ export function JobsTab({ navLead, navTrail }: { navLead?: ReactNode; navTrail?:
                 className="hidden sm:flex"
             />
             <div role="group" aria-label={t("jobs.view.label")} className="hidden shrink-0 rounded-xl border border-edge bg-surface-4 p-0.5 sm:flex">
-                {(["board", "list"] as const).map((option) => {
-                    const Icon = option === "board" ? Columns3 : List;
+                {JOB_VIEWS.map((option) => {
+                    const Icon = VIEW_ICONS[option];
                     return (
                         <button
                             key={option}
@@ -223,6 +230,8 @@ export function JobsTab({ navLead, navTrail }: { navLead?: ReactNode; navTrail?:
                 )}
                 <div className="mb-6 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm" data-testid="jobs-summary">
                     <p className="text-mid"><span className="font-semibold tabular-nums text-strong">{summary.active}</span> {t("jobs.summary.active")}</p>
+                    <p className={counts.due > 0 ? "text-warning" : "text-mid"} data-testid="jobs-summary-due"><span className="font-semibold tabular-nums">{counts.due}</span> {t("jobs.summary.due")}</p>
+                    <p className="text-mid" data-testid="jobs-summary-interviews"><span className="font-semibold tabular-nums text-strong">{counts.interviewsThisWeek}</span> {t("jobs.summary.interviews")}</p>
                     <p className="text-mid"><span className="font-semibold tabular-nums text-strong">{summary.offers}</span> {t("jobs.summary.offers")}</p>
                     {summary.trashed > 0 && filters.scope !== "trash" && (
                         <button type="button" onClick={() => setFilters({ ...EMPTY_FILTERS, scope: "trash" })} className="ml-auto flex items-center gap-1.5 text-mid hover:text-strong" data-testid="jobs-open-trash">
@@ -243,7 +252,9 @@ export function JobsTab({ navLead, navTrail }: { navLead?: ReactNode; navTrail?:
                         {hasActiveFilters(filters) && <button type="button" onClick={() => setFilters(EMPTY_FILTERS)} className={`${BUTTON_CLASS} mx-auto mt-4`} data-testid="jobs-no-match-clear">{t("jobs.filters.clear")}</button>}
                     </div>
                 )}
-                {effectiveView === "board" ? (
+                {effectiveView === "actions" ? (
+                    <NextActions applications={visible} onOpen={open} onAnnounce={announce} />
+                ) : effectiveView === "board" ? (
                     <JobBoard groups={groups} onOpen={open} onMove={move} showClosed={showClosed} onToggleClosed={() => setShowClosed((value) => !value)} onAdd={setAdding} />
                 ) : visible.length > 0 && (
                     <JobList applications={visible} onOpen={open} onMove={move} />
@@ -259,10 +270,10 @@ export function JobsTab({ navLead, navTrail }: { navLead?: ReactNode; navTrail?:
                     {navLead}
                     {controls}
                     <div className="ml-auto flex items-center gap-2">
-                        <button type="button" onClick={() => setAdding("saved")} className={PRIMARY_BUTTON_CLASS} title={t("jobs.add.button")} data-testid="jobs-add">
+                        <button type="button" onClick={() => setAdding("saved")} className={`${PRIMARY_BUTTON_CLASS} shrink-0 whitespace-nowrap`} title={t("jobs.add.button")} data-testid="jobs-add">
                             <Plus className="h-4 w-4" aria-hidden="true" />
-                            <span className="hidden sm:inline">{t("jobs.add.button")}</span>
-                            <span className="sr-only sm:hidden">{t("jobs.add.button")}</span>
+                            <span className="hidden lg:inline">{t("jobs.add.button")}</span>
+                            <span className="sr-only lg:hidden">{t("jobs.add.button")}</span>
                         </button>
                         {navTrail}
                     </div>
@@ -273,6 +284,7 @@ export function JobsTab({ navLead, navTrail }: { navLead?: ReactNode; navTrail?:
                 {content}
             </div>
             <p role="status" aria-live="polite" className="sr-only" data-testid="jobs-announcer">{announcement}</p>
+            {stageDialog}
 
             {adding && applications && (
                 <AddJobDialog

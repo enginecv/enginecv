@@ -6,11 +6,13 @@ import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { useDialogFocus } from "@/hooks/useDialogFocus";
 import { useTranslation } from "@/lib/i18n";
 import { detailsFromForm, formFromApplication, type DetailsErrors, type DetailsField, type DetailsForm } from "@/lib/jobs/form";
-import { archive, changeStage, defaultContext, duplicate, restore, trash, unarchive, updateDetails } from "@/lib/jobs/operations";
+import { archive, defaultContext, duplicate, restore, trash, unarchive, updateDetails } from "@/lib/jobs/operations";
 import { deleteApplicationPermanently, insertApplication } from "@/lib/jobs/repository";
 import { isSafeWebUrl, type ApplicationEvent, type ApplicationStage, type JobApplication } from "@/lib/jobs/schema";
 import { ApplicationDocuments } from "./ApplicationDocuments";
 import { EssentialFields, MoreFields } from "./DetailsFields";
+import { NextSteps } from "./NextSteps";
+import { useStageChange } from "./useStageChange";
 import { useDocumentChoices } from "./useDocumentChoices";
 import { BUTTON_CLASS, LABEL_CLASS, PRIMARY_BUTTON_CLASS, StageMenu, TEXTAREA_CLASS, runCommand, useCommandError, useStageLabel } from "./shared";
 
@@ -33,9 +35,9 @@ export function ApplicationDetails({ application, onClose, onAnnounce, onOpen }:
     onOpen: (id: string) => void;
 }) {
     const { t } = useTranslation();
-    const stageLabel = useStageLabel();
     const commandError = useCommandError();
     const ref = useDialogFocus<HTMLDivElement>(true, onClose);
+    const { requestStage, stageDialog } = useStageChange(onAnnounce);
     const [tab, setTab] = useState<DetailsTab>("overview");
     // Local edits not yet saved; without any, the form shows the stored record (a stage change, another tab, a restore).
     const [draft, setDraft] = useState<DetailsForm | null>(null);
@@ -178,7 +180,7 @@ export function ApplicationDetails({ application, onClose, onAnnounce, onOpen }:
                             <StageMenu
                                 application={application}
                                 testId="job-details-stage"
-                                onChange={(stage: ApplicationStage) => void act((current, ctx) => changeStage(current, stage, ctx), t("jobs.announce.moved", { job: title, stage: stageLabel(stage) }))}
+                                onChange={(stage: ApplicationStage) => requestStage(application, stage)}
                             />
                         )}
                         {trashed && <span className="rounded-lg bg-danger-tint px-2 py-1 text-xs font-medium text-danger-soft">{t("jobs.inTrash")}</span>}
@@ -296,6 +298,9 @@ export function ApplicationDetails({ application, onClose, onAnnounce, onOpen }:
                     {tab === "overview" ? (
                         <div id="job-panel-overview" role="tabpanel" aria-labelledby="job-tab-overview">
                             <DocumentsSummary application={application} onManage={() => setTab("documents")} />
+                            <fieldset disabled={trashed} className="mb-5">
+                                <NextSteps application={application} onAnnounce={onAnnounce} />
+                            </fieldset>
                             <fieldset disabled={trashed} className="space-y-5">
                                 <EssentialFields form={form} errors={errors} onChange={change} idPrefix="job-details" />
                                 <div>
@@ -323,6 +328,7 @@ export function ApplicationDetails({ application, onClose, onAnnounce, onOpen }:
                     )}
                 </div>
             </div>
+            {stageDialog}
             <ConfirmModal
                 open={confirmDelete}
                 title={t("jobs.delete.title")}

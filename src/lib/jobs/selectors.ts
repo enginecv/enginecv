@@ -1,4 +1,6 @@
-import { APPLICATION_STAGES, isTerminalStage, type ApplicationStage, type JobApplication } from "./schema";
+import { localDateOnly } from "./dates";
+import { isOpenTask } from "./operations";
+import { APPLICATION_STAGES, isTerminalStage, type ApplicationInterview, type ApplicationStage, type ApplicationTask, type JobApplication } from "./schema";
 
 /**
  * What the board and list show. Filters combine with AND; the values chosen inside one filter combine
@@ -11,7 +13,7 @@ export type ApplicationScope = (typeof APPLICATION_SCOPES)[number];
 export const DOCUMENT_FILTERS = ["cv", "letter", "none"] as const;
 export type DocumentFilter = (typeof DOCUMENT_FILTERS)[number];
 
-export const APPLICATION_SORTS = ["updated", "company", "role"] as const;
+export const APPLICATION_SORTS = ["updated", "next", "company", "role"] as const;
 export type ApplicationSort = (typeof APPLICATION_SORTS)[number];
 
 export interface ApplicationFilters {
@@ -20,13 +22,15 @@ export interface ApplicationFilters {
     stages: ApplicationStage[];
     tags: string[];
     documents: DocumentFilter[];
+    /** Only applications with an overdue or due-today task. */
+    dueOnly: boolean;
 }
 
-export const EMPTY_FILTERS: ApplicationFilters = { query: "", scope: "current", stages: [], tags: [], documents: [] };
+export const EMPTY_FILTERS: ApplicationFilters = { query: "", scope: "current", stages: [], tags: [], documents: [], dueOnly: false };
 
 /** True when anything narrows the list beyond the default "current" view. */
 export function hasActiveFilters(filters: ApplicationFilters): boolean {
-    return filters.query.trim() !== "" || filters.scope !== "current" || filters.stages.length > 0 || filters.tags.length > 0 || filters.documents.length > 0;
+    return filters.query.trim() !== "" || filters.scope !== "current" || filters.stages.length > 0 || filters.tags.length > 0 || filters.documents.length > 0 || filters.dueOnly;
 }
 
 function inScope(application: JobApplication, scope: ApplicationScope): boolean {
@@ -50,7 +54,7 @@ function matchesQuery(application: JobApplication, needle: string): boolean {
     return fields.some((field) => field.toLocaleLowerCase().includes(needle));
 }
 
-export function filterApplications(applications: readonly JobApplication[], filters: ApplicationFilters): JobApplication[] {
+export function filterApplications(applications: readonly JobApplication[], filters: ApplicationFilters, today: string = localDateOnly()): JobApplication[] {
     const needle = filters.query.trim().toLocaleLowerCase();
     const tags = new Set(filters.tags.map((tag) => tag.toLocaleLowerCase()));
     return applications.filter((application) =>
@@ -58,11 +62,24 @@ export function filterApplications(applications: readonly JobApplication[], filt
         && (filters.stages.length === 0 || filters.stages.includes(application.stage))
         && (tags.size === 0 || application.tags.some((tag) => tags.has(tag.toLocaleLowerCase())))
         && matchesDocuments(application, filters.documents)
+        && (!filters.dueOnly || hasDueTask(application, today))
         && matchesQuery(application, needle),
     );
 }
 
-export function sortApplications(applications: readonly JobApplication[], sort: ApplicationSort, locale: string): JobApplication[] {
+export function sortApplications(applications: readonly JobApplication[], sort: ApplicationSort, locale: string, today: string = localDateOnly()): JobApplication[] {
+    if (sort === "next") {
+        // Soonest next action first; applications with nothing to do keep their latest-update order after them.
+        const keys = new Map(applications.map((application) => [application.id, nextAction(application, today)?.sortKey ?? null]));
+        return sortApplications(applications, "updated", locale).sort((a, b) => {
+            const ka = keys.get(a.id) ?? null;
+            const kb = keys.get(b.id) ?? null;
+            if (ka === kb) return 0;
+            if (ka === null) return 1;
+            if (kb === null) return -1;
+            return ka.localeCompare(kb);
+        });
+    }
     const collator = new Intl.Collator(locale, { sensitivity: "base", numeric: true });
     const byUpdated = (a: JobApplication, b: JobApplication) => b.updatedAt - a.updatedAt || a.id.localeCompare(b.id);
     return [...applications].sort((a, b) => {
@@ -151,4 +168,83 @@ export function findPossibleDuplicate(
     const role = fold(candidate.role);
     const match = live.find((application) => fold(application.company) === company && fold(application.role) === role);
     return match ? { application: match, reason: "company-role" } : null;
+}
+// ---- Next actions ----------------------------------------------------------------------------------
+
+export type DueState = "overdue" | "today" | "upcoming" | "undated";
+
+export function dueState(dueOn: string | null, today: string): DueState {
+    if (dueOn === null) return "undated";
+    return dueOn < today ? "overdue" : dueOn === today ? "today" : "upcoming";
+}
+
+export type NextAction =
+    | { kind: "task"; task: ApplicationTask; due: DueState; sortKey: string }
+    | { kind: "interview"; interview: ApplicationInterview; sortKey: string };
+
+const UNDATED_KEY = "9999-12-31~";
+
+/**
+ * The one thing to do next for an application: the earliest open task or scheduled interview, by the
+ * viewer's calendar. Overdue tasks come first; undated tasks only when nothing is dated.
+ */
+export function nextAction(application: JobApplication, today: string): NextAction | null {
+    const candidates: NextAction[] = [
+        ...application.tasks.filter(isOpenTask).map((task) => ({ kind: "task" as const, task, due: dueState(task.dueOn, today), sortKey: task.dueOn ?? UNDATED_KEY })),
+        ...application.interviews
+            .filter((interview) => interview.outcome === "scheduled" && interview.startsAt !== null)
+            .map((interview) => ({ kind: "interview" as const, interview, sortKey: localDateOnly(new Date(interview.startsAt!)) })),
+    ];
+    candidates.sort((a, b) => a.sortKey.localeCompare(b.sortKey) || (a.kind === "task" ? -1 : 1));
+    return candidates[0] ?? null;
+}
+
+export interface TaskEntry { application: JobApplication; task: ApplicationTask; due: DueState }
+export interface InterviewEntry { application: JobApplication; interview: ApplicationInterview }
+
+export interface NextActionGroups {
+    overdue: TaskEntry[];
+    today: TaskEntry[];
+    upcoming: TaskEntry[];
+    interviews: InterviewEntry[];
+}
+
+/**
+ * Every open task and every scheduled interview of current (not archived, not trashed) applications.
+ * Tasks are grouped by due state; undated ones close the upcoming group. Interviews whose time passed stay
+ * until the person records an outcome; ones without a time come last.
+ */
+export function nextActionGroups(applications: readonly JobApplication[], today: string): NextActionGroups {
+    const groups: NextActionGroups = { overdue: [], today: [], upcoming: [], interviews: [] };
+    for (const application of applications) {
+        if (application.trashedAt !== null || application.archivedAt !== null) continue;
+        for (const task of application.tasks) {
+            if (!isOpenTask(task)) continue;
+            const due = dueState(task.dueOn, today);
+            groups[due === "undated" ? "upcoming" : due].push({ application, task, due });
+        }
+        for (const interview of application.interviews) {
+            if (interview.outcome === "scheduled") groups.interviews.push({ application, interview });
+        }
+    }
+    const byDue = (a: TaskEntry, b: TaskEntry) => (a.task.dueOn ?? UNDATED_KEY).localeCompare(b.task.dueOn ?? UNDATED_KEY) || a.task.createdAt - b.task.createdAt;
+    groups.overdue.sort(byDue);
+    groups.today.sort(byDue);
+    groups.upcoming.sort(byDue);
+    groups.interviews.sort((a, b) => (a.interview.startsAt ?? Number.MAX_SAFE_INTEGER) - (b.interview.startsAt ?? Number.MAX_SAFE_INTEGER));
+    return groups;
+}
+
+const WEEK = 7 * 24 * 60 * 60 * 1000;
+
+/** Due-now tasks and interviews in the next seven days, over current applications. */
+export function actionCounts(applications: readonly JobApplication[], today: string, now: number): { due: number; interviewsThisWeek: number } {
+    const groups = nextActionGroups(applications, today);
+    const interviewsThisWeek = groups.interviews.filter(({ interview }) => interview.startsAt !== null && interview.startsAt >= now && interview.startsAt < now + WEEK).length;
+    return { due: groups.overdue.length + groups.today.length, interviewsThisWeek };
+}
+
+/** True when the application has an open task that is overdue or due today. */
+export function hasDueTask(application: JobApplication, today: string): boolean {
+    return application.tasks.some((task) => isOpenTask(task) && task.dueOn !== null && task.dueOn <= today);
 }

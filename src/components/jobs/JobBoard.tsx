@@ -18,6 +18,9 @@ import { useState } from "react";
 import { useTranslation } from "@/lib/i18n";
 import { ACTIVE_STAGES, TERMINAL_STAGES, type ApplicationStage, type JobApplication } from "@/lib/jobs/schema";
 import { StageDot, StageMenu, useStageLabel } from "./shared";
+import { useToday } from "./useToday";
+import { dateOnlyFormatter } from "@/lib/jobs/dates";
+import { nextAction } from "@/lib/jobs/selectors";
 
 export interface ViewProps {
     groups: Record<ApplicationStage, JobApplication[]>;
@@ -48,13 +51,30 @@ export function WorkingDocuments({ application }: { application: JobApplication 
 function CardBody({ application }: { application: JobApplication }) {
     const where = useWhereLine();
     const line = where(application);
+    const next = useNextActionLine(application);
     return (
         <>
             <span className="block break-words text-sm font-semibold text-strong">{application.role}</span>
             <span className="block break-words text-sm text-mid">{application.company}</span>
             {line && <span className="mt-1 block text-xs text-faint">{line}</span>}
+            {next && <span className={`mt-1 block break-words text-xs ${next.className}`} data-testid="job-card-next">{next.text}</span>}
         </>
     );
+}
+
+/** "Next: …" for a card or row: the earliest open task or scheduled interview. */
+export function useNextActionLine(application: JobApplication): { text: string; className: string } | null {
+    const { t, locale } = useTranslation();
+    const today = useToday();
+    const action = nextAction(application, today);
+    if (!action) return null;
+    if (action.kind === "interview") {
+        const when = new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit", timeZone: action.interview.timeZone }).format(action.interview.startsAt!);
+        return { text: t("jobs.next.interview", { label: action.interview.label, when }), className: "text-info" };
+    }
+    const due = action.task.dueOn ? dateOnlyFormatter(locale)(action.task.dueOn) : null;
+    const text = due ? t("jobs.next.taskDue", { task: action.task.title, date: due }) : t("jobs.next.task", { task: action.task.title });
+    return { text, className: action.due === "overdue" ? "text-danger" : action.due === "today" ? "text-warning" : "text-mid" };
 }
 
 /**

@@ -7,7 +7,7 @@ import { db } from "@/lib/db";
 import { editorHrefFromJob } from "@/lib/dashboard-tab-url";
 import { useTranslation } from "@/lib/i18n";
 import { dateOnlyFormatter } from "@/lib/jobs/dates";
-import { updateDetails } from "@/lib/jobs/operations";
+import { addCalendarDays, addTask, updateDetails } from "@/lib/jobs/operations";
 import type { ApplicationSubmission, DocumentSelection, JobApplication } from "@/lib/jobs/schema";
 import { readSubmissionPacket, type CapturedDocuments, type PacketReadResult } from "@/lib/jobs/submissions";
 import { createLetterRecord, createStandaloneLetterRecord, parseCv } from "@/lib/letters/store";
@@ -18,6 +18,9 @@ import { BUTTON_CLASS, FIELD_CLASS, PRIMARY_BUTTON_CLASS, runCommand, useCommand
 import { useDocumentChoices, type CvChoice, type LetterChoice } from "./useDocumentChoices";
 
 type Choice = CvChoice | LetterChoice;
+
+/** A follow-up is suggested this many calendar days after a submission, and created only if accepted. */
+const FOLLOW_UP_DAYS = 7;
 
 function useUpdated() {
     const { locale } = useTranslation();
@@ -177,11 +180,13 @@ function SubmissionRow({ application, submission, cvs, letters, onView }: {
  * from the submission history (frozen copies of what was sent). A linked letter is never shown as sent.
  */
 export function ApplicationDocuments({ application, onAnnounce }: { application: JobApplication; onAnnounce: (message: string) => void }) {
-    const { t } = useTranslation();
+    const { t, locale } = useTranslation();
+    const formatDay = useMemo(() => dateOnlyFormatter(locale), [locale]);
     const commandError = useCommandError();
     const { cvs, letters } = useDocumentChoices(t("dashboard.untitled"));
     const [recording, setRecording] = useState(false);
     const [viewing, setViewing] = useState<CapturedDocuments | null>(null);
+    const [followUp, setFollowUp] = useState<string | null>(null);
     const [busy, setBusy] = useState(false);
     const trashed = application.trashedAt !== null;
 
@@ -269,6 +274,21 @@ export function ApplicationDocuments({ application, onAnnounce }: { application:
                 )}
             </section>
 
+            {followUp && (
+                <div role="status" className="flex flex-col gap-3 rounded-xl border border-edge bg-surface-3 p-3 text-sm text-strong sm:flex-row sm:items-center" data-testid="follow-up-offer">
+                    <p className="min-w-0 flex-1">{t("jobs.followUp.offer", { date: formatDay(followUp) })}</p>
+                    <div className="flex gap-2">
+                        <button type="button" className={PRIMARY_BUTTON_CLASS} data-testid="follow-up-add" onClick={async () => {
+                            const date = followUp;
+                            setFollowUp(null);
+                            const outcome = await runCommand(application, (current, ctx) => addTask(current, { title: t("jobs.followUp.title", { company: current.company }), dueOn: date }, ctx));
+                            onAnnounce(outcome.ok ? t("jobs.followUp.added") : commandError(outcome.reason));
+                        }}>{t("jobs.followUp.add")}</button>
+                        <button type="button" className={BUTTON_CLASS} onClick={() => setFollowUp(null)} data-testid="follow-up-skip">{t("jobs.followUp.skip")}</button>
+                    </div>
+                </div>
+            )}
+
             <section aria-labelledby="history-heading">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                     <h3 id="history-heading" className="text-sm font-semibold text-strong">{t("jobs.submission.history")}</h3>
@@ -293,9 +313,11 @@ export function ApplicationDocuments({ application, onAnnounce }: { application:
                     cvs={cvs}
                     letters={letters}
                     onClose={() => setRecording(false)}
-                    onRecorded={() => {
+                    onRecorded={(saved) => {
                         setRecording(false);
                         onAnnounce(t("jobs.announce.recorded"));
+                        const sentOn = saved.submissions.at(-1)?.sentOn;
+                        if (sentOn) setFollowUp(addCalendarDays(sentOn, FOLLOW_UP_DAYS));
                     }}
                 />
             )}

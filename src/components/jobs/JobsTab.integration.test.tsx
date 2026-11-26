@@ -2,7 +2,7 @@ import { act, cleanup, configure, fireEvent, render, screen, waitFor, within } f
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { db } from "@/lib/db";
 import { useI18nStore } from "@/lib/i18n";
-import { changeStage, defaultContext, newApplication } from "@/lib/jobs/operations";
+import { addTask, changeStage, defaultContext, newApplication } from "@/lib/jobs/operations";
 import { insertApplication } from "@/lib/jobs/repository";
 import { useClientPreferencesStore } from "@/lib/preferences/store";
 import { JobsTab } from "./JobsTab";
@@ -175,6 +175,69 @@ describe("JobsTab", () => {
         expect((await db.coverLetters.get(stored!.workingLetterId!))?.status).toBe("draft");
         fireEvent.click(within(details).getByTestId("submission-view"));
         expect(await screen.findByTestId("evidence-dialog")).toBeInTheDocument();
+    });
+
+    it("adds and completes a task, and schedules an interview that moves Applied to Interviewing", async () => {
+        const job = await seed("Acme", "Designer", "applied");
+        search = `tab=jobs&application=${job.id}`;
+        render(<JobsTab />);
+        const details = await screen.findByTestId("job-details");
+        fireEvent.change(within(details).getByTestId("task-title"), { target: { value: "Send portfolio" } });
+        fireEvent.change(within(details).getByTestId("task-due"), { target: { value: "2026-12-01" } });
+        fireEvent.click(within(details).getByTestId("task-add"));
+        expect(await within(details).findByText("Send portfolio")).toBeInTheDocument();
+        fireEvent.click(within(details).getByTestId("task-complete"));
+        await waitFor(async () => expect((await db.jobApplications.get(job.id))?.tasks[0].completedAt).not.toBeNull());
+        expect((await db.jobApplications.get(job.id))?.events.at(-1)?.type).toBe("task-completed");
+
+        fireEvent.click(within(details).getByTestId("interview-add"));
+        const dialog = await screen.findByTestId("interview-dialog");
+        fireEvent.change(within(dialog).getByTestId("interview-date"), { target: { value: "2026-12-02" } });
+        fireEvent.change(within(dialog).getByTestId("interview-start"), { target: { value: "10:00" } });
+        fireEvent.change(within(dialog).getByTestId("interview-zone"), { target: { value: "Europe/Berlin" } });
+        fireEvent.click(within(dialog).getByTestId("interview-save"));
+        await waitFor(() => expect(screen.queryByTestId("interview-dialog")).toBeNull());
+        const stored = await db.jobApplications.get(job.id);
+        expect(stored).toMatchObject({ stage: "interviewing", interviews: [{ startsAt: Date.UTC(2026, 11, 2, 9), timeZone: "Europe/Berlin", outcome: "scheduled" }] });
+    });
+
+    it("refuses an interview time the clocks skip", async () => {
+        const job = await seed("Acme", "Designer", "applied");
+        search = `tab=jobs&application=${job.id}`;
+        render(<JobsTab />);
+        fireEvent.click(await screen.findByTestId("interview-add"));
+        const dialog = await screen.findByTestId("interview-dialog");
+        fireEvent.change(within(dialog).getByTestId("interview-date"), { target: { value: "2026-03-29" } });
+        fireEvent.change(within(dialog).getByTestId("interview-start"), { target: { value: "02:30" } });
+        fireEvent.change(within(dialog).getByTestId("interview-zone"), { target: { value: "Europe/Berlin" } });
+        fireEvent.click(within(dialog).getByTestId("interview-save"));
+        expect(await within(dialog).findByTestId("interview-error")).toHaveTextContent("does not exist");
+        expect((await db.jobApplications.get(job.id))?.interviews).toEqual([]);
+    });
+
+    it("asks before closing a job with open tasks, keeping them by default", async () => {
+        const ctx = defaultContext();
+        const job = await insertApplication(addTask(newApplication({ company: "Acme", role: "Designer" }, ctx), { title: "Call back", dueOn: null }, ctx));
+        render(<JobsTab />);
+        fireEvent.click(await screen.findByTestId(`job-card-stage-${job.id}`));
+        fireEvent.click(await screen.findByTestId(`job-card-stage-${job.id}-rejected`));
+        fireEvent.click(await screen.findByText("Move and cancel 1 task"));
+        await waitFor(async () => expect((await db.jobApplications.get(job.id))?.stage).toBe("rejected"));
+        expect((await db.jobApplications.get(job.id))?.tasks[0].cancelledAt).not.toBeNull();
+    });
+
+    it("lists due tasks and interviews in Next actions and counts them", async () => {
+        const ctx = defaultContext();
+        await insertApplication(addTask(newApplication({ company: "Acme", role: "Designer" }, ctx), { title: "Overdue thing", dueOn: "2020-01-01" }, ctx));
+        render(<JobsTab />);
+        expect(await screen.findByTestId("jobs-summary-due")).toHaveTextContent("1");
+        expect(screen.getByTestId("job-card-next")).toHaveTextContent("Next: Overdue thing");
+        fireEvent.click(screen.getByTestId("jobs-view-actions"));
+        const overdue = await screen.findByTestId("actions-overdue");
+        expect(within(overdue).getByText("Overdue thing")).toBeInTheDocument();
+        expect(screen.getByText(/Reminders appear when you open EngineCV/)).toBeInTheDocument();
+        fireEvent.click(within(overdue).getByTestId("action-task-complete"));
+        expect(await screen.findByTestId("actions-empty")).toBeInTheDocument();
     });
 
     it("explains a link to an application that does not exist", async () => {
