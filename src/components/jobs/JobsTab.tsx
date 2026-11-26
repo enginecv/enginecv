@@ -21,6 +21,7 @@ import { useClientPreferencesStore } from "@/lib/preferences/store";
 import { AddJobDialog } from "./AddJobDialog";
 import { ApplicationDetails } from "./ApplicationDetails";
 import { JobBoard } from "./JobBoard";
+import { BackupMenu } from "./BackupMenu";
 import { JobList } from "./JobList";
 import { NextActions } from "./NextActions";
 import { useNow, useToday } from "./useToday";
@@ -233,12 +234,15 @@ export function JobsTab({ navLead, navTrail }: { navLead?: ReactNode; navTrail?:
                     <p className={counts.due > 0 ? "text-warning" : "text-mid"} data-testid="jobs-summary-due"><span className="font-semibold tabular-nums">{counts.due}</span> {t("jobs.summary.due")}</p>
                     <p className="text-mid" data-testid="jobs-summary-interviews"><span className="font-semibold tabular-nums text-strong">{counts.interviewsThisWeek}</span> {t("jobs.summary.interviews")}</p>
                     <p className="text-mid"><span className="font-semibold tabular-nums text-strong">{summary.offers}</span> {t("jobs.summary.offers")}</p>
+                    <div className="ml-auto flex items-center gap-4">
                     {summary.trashed > 0 && filters.scope !== "trash" && (
-                        <button type="button" onClick={() => setFilters({ ...EMPTY_FILTERS, scope: "trash" })} className="ml-auto flex items-center gap-1.5 text-mid hover:text-strong" data-testid="jobs-open-trash">
+                        <button type="button" onClick={() => setFilters({ ...EMPTY_FILTERS, scope: "trash" })} className="flex items-center gap-1.5 text-mid hover:text-strong" data-testid="jobs-open-trash">
                             <Trash2 className="h-4 w-4" aria-hidden="true" />
                             {t("jobs.trashCount", { count: summary.trashed })}
                         </button>
                     )}
+                    <BackupMenu onAnnounce={announce} />
+                    </div>
                 </div>
                 {filters.scope !== "current" && (
                     <p className="mb-4 rounded-xl border border-edge bg-surface-3 px-3 py-2 text-sm text-mid" data-testid="jobs-scope-note">
