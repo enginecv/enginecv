@@ -88,7 +88,7 @@ describe("GitHub as a source in the hub", () => {
         const user = userEvent.setup();
         open(provider());
         await lookUp(user);
-        await screen.findByTestId("github-import-repo-picker");
+        await screen.findByTestId("github-import-repos-section");
         await user.click(screen.getByTestId("github-import-confirm"));
 
         const batch = await screen.findByTestId("import-hub-batch");
@@ -104,6 +104,26 @@ describe("GitHub as a source in the hub", () => {
         const projects = screen.getByTestId("import-hub-section-projects");
         expect(within(projects).getAllByTestId("import-hub-row").length).toBeGreaterThan(0);
         expect(projects).toHaveTextContent("engine-cv");
+    });
+
+    it("keeps every group closed and lists the personal details GitHub gives", async () => {
+        const user = userEvent.setup();
+        open(provider({ fetchProfile: vi.fn(async () => ({ ...profile, email: "octo@example.com", location: "Sarajevo", twitter: "not a handle!" })) }));
+        await lookUp(user);
+        const details = await screen.findByTestId("github-import-details-section");
+        for (const id of ["details", "repos", "organizations", "extras"]) {
+            expect(within(screen.getByTestId(`github-import-${id}-section`)).getByRole("button")).toHaveAttribute("aria-expanded", "false");
+        }
+        expect(screen.queryByTestId("github-import-repo-picker")).not.toBeInTheDocument();
+
+        await user.click(within(details).getByRole("button", { name: /Personal details/ }));
+        expect(within(details).getByTestId("github-import-detail-name")).toHaveTextContent("The Octocat");
+        expect(within(details).getByTestId("github-import-detail-email")).toHaveTextContent("octo@example.com");
+        expect(within(details).getByTestId("github-import-detail-location")).toHaveTextContent("Sarajevo");
+        expect(within(details).getByTestId("github-import-detail-summary")).toHaveTextContent("Open-source builder.");
+        // Only what the import would write: an invalid handle and empty fields are left out.
+        expect(within(details).queryByTestId("github-import-detail-x")).not.toBeInTheDocument();
+        expect(within(details).queryByTestId("github-import-detail-website")).not.toBeInTheDocument();
     });
 
     it("shows a not-found error inside the panel and keeps the other sources", async () => {
@@ -138,7 +158,7 @@ describe("GitHub as a source in the hub", () => {
         // Off by default: the plain import never touches them.
         open(provider(extras));
         await lookUp(user);
-        await screen.findByTestId("github-import-repo-picker");
+        await screen.findByTestId("github-import-repos-section");
         await user.click(screen.getByRole("button", { name: /More from GitHub/ }));
         for (const id of ["readme", "details", "contributions"]) expect(screen.getByTestId(`github-import-extra-${id}`)).not.toBeChecked();
         await user.click(screen.getByTestId("github-import-confirm"));
@@ -151,7 +171,7 @@ describe("GitHub as a source in the hub", () => {
         // Turned on: each is read, and the result reaches the review step.
         open(provider(extras));
         await lookUp(user);
-        await screen.findByTestId("github-import-repo-picker");
+        await screen.findByTestId("github-import-repos-section");
         await user.click(screen.getByRole("button", { name: /More from GitHub/ }));
         await user.click(screen.getByTestId("github-import-extra-readme"));
         await user.click(screen.getByTestId("github-import-extra-details"));
@@ -169,7 +189,7 @@ describe("GitHub as a source in the hub", () => {
         const user = userEvent.setup();
         open(provider({ fetchProfileReadme: vi.fn(async () => ""), fetchRepoDetails: vi.fn(async () => new Map()), fetchContributions: vi.fn(async () => []) }));
         await lookUp(user);
-        await screen.findByTestId("github-import-repo-picker");
+        await screen.findByTestId("github-import-repos-section");
         await user.click(screen.getByRole("button", { name: /More from GitHub/ }));
         for (const id of ["readme", "details", "contributions"]) await user.click(screen.getByTestId(`github-import-extra-${id}`));
         await user.click(screen.getByTestId("github-import-confirm"));

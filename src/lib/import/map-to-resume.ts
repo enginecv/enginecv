@@ -25,6 +25,20 @@ export interface GithubExtras {
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const TWITTER = /^[A-Za-z0-9_]{1,15}$/;
 
+/** The person's own details a GitHub profile gives, as the import writes them. "" where GitHub has nothing usable. */
+export function githubPersonalDetails(profile: NormalizedProfile) {
+    return {
+        name: profile.displayName,
+        // Only an email the person made public on GitHub.
+        email: profile.email && EMAIL.test(profile.email) ? profile.email : "",
+        location: profile.location,
+        website: profile.website,
+        github: profile.profileUrl,
+        summary: profile.bio,
+        x: profile.twitter && TWITTER.test(profile.twitter) ? profile.twitter : "",
+    };
+}
+
 interface MapToResumeOptions {
     extras?: GithubExtras;
     referenceDate?: Date;
@@ -155,8 +169,9 @@ export function mapToResume(
         ...(languageSkills.length > 0 || toolSkills.length > 0 ? ["skills"] : []),
         ...(organisations.length > 0 ? ["organisations"] : []),
     ];
-    const customLinks = profile.twitter && TWITTER.test(profile.twitter)
-        ? [{ id: createId(), name: "X", url: `https://x.com/${profile.twitter}`, label: `@${profile.twitter}`, icon: "auto" }]
+    const details = githubPersonalDetails(profile);
+    const customLinks = details.x
+        ? [{ id: createId(), name: "X", url: `https://x.com/${details.x}`, label: `@${details.x}`, icon: "auto" }]
         : [];
 
     return resumeSchema.parse({
@@ -166,14 +181,13 @@ export function mapToResume(
         updatedAt: 0,
         basics: {
             ...base.basics,
-            name: profile.displayName,
+            name: details.name,
             photo: avatarDataUrl,
-            // Only an email the person made public on GitHub.
-            email: profile.email && EMAIL.test(profile.email) ? profile.email : "",
-            location: profile.location,
-            website: profile.website,
-            github: profile.profileUrl,
-            summary: options.extras?.profileReadme || profile.bio,
+            email: details.email,
+            location: details.location,
+            website: details.website,
+            github: details.github,
+            summary: options.extras?.profileReadme || details.summary,
             customLinks,
         },
         meta: {

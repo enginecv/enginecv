@@ -146,7 +146,7 @@ test.describe("imports", () => {
         await expect(hubDialog(page)).toBeVisible();
         await page.getByTestId("github-import-input").fill("octocat");
         await page.getByTestId("github-import-submit").click();
-        await expect(page.getByText("engine-cv")).toBeVisible();
+        await expect(page.getByTestId("github-import-repos-section")).toBeVisible();
         await page.getByTestId("github-import-confirm").click();
         await createCvFromHub(page);
         await expect(page.locator(".resume-page").first().getByText("engine-cv", { exact: true })).toBeVisible();

@@ -128,7 +128,7 @@ test.describe("GitHub tool page", () => {
 
         await page.getByTestId("github-import-input").fill("octocat");
         await page.getByTestId("github-import-submit").click();
-        await expect(page.getByText("engine-cv")).toBeVisible();
+        await expect(page.getByTestId("github-import-repos-section")).toBeVisible();
         await page.getByTestId("github-import-confirm").click();
 
         await expect(page).toHaveURL(/\/editor\/[^/]+$/, { timeout: 30_000 });

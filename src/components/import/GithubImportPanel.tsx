@@ -35,6 +35,7 @@ import {
 import { resumeSchema, type Resume } from "@/lib/schema";
 import { CollapsibleImportSection } from "./CollapsibleImportSection";
 import { getDefaultSelectedOrganizationLogins, OrganizationPicker } from "./OrganizationPicker";
+import { PersonalDetailsPreview, personalDetailRows } from "./PersonalDetailsPreview";
 import { ProfilePreviewCard } from "./ProfilePreviewCard";
 import { ProfileSuggestionList } from "./ProfileSuggestionList";
 import { getDefaultSelectedRepoNames, RepoPicker } from "./RepoPicker";
@@ -551,6 +552,16 @@ export function GithubImportPanel({
                     <p className="text-sm leading-6 text-mid">
                         {t("githubImport.pickerSubtitle", { username })}
                     </p>
+                    {profile && (
+                        <CollapsibleImportSection
+                            title={t("githubImport.detailsTitle")}
+                            subtitle={t("githubImport.detailsSubtitle")}
+                            count={String(personalDetailRows(profile).length + (profile.avatarUrl ? 1 : 0))}
+                            testId="github-import-details-section"
+                        >
+                            <PersonalDetailsPreview profile={profile} />
+                        </CollapsibleImportSection>
+                    )}
                     <CollapsibleImportSection
                         title={t("githubImport.reposTitle")}
                         count={`${selectedNames.size}/${repos.length}`}
@@ -580,7 +591,6 @@ export function GithubImportPanel({
                     <CollapsibleImportSection
                         title={t("githubImport.extrasTitle")}
                         subtitle={t("githubImport.extrasSubtitle")}
-                        defaultOpen={false}
                         testId="github-import-extras-section"
                     >
                         <div className="space-y-2">
