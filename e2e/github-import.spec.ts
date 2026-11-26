@@ -15,6 +15,9 @@ test("imports a GitHub profile into a new resume and opens the editor", async ({
 
     await page.getByTestId("github-import-input").fill("octocat");
     await page.getByTestId("github-import-submit").click();
+    // Every group starts closed; open the repositories and organizations to check them.
+    await page.getByTestId("github-import-repos-section").getByRole("button").first().click();
+    await page.getByTestId("github-import-organizations-section").getByRole("button").first().click();
     await expect(page.getByText("engine-cv")).toBeVisible();
     await expect(page.getByText("framework-fork")).toBeVisible();
     await expect(page.getByTestId("github-import-organization-row").getByText("GitHub", { exact: true })).toBeVisible();

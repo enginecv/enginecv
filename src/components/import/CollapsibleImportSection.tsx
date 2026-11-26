@@ -7,20 +7,19 @@ interface CollapsibleImportSectionProps {
     title: string;
     subtitle?: string;
     count?: string;
-    defaultOpen?: boolean;
     testId?: string;
     children: ReactNode;
 }
 
+/** A group of the GitHub import, closed until opened: the header's count says what it holds. */
 export function CollapsibleImportSection({
     title,
     subtitle,
     count,
-    defaultOpen = true,
     testId,
     children,
 }: CollapsibleImportSectionProps) {
-    const [open, setOpen] = useState(defaultOpen);
+    const [open, setOpen] = useState(false);
 
     return (
         <div className="rounded-xl border border-edge" data-testid={testId}>
