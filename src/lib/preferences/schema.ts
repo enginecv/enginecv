@@ -6,10 +6,12 @@ export const CLIENT_PREFERENCES_VERSION = 1 as const;
 
 export const themePreferenceSchema = z.enum(["light", "dark", "system"]);
 export const localePreferenceSchema = z.enum(["en", "bs", "de", "fr", "es"]);
-export const dashboardTabSchema = z.enum(["resumes", "letters", "templates"]);
+export const dashboardTabSchema = z.enum(["resumes", "letters", "jobs", "templates"]);
 export const dashboardDensitySchema = z.enum(["large", "normal", "compact"]);
 export const dashboardSortSchema = z.enum(["updated", "created", "name-asc", "name-desc"]);
 export const dashboardPageSizeSchema = z.enum(["12", "24", "48", "all"]);
+// "auto" until the person picks one: the board on wide screens, the list on narrow ones.
+export const jobsViewSchema = z.enum(["auto", "board", "list"]);
 export const commandPaletteWidthSchema = z.enum(["compact", "standard", "wide"]);
 export const commandPaletteHeightSchema = z.enum(["compact", "standard", "tall"]);
 export const resumeExportFormatSchema = z.enum(EXPORT_FORMAT_IDS);
@@ -43,7 +45,8 @@ export const clientPreferencesSchema = z.object({
         resumeSort: dashboardSortSchema.catch("updated"),
         templateSort: dashboardSortSchema.catch("updated"),
         pageSize: dashboardPageSizeSchema.catch("24"),
-    }).default({ activeTab: "resumes", density: "normal", resumeSort: "updated", templateSort: "updated", pageSize: "24" }),
+        jobsView: jobsViewSchema.catch("auto"),
+    }).default({ activeTab: "resumes", density: "normal", resumeSort: "updated", templateSort: "updated", pageSize: "24", jobsView: "auto" }),
     editor: editorPreferencesSchema.prefault({
         autoSave: true,
         rightPanelVisible: false,

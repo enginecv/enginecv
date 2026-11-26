@@ -23,7 +23,7 @@ interface ChoiceMenuProps<T extends string> {
  * A non-modal popover menu, like the template filter. A Radix Select locks
  * page scrolling while open, which hides the scrollbar and shifts the page.
  */
-function ChoiceMenu<T extends string>({ value, options, label, onChange, title, icon, shortLabel, testId, className }: ChoiceMenuProps<T>) {
+export function ChoiceMenu<T extends string>({ value, options, label, onChange, title, icon, shortLabel, testId, className }: ChoiceMenuProps<T>) {
     const [open, setOpen] = useState(false);
 
     return (
