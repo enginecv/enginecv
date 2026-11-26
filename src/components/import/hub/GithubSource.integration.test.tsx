@@ -96,6 +96,9 @@ describe("GitHub as a source in the hub", () => {
         expect(batch).toHaveTextContent("GitHub");
         // The tab keeps a badge for what was added, and nothing was saved.
         expect(screen.getByTestId("import-hub-source-github")).toHaveTextContent("1");
+        // The panel starts over instead of spinning on "Building your resume…".
+        expect(screen.queryByText("Building your resume…")).not.toBeInTheDocument();
+        expect(screen.getByTestId("github-import-input")).toBeInTheDocument();
 
         await user.click(screen.getByTestId("import-hub-review"));
         const projects = screen.getByTestId("import-hub-section-projects");

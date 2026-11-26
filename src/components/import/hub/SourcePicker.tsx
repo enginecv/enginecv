@@ -66,6 +66,8 @@ export function SourcePicker({ onAdd, helpers, initialFiles, githubProvider, ini
     const [active, setActive] = useState<SourceId>(initialSource ?? "enginecv");
     const tabRefs = useRef<Record<string, HTMLButtonElement | null>>({});
     const stagedGithub = useRef<Resume | null>(null);
+    // The GitHub panel stays on its "importing" step after it hands over a CV; a new key starts it fresh.
+    const [githubRun, setGithubRun] = useState(0);
 
     const messageFor = (cause: unknown): string => {
         if (cause instanceof SourceReadError) {
@@ -297,6 +299,7 @@ export function SourcePicker({ onAdd, helpers, initialFiles, githubProvider, ini
                     <section data-testid="import-hub-github" className="space-y-3">
                         <p className="text-sm text-mid">{t("importHub.needsNetwork")}.</p>
                         <GithubImportPanel
+                            key={githubRun}
                             provider={githubProvider}
                             onCancel={() => setActive("enginecv")}
                             // Nothing is saved: the mapped CV is held as one more source.
@@ -307,6 +310,7 @@ export function SourcePicker({ onAdd, helpers, initialFiles, githubProvider, ini
                             onDone={() => {
                                 const resume = stagedGithub.current;
                                 stagedGithub.current = null;
+                                setGithubRun((run) => run + 1);
                                 if (!resume) return;
                                 onAdd([{ id: createId(), sourceId: "github", label: resume.basics.name || t("importHub.source.github"), resume }]);
                             }}
