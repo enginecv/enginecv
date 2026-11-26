@@ -22,7 +22,7 @@ export function VersionOption({ name, checked, onPick, ariaLabel, source, childr
                 <ChoiceInput type="radio" name={name} checked={checked} onChange={onPick} aria-label={ariaLabel} />
             </span>
             <span className="min-w-0 flex-1">
-                <span className={`block text-[11px] font-medium uppercase tracking-wide ${checked ? "text-accent" : "text-faint"}`}>{source}</span>
+                <span className={`block text-xs font-medium ${checked ? "text-accent" : "text-faint"}`}>{source}</span>
                 <span className="mt-0.5 block break-words text-bright">{children}</span>
             </span>
         </label>

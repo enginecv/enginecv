@@ -78,6 +78,8 @@ export function entryDetails(section: StageSection, entry: StagedEntry, formatDa
     const facts = META_FIELDS.filter((field) => !inTitle.has(field)).map((field) => textOf(entry, field));
     const meta = [dates, ...facts, linkLabel(textOf(entry, "url"))].filter(Boolean);
     const summary = plainText(textOf(entry, "description")) || listOf(entry, "highlights").map(plainText).join(" · ");
-    const tags = [...new Set([...listOf(entry, "keywords"), ...listOf(entry, "skills")])];
+    // "typescript" (a topic) and "TypeScript" (a language) are one tag; the first spelling wins.
+    const seen = new Set<string>();
+    const tags = [...listOf(entry, "keywords"), ...listOf(entry, "skills")].filter((tag) => !seen.has(tag.toLowerCase()) && seen.add(tag.toLowerCase()));
     return { meta, text: shorten(summary, 240), tags };
 }

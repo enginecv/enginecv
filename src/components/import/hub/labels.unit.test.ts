@@ -23,10 +23,10 @@ describe("entryDetails", () => {
         expect(details.text).toBe("A fast cv tool. one two");
     });
 
-    it("falls back to the highlights, and joins keywords and skills without repeats", () => {
+    it("falls back to the highlights, and joins keywords and skills, keeping the first spelling of a repeat", () => {
         const details = entryDetails(
             "projects",
-            { id: "1", name: "engine", description: "", highlights: ["Shipped v1", "Wrote docs"], keywords: ["TypeScript", "React"], skills: ["React", "Next.js"] },
+            { id: "1", name: "engine", description: "", highlights: ["Shipped v1", "Wrote docs"], keywords: ["TypeScript", "React"], skills: ["react", "Next.js", "typescript"] },
             asIs,
         );
         expect(details.text).toBe("Shipped v1 · Wrote docs");
