@@ -7,6 +7,7 @@ import type { SourceId } from "@/lib/import/sources";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { SecretKeyDialog } from "@/components/ui/SecretKeyDialog";
 import { useDialogFocus } from "@/hooks/useDialogFocus";
+import { formatCvDate } from "@/lib/cv-language";
 import { recordResumeHistory } from "@/lib/history";
 import { useTranslation } from "@/lib/i18n";
 import type { ImportProvider } from "@/lib/import/provider";
@@ -227,7 +228,9 @@ export function ImportDataDialog({
                         </>
                     )}
 
-                    {hub.step === "review" && <ReviewStep hub={hub} />}
+                    {hub.step === "review" && (
+                        <ReviewStep hub={hub} formatDate={(value) => formatCvDate(value, current.settings.dateFormat, current.settings.language)} />
+                    )}
 
                     {done && outcome && (
                         <div data-testid="import-hub-done" role="status" className="flex flex-col items-center gap-3 py-8 text-center">

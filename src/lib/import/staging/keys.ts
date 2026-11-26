@@ -83,10 +83,13 @@ export function matchKey(section: StageSection, entry: StagedEntry): string {
 
 /** Short text to show for an entry. */
 export function entryTitle(section: StageSection, entry: StagedEntry): string {
+    return titleFields(section).map((field) => String(entry[field] ?? "").trim()).filter(Boolean).join(" · ") || "—";
+}
+
+/** The fields `entryTitle` shows for a section. */
+export function titleFields(section: StageSection): string[] {
     const fields = KEY_FIELDS[section];
-    const first = String(entry[fields.primary] ?? "").trim();
-    const second = fields.secondary ? String(entry[fields.secondary] ?? "").trim() : "";
-    return [first, second].filter(Boolean).join(" · ") || "—";
+    return fields.secondary ? [fields.primary, fields.secondary] : [fields.primary];
 }
 
 /** An entry with nothing in its identifying field: not worth listing. */
