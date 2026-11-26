@@ -7,6 +7,7 @@ import { STAGE_SECTIONS, type MergeRow } from "@/lib/import/staging/types";
 import type { ImportHub } from "./useImportHub";
 import { BasicsChoices } from "./BasicsChoices";
 import { SECTION_LABEL_KEYS, fieldLabelKey, optionLabel, shorten } from "./labels";
+import { VersionOption } from "./VersionOption";
 
 interface RowProps {
     row: MergeRow;
@@ -65,24 +66,25 @@ function Row({ row, hub }: RowProps) {
                         const name = `${row.id}-${conflict.field}`;
                         const label = t(fieldLabelKey(conflict.field));
                         return (
-                            <fieldset key={conflict.field} className="rounded-md border border-edge p-2">
-                                <legend className="px-1 text-xs font-medium text-faint">{label}</legend>
-                                {conflict.options.map((option) => (
-                                    <label key={option.id} className="flex min-h-11 cursor-pointer items-start gap-2 rounded-md px-1 py-2 text-sm hover:bg-surface-4">
-                                        <input
-                                            type="radio"
-                                            name={name}
-                                            checked={chosen === option.id}
-                                            onChange={() => hub.pickField(row.id, conflict.field, option.id)}
-                                            aria-label={`${t("importHub.pick", { field: label })}: ${optionLabel(option.id, hub.plan.batches, t)}`}
-                                            className="mt-1"
-                                        />
-                                        <span className="min-w-0 flex-1">
-                                            <span className="block text-xs text-faint">{optionLabel(option.id, hub.plan.batches, t)}</span>
-                                            <span className="block break-words text-bright">{shorten(option.value) || t("importHub.empty")}</span>
-                                        </span>
-                                    </label>
-                                ))}
+                            <fieldset key={conflict.field}>
+                                <legend className="mb-1.5 text-xs font-medium text-mid">{label}</legend>
+                                <div className="grid gap-2 sm:grid-cols-2">
+                                    {conflict.options.map((option) => {
+                                        const source = optionLabel(option.id, hub.plan.batches, t);
+                                        return (
+                                            <VersionOption
+                                                key={option.id}
+                                                name={name}
+                                                checked={chosen === option.id}
+                                                onPick={() => hub.pickField(row.id, conflict.field, option.id)}
+                                                ariaLabel={`${t("importHub.pick", { field: label })}: ${source}`}
+                                                source={source}
+                                            >
+                                                {shorten(option.value) || <span className="text-faint">{t("importHub.empty")}</span>}
+                                            </VersionOption>
+                                        );
+                                    })}
+                                </div>
                             </fieldset>
                         );
                     })}
