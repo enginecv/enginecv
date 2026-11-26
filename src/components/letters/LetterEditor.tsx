@@ -22,6 +22,7 @@ import { DesignPane } from "./DesignPane";
 import { LayoutPane } from "./LayoutPane";
 import { LetterExportMenu } from "./LetterExportMenu";
 import { LetterPreview } from "./LetterPreview";
+import { useJobReturnHref } from "@/hooks/useJobReturnHref";
 import { LetterTextPane } from "./LetterTextPane";
 import { MarkSentDialog } from "./MarkSentDialog";
 import { ParagraphLibrary } from "./ParagraphLibrary";
@@ -58,6 +59,7 @@ function MobileFooterButton({ active, onClick, icon, label, testId }: { active: 
  * the form and the live preview, and the same phone layout with a footer to switch panes.
  */
 export function LetterEditor({ letterId }: { letterId: string }) {
+    const backHref = useJobReturnHref(LETTERS_HREF);
     const { t } = useTranslation();
     const { loadState, letter, cv, resolved, saveState, conflict, update, keepMine, loadTheirs, flush } = useLetter(letterId);
     const router = useRouter();
@@ -109,7 +111,7 @@ export function LetterEditor({ letterId }: { letterId: string }) {
             <div className="flex min-h-screen flex-col items-center justify-center gap-3 bg-surface-2 p-6 text-center" data-testid="letter-editor-missing">
                 <p className="text-base font-semibold text-strong">{t("letters.editor.notFound")}</p>
                 <p className="max-w-md text-sm text-mid">{t("letters.editor.notFoundHint")}</p>
-                <Link href={LETTERS_HREF} className="rounded-xl border border-edge px-4 py-2 text-sm font-medium text-bright hover:border-faint hover:text-strong">{t("letters.editor.back")}</Link>
+                <Link href={backHref} className="rounded-xl border border-edge px-4 py-2 text-sm font-medium text-bright hover:border-faint hover:text-strong">{t("letters.editor.back")}</Link>
             </div>
         );
     }
@@ -183,7 +185,7 @@ export function LetterEditor({ letterId }: { letterId: string }) {
         <div className="flex h-[100dvh] min-h-screen min-h-[100dvh] flex-col overflow-hidden bg-surface-2 font-sans text-strong print:h-auto print:bg-white print:text-black" data-testid="letter-editor">
             <header className="z-10 flex shrink-0 items-center gap-2 px-3 pt-2 pb-1.5 sm:px-6 print:hidden">
                 <div className="flex min-w-0 flex-1 items-center gap-1.5 lg:gap-2">
-                    <Link href={LETTERS_HREF} aria-label={t("letters.editor.back")} title={t("letters.editor.back")} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-faint transition-colors hover:bg-edge hover:text-strong lg:-ml-1">
+                    <Link href={backHref} aria-label={t("letters.editor.back")} title={t("letters.editor.back")} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-faint transition-colors hover:bg-edge hover:text-strong lg:-ml-1">
                         <ArrowLeft className="w-4 h-4" aria-hidden="true" />
                     </Link>
 

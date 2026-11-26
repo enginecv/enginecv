@@ -6,6 +6,7 @@ import { useLiveQuery } from "dexie-react-hooks";
 import { useDialogFocus } from "@/hooks/useDialogFocus";
 import { urlAfterDashboardTabSelect } from "@/lib/dashboard-tab-url";
 import { isTerminalStage } from "@/lib/jobs/schema";
+import { useTrackerUsageNote } from "@/components/jobs/useTrackerUsage";
 import { db } from "@/lib/db";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useResumeStore } from "@/lib/store";
@@ -844,6 +845,7 @@ function Dashboard() {
     const [startError, setStartError] = useState<string | null>(null);
     const [startFocusId, setStartFocusId] = useState<StartPathId | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+    const deleteUsage = useTrackerUsageNote(deleteTarget?.id);
     const cvUndo = useUndoSlot<{ snapshot: DeletedCvSnapshot; fileKept: boolean }>();
     const templateUndo = useUndoSlot<NonNullable<Awaited<ReturnType<typeof snapshotTemplateForUndo>>>>();
     // The letters linked to the CV being deleted; when there are any, a dialog decides what happens to them.
@@ -1946,7 +1948,7 @@ function Dashboard() {
             <ConfirmModal
                 open={!!deleteTarget && deleteLetters.length === 0 && !deleteHasFile}
                 title={t("dashboard.deleteTitle")}
-                description={t("dashboard.deleteConfirm", { name: deleteTarget?.name ?? "" })}
+                description={[t("dashboard.deleteConfirm", { name: deleteTarget?.name ?? "" }), deleteUsage].filter(Boolean).join(" ")}
                 confirmLabel={t("dashboard.deletePermanently")}
                 destructive
                 onConfirm={() => void handleDelete()}
@@ -1955,7 +1957,7 @@ function Dashboard() {
             {!!deleteTarget && deleteLetters.length === 0 && deleteHasFile && (
                 <DeleteDocumentDialog
                     name={deleteTarget.name}
-                    description={t("dashboard.deleteConfirm", { name: deleteTarget.name })}
+                    description={[t("dashboard.deleteConfirm", { name: deleteTarget.name }), deleteUsage].filter(Boolean).join(" ")}
                     confirmLabel={t("dashboard.deletePermanently")}
                     onConfirm={(choice) => void handleDelete(choice)}
                     onCancel={cancelDelete}

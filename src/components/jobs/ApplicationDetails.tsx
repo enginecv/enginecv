@@ -1,6 +1,6 @@
 "use client";
 
-import { Archive, ArchiveRestore, Copy, ExternalLink, RotateCcw, Trash2, X } from "lucide-react";
+import { Archive, ArchiveRestore, Copy, ExternalLink, FileText, Mail, RotateCcw, Trash2, X } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { useDialogFocus } from "@/hooks/useDialogFocus";
@@ -9,13 +9,16 @@ import { detailsFromForm, formFromApplication, type DetailsErrors, type DetailsF
 import { archive, changeStage, defaultContext, duplicate, restore, trash, unarchive, updateDetails } from "@/lib/jobs/operations";
 import { deleteApplicationPermanently, insertApplication } from "@/lib/jobs/repository";
 import { isSafeWebUrl, type ApplicationEvent, type ApplicationStage, type JobApplication } from "@/lib/jobs/schema";
+import { ApplicationDocuments } from "./ApplicationDocuments";
 import { EssentialFields, MoreFields } from "./DetailsFields";
-import { BUTTON_CLASS, LABEL_CLASS, StageMenu, TEXTAREA_CLASS, runCommand, useCommandError, useStageLabel } from "./shared";
+import { useDocumentChoices } from "./useDocumentChoices";
+import { BUTTON_CLASS, LABEL_CLASS, PRIMARY_BUTTON_CLASS, StageMenu, TEXTAREA_CLASS, runCommand, useCommandError, useStageLabel } from "./shared";
 
 const AUTOSAVE_DELAY_MS = 700;
 
 type SaveState = "idle" | "pending" | "saving" | "saved" | "invalid" | "failed" | "conflict";
-type DetailsTab = "overview" | "activity";
+type DetailsTab = "overview" | "documents" | "activity";
+const DETAILS_TABS: readonly DetailsTab[] = ["overview", "documents", "activity"];
 
 /**
  * One application, opened from the board or list (or a deep link). Edits save on their own after a short
@@ -186,6 +189,12 @@ export function ApplicationDetails({ application, onClose, onAnnounce, onOpen }:
                                 {t("jobs.openLink")}
                             </a>
                         )}
+                        {!trashed && application.submissions.length === 0 && tab !== "documents" && (
+                            <button type="button" className={PRIMARY_BUTTON_CLASS} onClick={() => setTab("documents")} data-testid="job-details-prepare">
+                                <FileText className="h-4 w-4" aria-hidden="true" />
+                                {t("jobs.prepare")}
+                            </button>
+                        )}
                         <div className="ml-auto flex flex-wrap gap-2">
                             {trashed ? (
                                 <>
@@ -225,7 +234,7 @@ export function ApplicationDetails({ application, onClose, onAnnounce, onOpen }:
                         </div>
                     </div>
                     <div role="tablist" aria-label={t("jobs.details.sections")} className="mt-4 flex gap-1">
-                        {(["overview", "activity"] as const).map((id) => (
+                        {DETAILS_TABS.map((id) => (
                             <button
                                 key={id}
                                 type="button"
@@ -237,7 +246,8 @@ export function ApplicationDetails({ application, onClose, onAnnounce, onOpen }:
                                 onClick={() => setTab(id)}
                                 onKeyDown={(event) => {
                                     if (event.key === "ArrowRight" || event.key === "ArrowLeft") {
-                                        const next = id === "overview" ? "activity" : "overview";
+                                        const step = event.key === "ArrowRight" ? 1 : DETAILS_TABS.length - 1;
+                                        const next = DETAILS_TABS[(DETAILS_TABS.indexOf(id) + step) % DETAILS_TABS.length];
                                         setTab(next);
                                         document.getElementById(`job-tab-${next}`)?.focus();
                                     }
@@ -285,6 +295,7 @@ export function ApplicationDetails({ application, onClose, onAnnounce, onOpen }:
                     )}
                     {tab === "overview" ? (
                         <div id="job-panel-overview" role="tabpanel" aria-labelledby="job-tab-overview">
+                            <DocumentsSummary application={application} onManage={() => setTab("documents")} />
                             <fieldset disabled={trashed} className="space-y-5">
                                 <EssentialFields form={form} errors={errors} onChange={change} idPrefix="job-details" />
                                 <div>
@@ -300,6 +311,10 @@ export function ApplicationDetails({ application, onClose, onAnnounce, onOpen }:
                                 </div>
                                 <MoreFields form={form} errors={errors} onChange={change} idPrefix="job-details" />
                             </fieldset>
+                        </div>
+                    ) : tab === "documents" ? (
+                        <div id="job-panel-documents" role="tabpanel" aria-labelledby="job-tab-documents">
+                            <ApplicationDocuments application={application} onAnnounce={onAnnounce} />
                         </div>
                     ) : (
                         <div id="job-panel-activity" role="tabpanel" aria-labelledby="job-tab-activity">
@@ -355,5 +370,33 @@ function ActivityList({ events }: { events: readonly ApplicationEvent[] }) {
                 </li>
             ))}
         </ol>
+    );
+}
+
+/**
+ * The working CV and letter at the top of the Overview, so linking them is never hidden behind a tab.
+ * These are documents being worked on, not a record of what was sent.
+ */
+function DocumentsSummary({ application, onManage }: { application: JobApplication; onManage: () => void }) {
+    const { t } = useTranslation();
+    const { cvs, letters } = useDocumentChoices(t("dashboard.untitled"));
+    const name = (id: string | null, choices: { id: string; title: string }[] | undefined) => {
+        if (!id) return null;
+        return choices?.find((choice) => choice.id === id)?.title ?? (choices ? t("jobs.documents.missing") : "…");
+    };
+    const cv = name(application.workingCvId, cvs);
+    const letter = name(application.workingLetterId, letters);
+    return (
+        <div className="mb-5 flex flex-col gap-3 rounded-xl border border-edge bg-surface-2 p-3 sm:flex-row sm:items-center" data-testid="documents-summary">
+            <dl className="grid min-w-0 flex-1 gap-1 text-sm sm:grid-cols-[auto_1fr] sm:gap-x-3">
+                <dt className="flex items-center gap-1.5 text-faint"><FileText className="h-3.5 w-3.5" aria-hidden="true" />{t("jobs.documents.cv")}</dt>
+                <dd className={`break-words ${cv ? "text-strong" : "text-mid"}`}>{cv ?? t("jobs.documents.none")}</dd>
+                <dt className="flex items-center gap-1.5 text-faint"><Mail className="h-3.5 w-3.5" aria-hidden="true" />{t("jobs.documents.letter")}</dt>
+                <dd className={`break-words ${letter ? "text-strong" : "text-mid"}`}>{letter ?? t("jobs.documents.none")}</dd>
+            </dl>
+            <button type="button" className={BUTTON_CLASS} onClick={onManage} data-testid="documents-summary-manage">
+                {t(cv || letter ? "jobs.documents.manage" : "jobs.documents.linkDocuments")}
+            </button>
+        </div>
     );
 }

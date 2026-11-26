@@ -203,21 +203,24 @@ export function JobsTab({ navLead, navTrail }: { navLead?: ReactNode; navTrail?:
                 {Array.from({ length: 3 }).map((_, index) => <Skeleton key={index} className="h-40 w-full rounded-2xl" />)}
             </div>
         );
-    } else if (applications.length === 0) {
-        content = (
-            <div className="mx-auto max-w-md py-16 text-center" data-testid="jobs-empty">
-                <Briefcase className="mx-auto h-10 w-10 text-faint" aria-hidden="true" />
-                <h2 className="mt-4 text-xl font-bold text-strong">{t("jobs.empty.title")}</h2>
-                <p className="mt-2 text-sm text-mid">{t("jobs.empty.body")}</p>
-                <button type="button" onClick={() => setAdding("saved")} className={`${PRIMARY_BUTTON_CLASS} mx-auto mt-6`} data-testid="jobs-empty-add">
-                    <Plus className="h-4 w-4" aria-hidden="true" />
-                    {t("jobs.empty.add")}
-                </button>
-            </div>
-        );
     } else {
+        const empty = applications.length === 0;
         content = (
             <>
+                {empty && (
+                    // The first visit: a short welcome above an empty board, so the columns are already in view.
+                    <div className="mb-6 flex flex-col gap-4 rounded-2xl border border-edge bg-surface-1 p-5 sm:flex-row sm:items-center" data-testid="jobs-empty">
+                        <Briefcase className="h-8 w-8 shrink-0 text-faint" aria-hidden="true" />
+                        <div className="min-w-0 flex-1">
+                            <h2 className="text-lg font-bold text-strong">{t("jobs.empty.title")}</h2>
+                            <p className="mt-1 text-sm text-mid">{t("jobs.empty.body")}</p>
+                        </div>
+                        <button type="button" onClick={() => setAdding("saved")} className={PRIMARY_BUTTON_CLASS} data-testid="jobs-empty-add">
+                            <Plus className="h-4 w-4" aria-hidden="true" />
+                            {t("jobs.empty.add")}
+                        </button>
+                    </div>
+                )}
                 <div className="mb-6 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm" data-testid="jobs-summary">
                     <p className="text-mid"><span className="font-semibold tabular-nums text-strong">{summary.active}</span> {t("jobs.summary.active")}</p>
                     <p className="text-mid"><span className="font-semibold tabular-nums text-strong">{summary.offers}</span> {t("jobs.summary.offers")}</p>
@@ -234,14 +237,15 @@ export function JobsTab({ navLead, navTrail }: { navLead?: ReactNode; navTrail?:
                         <button type="button" onClick={() => setFilters((current) => ({ ...current, scope: "current" }))} className="font-medium text-accent hover:underline">{t("jobs.scopeNote.back")}</button>
                     </p>
                 )}
-                {visible.length === 0 ? (
-                    <div className="py-12 text-center" data-testid="jobs-no-match">
+                {!empty && visible.length === 0 && (
+                    <div className="mb-6 py-6 text-center" data-testid="jobs-no-match">
                         <p className="text-sm text-mid">{t("jobs.noMatch")}</p>
                         {hasActiveFilters(filters) && <button type="button" onClick={() => setFilters(EMPTY_FILTERS)} className={`${BUTTON_CLASS} mx-auto mt-4`} data-testid="jobs-no-match-clear">{t("jobs.filters.clear")}</button>}
                     </div>
-                ) : effectiveView === "board" ? (
+                )}
+                {effectiveView === "board" ? (
                     <JobBoard groups={groups} onOpen={open} onMove={move} showClosed={showClosed} onToggleClosed={() => setShowClosed((value) => !value)} onAdd={setAdding} />
-                ) : (
+                ) : visible.length > 0 && (
                     <JobList applications={visible} onOpen={open} onMove={move} />
                 )}
             </>

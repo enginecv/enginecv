@@ -39,3 +39,20 @@ export function urlWithApplication(location: { pathname: string; search: string 
     const query = params.toString();
     return query ? `${location.pathname}?${query}` : location.pathname;
 }
+
+export const JOB_RETURN_PARAM = "job";
+const OPAQUE_ID = /^[A-Za-z0-9-]{1,128}$/;
+
+/** The editor URL for a document opened from a tracked job, so its back link can return there. */
+export function editorHrefFromJob(path: string, applicationId: string): string {
+    return `${path}?${JOB_RETURN_PARAM}=${encodeURIComponent(applicationId)}`;
+}
+
+/**
+ * Where an editor's back link goes when it was opened from a job: that job, open in the Job Tracker.
+ * Null without a well-formed `job` parameter, so the editor keeps its usual back link.
+ */
+export function jobReturnHref(search: string): string | null {
+    const id = new URLSearchParams(search).get(JOB_RETURN_PARAM);
+    return id && OPAQUE_ID.test(id) ? `/dashboard?tab=jobs&${APPLICATION_PARAM}=${encodeURIComponent(id)}` : null;
+}

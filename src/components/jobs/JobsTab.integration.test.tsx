@@ -6,6 +6,7 @@ import { changeStage, defaultContext, newApplication } from "@/lib/jobs/operatio
 import { insertApplication } from "@/lib/jobs/repository";
 import { useClientPreferencesStore } from "@/lib/preferences/store";
 import { JobsTab } from "./JobsTab";
+import { makeCv } from "../../../test/setup/letter-fixtures";
 
 configure({ asyncUtilTimeout: 4000 });
 
@@ -26,7 +27,7 @@ describe("JobsTab", () => {
     beforeEach(async () => {
         search = "";
         window.history.replaceState(null, "", "/dashboard");
-        await db.jobApplications.clear();
+        await Promise.all([db.jobApplications.clear(), db.jobSubmissionPackets.clear(), db.resumes.clear(), db.coverLetters.clear()]);
         act(() => {
             useI18nStore.setState({ locale: "en", _hydrated: true });
             useClientPreferencesStore.getState().updateSection("dashboard", { jobsView: "board" });
@@ -145,6 +146,35 @@ describe("JobsTab", () => {
         fireEvent.click(within(details).getByTestId("job-details-reapply"));
         await waitFor(async () => expect((await db.jobApplications.get(job.id))?.notesMarkdown).toBe("Call Amra"));
         expect((await db.jobApplications.get(job.id))?.stage).toBe("applied");
+    });
+
+    it("links a CV, writes a letter for the job, and records what was sent", async () => {
+        await db.resumes.put({ ...makeCv({ id: "cv-1", title: "Design CV" }), updatedAt: 5 });
+        const job = await seed("Acme", "Designer");
+        search = `tab=jobs&application=${job.id}`;
+        render(<JobsTab />);
+        const details = await screen.findByTestId("job-details");
+        fireEvent.click(within(details).getByTestId("job-details-prepare"));
+
+        fireEvent.click(await within(details).findByTestId("working-cv-link"));
+        expect(await within(details).findByTestId("working-cv-title")).toHaveTextContent("Design CV");
+        fireEvent.click(within(details).getByTestId("working-letter-create"));
+        expect(await within(details).findByTestId("working-letter-title")).toHaveTextContent("Acme - Designer");
+        const linked = await db.jobApplications.get(job.id);
+        expect(linked?.workingCvId).toBe("cv-1");
+        expect((await db.coverLetters.get(linked!.workingLetterId!))).toMatchObject({ cvId: "cv-1", company: "Acme", role: "Designer", status: "draft" });
+        expect(within(details).getByTestId("working-letter-open")).toHaveAttribute("href", `/letters/${linked!.workingLetterId}?job=${job.id}`);
+
+        fireEvent.click(within(details).getByTestId("record-open"));
+        const dialog = await screen.findByTestId("record-dialog");
+        fireEvent.click(within(dialog).getByTestId("record-save"));
+        expect(await within(details).findByTestId("submission")).toBeInTheDocument();
+        const stored = await db.jobApplications.get(job.id);
+        expect(stored).toMatchObject({ stage: "applied", submissions: [{ cv: { status: "captured", capturedTitle: "Design CV" }, letter: { status: "captured" } }] });
+        // The working letter is not marked as sent by recording.
+        expect((await db.coverLetters.get(stored!.workingLetterId!))?.status).toBe("draft");
+        fireEvent.click(within(details).getByTestId("submission-view"));
+        expect(await screen.findByTestId("evidence-dialog")).toBeInTheDocument();
     });
 
     it("explains a link to an application that does not exist", async () => {

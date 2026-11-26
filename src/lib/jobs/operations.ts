@@ -1,5 +1,5 @@
 import { createId } from "@/lib/id";
-import type { ApplicationEvent, ApplicationStage, JobApplication } from "./schema";
+import type { ApplicationEvent, ApplicationStage, ApplicationSubmission, JobApplication } from "./schema";
 
 /**
  * Pure rules for changing an application. Each returns a new aggregate with its explanatory event
@@ -103,6 +103,22 @@ export function changeStage(application: JobApplication, to: ApplicationStage, c
         ...application,
         stage: to,
         events: [...application.events, event({ type: "stage-changed", from: application.stage, to }, ctx, occurredOn)],
+    };
+}
+
+/**
+ * Adds a recorded submission and its event. The first one moves Saved or Preparing to Applied; later
+ * ones (and ones on an application already further along or closed) leave the stage alone.
+ */
+export function recordSubmission(application: JobApplication, submission: ApplicationSubmission, ctx: OperationContext): JobApplication {
+    const moves = application.stage === "saved" || application.stage === "preparing";
+    const events: ApplicationEvent[] = [event({ type: "submission-recorded", submissionId: submission.id }, ctx, submission.sentOn)];
+    if (moves) events.push(event({ type: "stage-changed", from: application.stage, to: "applied" }, ctx, submission.sentOn));
+    return {
+        ...application,
+        stage: moves ? "applied" : application.stage,
+        submissions: [...application.submissions, submission],
+        events: [...application.events, ...events],
     };
 }
 
