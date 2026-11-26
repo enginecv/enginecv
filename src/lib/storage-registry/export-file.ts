@@ -82,12 +82,13 @@ export function buildDataExport(
 ): DataExportFile {
     const { ts, locale } = context;
     const now = context.now ?? new Date();
-    const { resumes, versions, templates, letters, other } = inventory.counts;
+    const { resumes, versions, templates, letters, applications, other } = inventory.counts;
     const counts = [
         ts("yourData.summary.resumes", { count: resumes }),
         ts("yourData.summary.versions", { count: versions }),
         ts("yourData.summary.templates", { count: templates }),
         ...(letters > 0 ? [ts("yourData.summary.letters", { count: letters })] : []),
+        ...(applications > 0 ? [ts("yourData.summary.applications", { count: applications })] : []),
         ts("yourData.summary.other", { count: other }),
     ].join(", ");
 
@@ -104,6 +105,9 @@ export function buildDataExport(
             templates: content.templates,
             coverLetters: content.coverLetters ?? [],
             letterParagraphs: content.letterParagraphs ?? [],
+            // Packets keep their exact text: it is what the recorded hash covers.
+            jobApplications: content.jobApplications ?? [],
+            jobSubmissionPackets: content.jobSubmissionPackets ?? [],
         };
     }
 

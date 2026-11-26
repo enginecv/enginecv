@@ -3,6 +3,7 @@ import type { ResumeHistoryEntry } from "@/lib/db";
 import type { Resume } from "@/lib/schema";
 import type { LetterDocument, ParagraphEntry } from "@/lib/letters/schema";
 import type { TemplateDocument } from "@/lib/templates/template-schema";
+import type { JobApplication, SubmissionPacketRecord } from "@/lib/jobs/schema";
 import {
     ENGINECV_DATABASE,
     invisibleEntries,
@@ -42,11 +43,15 @@ export interface EngineCvContent {
     workspaceDocs?: object[];
     workspaceActivity?: object[];
     letterHistory?: object[];
+    /** Job tracker: applications and their frozen packets are exported; restore points are only counted. */
+    jobApplications?: JobApplication[];
+    jobSubmissionPackets?: SubmissionPacketRecord[];
+    jobApplicationHistory?: object[];
 }
 
 export interface Inventory {
     items: FoundItem[];
-    counts: { resumes: number; versions: number; templates: number; letters: number; other: number };
+    counts: { resumes: number; versions: number; templates: number; letters: number; applications: number; other: number };
     totalBytes: number;
     /** Third-party items that may exist but page script cannot see. */
     invisible: RegistryEntry[];
@@ -90,7 +95,7 @@ export function browserAdapters(): BrowserAdapters {
         readEngineCvContent: async () => {
             // Imported here so the inventory never opens (and so creates) the database unless it exists.
             const { db } = await import("@/lib/db");
-            const [resumes, resumeHistory, templates, coverLetters, letterParagraphs, workspace, workspaceDocs, workspaceActivity, letterHistory] = await Promise.all([
+            const [resumes, resumeHistory, templates, coverLetters, letterParagraphs, workspace, workspaceDocs, workspaceActivity, letterHistory, jobApplications, jobSubmissionPackets, jobApplicationHistory] = await Promise.all([
                 db.resumes.toArray(),
                 db.resumeHistory.toArray(),
                 db.templates.toArray(),
@@ -100,8 +105,11 @@ export function browserAdapters(): BrowserAdapters {
                 db.workspaceDocs.toArray(),
                 db.workspaceActivity.toArray(),
                 db.letterHistory.toArray(),
+                db.jobApplications.toArray(),
+                db.jobSubmissionPackets.toArray(),
+                db.jobApplicationHistory.toArray(),
             ]);
-            return { resumes, resumeHistory, templates, coverLetters, letterParagraphs, workspace, workspaceDocs, workspaceActivity, letterHistory };
+            return { resumes, resumeHistory, templates, coverLetters, letterParagraphs, workspace, workspaceDocs, workspaceActivity, letterHistory, jobApplications, jobSubmissionPackets, jobApplicationHistory };
         },
     };
 }
@@ -160,7 +168,7 @@ function storageItems(location: "local-storage" | "session-storage", values: Rec
     });
 }
 
-const TABLES = ["resumes", "resumeHistory", "templates", "coverLetters", "letterParagraphs", "workspace", "workspaceDocs", "workspaceActivity", "letterHistory"] as const;
+const TABLES = ["resumes", "resumeHistory", "templates", "coverLetters", "letterParagraphs", "workspace", "workspaceDocs", "workspaceActivity", "letterHistory", "jobApplications", "jobSubmissionPackets", "jobApplicationHistory"] as const;
 
 export async function collectInventory(overrides: Partial<BrowserAdapters> = {}): Promise<Inventory> {
     const adapters = { ...browserAdapters(), ...overrides };
@@ -237,11 +245,12 @@ export async function collectInventory(overrides: Partial<BrowserAdapters> = {})
     const versions = content?.resumeHistory.length ?? 0;
     const templates = content?.templates.length ?? 0;
     const letters = content?.coverLetters?.length ?? 0;
+    const applications = content?.jobApplications?.length ?? 0;
     const other = items.filter((item) => item.location !== "indexeddb-database" && item.location !== "indexeddb-table").length;
 
     return {
         items,
-        counts: { resumes, versions, templates, letters, other },
+        counts: { resumes, versions, templates, letters, applications, other },
         totalBytes: items.reduce((sum, item) => sum + (item.sizeBytes ?? 0), 0),
         invisible: invisibleEntries(),
         unreadable: [...unreadable],
