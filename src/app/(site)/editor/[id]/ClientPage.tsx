@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState, use, useCallback, useSyncExternalStore, type ChangeEvent, type ReactNode } from "react";
 import { getJsonSession, getEmptyJsonSession, subscribeJsonSession, requestJsonEditorLeave } from "@/lib/editor-json-session";
 import { useRouter } from "next/navigation";
+import { useJobReturnHref } from "@/hooks/useJobReturnHref";
 import { createLetterRecord } from "@/lib/letters/store";
 import dynamic from "next/dynamic";
 import { useLiveQuery } from "dexie-react-hooks";
@@ -144,6 +145,7 @@ export default function EditorPage({ params }: { params: Promise<{ id: string }>
     const unwrappedParams = use(params);
     const { id } = unwrappedParams;
     const router = useRouter();
+    const backHref = useJobReturnHref("/dashboard");
 
     /** Starts a cover letter linked to the CV open here and goes to it. Saves the CV first so the letter reads what is on screen. */
     const [letterError, setLetterError] = useState(false);
@@ -1541,7 +1543,7 @@ export default function EditorPage({ params }: { params: Promise<{ id: string }>
             label: t("palette.backToDashboard"),
             icon: ArrowLeft,
             keywords: ["dashboard", "home", "resumes", "back"],
-            run: () => requestJsonEditorLeave(() => router.push("/dashboard")),
+            run: () => requestJsonEditorLeave(() => router.push(backHref)),
         },
         {
             id: "preferences",
@@ -1644,6 +1646,7 @@ export default function EditorPage({ params }: { params: Promise<{ id: string }>
         ];
     }, [
         autoSaveEnabled,
+        backHref,
         checklistHidden,
         goToPreview,
         handleManualSave,
@@ -1958,7 +1961,7 @@ export default function EditorPage({ params }: { params: Promise<{ id: string }>
         <div className="flex h-[100dvh] min-h-screen min-h-[100dvh] flex-col overflow-hidden bg-surface-2 font-sans text-strong print:h-auto print:bg-white print:text-black">
             <header className={`${mobileMenuOpen ? "relative z-[90]" : "z-10"} flex shrink-0 items-center gap-2 px-3 pt-2 pb-1.5 sm:px-6 transition-all duration-500 print:hidden ${isFocusMode ? "opacity-0 pointer-events-none -translate-y-4" : "opacity-100"}`}>
                 <div className="flex min-w-0 flex-1 items-center gap-1.5 lg:gap-2">
-                    <Link href="/dashboard" aria-label={t("palette.backToDashboard")} title={t("palette.backToDashboard")} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-faint transition-colors hover:bg-edge hover:text-strong lg:-ml-1">
+                    <Link href={backHref} aria-label={t("palette.backToDashboard")} title={t("palette.backToDashboard")} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-faint transition-colors hover:bg-edge hover:text-strong lg:-ml-1">
                         <ArrowLeft className="w-4 h-4" aria-hidden="true" />
                     </Link>
 

@@ -40,6 +40,20 @@ describe("buildDataExport", () => {
         expect(file.data.cookies).toEqual({ "enginecv-locale": "de" });
     });
 
+    it("includes tracked jobs and their exact packet text, and names them in the summary", async () => {
+        const base = seededAdapters();
+        const content = await base.readEngineCvContent();
+        const application = { id: "job-1", company: "Acme", role: "Designer", updatedAt: Date.UTC(2026, 9, 1) } as never;
+        const packet = { id: "p-1", applicationId: "job-1", submissionId: "s-1", capturedAt: 1, sha256: "a".repeat(64), text: "{\"exact\":true}" };
+        const adapters = seededAdapters({ readEngineCvContent: async () => ({ ...content, jobApplications: [application], jobSubmissionPackets: [packet], jobApplicationHistory: [] }) });
+        const file = buildDataExport(await collectInventory(adapters), context);
+        const database = file.data.indexedDB.EngineCVDatabase;
+        expect(database.jobApplications).toEqual([application]);
+        expect(database.jobSubmissionPackets).toEqual([packet]);
+        expect(file.summary[1]).toContain("1 tracked job");
+        expect(file.items.find((item) => item.name === "jobApplications")).toMatchObject({ registryId: "idb.jobApplications", count: 1 });
+    });
+
     it("explains itself in the interface language", async () => {
         const file = buildDataExport(await collectInventory(seededAdapters()), { ...context, ts: tsDe, locale: "de" });
         expect(file.summary[1]).toBe("Sie enthält 3 Lebensläufe, 2 gespeicherte Versionen, 0 Vorlagen, 4 weitere Einträge.");

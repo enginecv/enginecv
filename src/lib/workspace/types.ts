@@ -6,7 +6,9 @@ import type { LetterDocument } from "@/lib/letters/schema";
  * `db.ts` and the UI can import it without pulling in browser file access.
  */
 
-export type DocKind = "cv" | "letter";
+/** CVs and letters always; tracked jobs only while the person includes the job tracker in the folder. */
+export type DocKind = "cv" | "letter" | "application";
+export const DOC_KINDS = ["cv", "letter", "application"] as const satisfies readonly DocKind[];
 
 export type DocState =
     | "in-sync"
@@ -77,6 +79,10 @@ export interface WorkspaceRecord {
     ignoredFiles?: string[];
     /** Show a notification when something changes in the folder. On unless set to false. */
     notify?: boolean;
+    /** Tracked jobs are mirrored to `applications/` (contacts and notes included). Off until the person turns it on. */
+    includeJobs?: boolean;
+    /** Full copies of submitted documents are written to `submissions/`. Off until the person turns it on separately. */
+    backupSubmissions?: boolean;
 }
 
 export interface FileStampRecord {
@@ -134,5 +140,7 @@ export interface LetterHistoryEntry {
 export const ACTIVITY_CAP = 500;
 /** Documents scanned per workspace, files above this are listed as skipped. */
 export const MAX_DOCUMENTS = 500;
+/** Tracked job files scanned per workspace, counted apart so jobs never crowd out CVs and letters. */
+export const MAX_APPLICATION_FILES = 2000;
 /** Largest document file read (same as the authoring text cap). */
 export const MAX_FILE_BYTES = 200 * 1024;

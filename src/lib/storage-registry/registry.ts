@@ -65,6 +65,9 @@ export const STORAGE_REGISTRY = [
     { ...active, id: "idb.workspaceActivity", location: "indexeddb-table", name: "workspaceActivity", database: ENGINECV_DATABASE, legalBasis: "user-content", owner: "enginecv", retention: "until-deleted", jsReadable: true, removable: "yes", timestampField: "at" },
     { ...active, id: "idb.letterHistory", location: "indexeddb-table", name: "letterHistory", database: ENGINECV_DATABASE, legalBasis: "user-content", owner: "enginecv", retention: "until-deleted", jsReadable: true, removable: "yes", timestampField: "createdAt" },
     { ...active, id: "idb.templates", location: "indexeddb-table", name: "templates", database: ENGINECV_DATABASE, legalBasis: "user-content", owner: "enginecv", retention: "until-deleted", jsReadable: true, removable: "yes", timestampField: "updatedAt" },
+    { ...active, id: "idb.jobApplications", location: "indexeddb-table", name: "jobApplications", database: ENGINECV_DATABASE, legalBasis: "user-content", owner: "enginecv", retention: "until-deleted", jsReadable: true, removable: "yes", timestampField: "updatedAt" },
+    { ...active, id: "idb.jobSubmissionPackets", location: "indexeddb-table", name: "jobSubmissionPackets", database: ENGINECV_DATABASE, legalBasis: "user-content", owner: "enginecv", retention: "until-deleted", jsReadable: true, removable: "yes", timestampField: "capturedAt" },
+    { ...active, id: "idb.jobApplicationHistory", location: "indexeddb-table", name: "jobApplicationHistory", database: ENGINECV_DATABASE, legalBasis: "user-content", owner: "enginecv", retention: "until-deleted", jsReadable: true, removable: "yes", timestampField: "createdAt" },
 
     // Settings and small choices.
     { ...active, id: "ls.preferences", location: "local-storage", name: "enginecv-preferences", legalBasis: "functional", owner: "enginecv", retention: "until-deleted", jsReadable: true, removable: "yes", timestampField: "updatedAt" },

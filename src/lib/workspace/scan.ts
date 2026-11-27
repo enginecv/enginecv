@@ -1,5 +1,5 @@
-import { nameKey, parseDocumentFileName } from "./names";
-import { MAX_DOCUMENTS, MAX_FILE_BYTES, type DocKind } from "./types";
+import { EXTENSIONS, nameKey, parseDocumentFileName } from "./names";
+import { MAX_APPLICATION_FILES, MAX_DOCUMENTS, MAX_FILE_BYTES, type DocKind } from "./types";
 
 /**
  * Pure classification of what a folder listing holds. The directory adapter lists `cvs/` and
@@ -38,7 +38,7 @@ export interface ScanResult {
 const CONFLICT_PATTERNS: RegExp[] = [
     /\((?:[^)]* )?conflicted copy[^)]*\)/i, // Dropbox
     /\.sync-conflict-\d{8}-\d{6}/i, // Syncthing
-    /-(?:DESKTOP|LAPTOP|PC|MACBOOK)-[A-Z0-9]{3,}(?=\.(?:cv|letter)\.json$)/i, // OneDrive
+    /-(?:DESKTOP|LAPTOP|PC|MACBOOK)-[A-Z0-9]{3,}(?=\.(?:cv|letter|application)\.json$)/i, // OneDrive
 ];
 
 /** Entries the browser or a sync tool leaves behind: ignored without comment. */
@@ -47,12 +47,12 @@ export function isIgnoredName(name: string): boolean {
 }
 
 function originalOf(name: string, kind: DocKind, present: ReadonlySet<string>): string | null {
-    const extension = kind === "cv" ? ".cv.json" : ".letter.json";
+    const extension = EXTENSIONS[kind];
     const candidates = [
         name.replace(/ \((?:[^)]* )?conflicted copy[^)]*\)/i, ""),
         name.replace(/\.sync-conflict-\d{8}-\d{6}(?:-[A-Z0-9]+)?/i, ""),
-        name.replace(/-(?:DESKTOP|LAPTOP|PC|MACBOOK)-[A-Z0-9]{3,}(?=\.(?:cv|letter)\.json$)/i, ""),
-        name.replace(/ \(\d+\)(?=\.(?:cv|letter)\.json$)/, ""),
+        name.replace(/-(?:DESKTOP|LAPTOP|PC|MACBOOK)-[A-Z0-9]{3,}(?=\.(?:cv|letter|application)\.json$)/i, ""),
+        name.replace(/ \(\d+\)(?=\.(?:cv|letter|application)\.json$)/, ""),
     ];
     for (const candidate of candidates) {
         if (candidate !== name && candidate.toLowerCase().endsWith(extension) && present.has(nameKey(candidate))) return candidate;
@@ -63,17 +63,22 @@ function originalOf(name: string, kind: DocKind, present: ReadonlySet<string>): 
 function looksLikeConflictCopy(name: string, kind: DocKind, present: ReadonlySet<string>): boolean {
     if (CONFLICT_PATTERNS.some((pattern) => pattern.test(name))) return true;
     // "name (1).cv.json" is only a copy when "name.cv.json" is also there.
-    return / \(\d+\)\.(?:cv|letter)\.json$/i.test(name) && originalOf(name, kind, present) !== null;
+    return / \(\d+\)\.(?:cv|letter|application)\.json$/i.test(name) && originalOf(name, kind, present) !== null;
 }
 
-export function classifyListing(listing: { cvs?: readonly ListedFile[]; letters?: readonly ListedFile[] }): ScanResult {
+export function classifyListing(listing: { cvs?: readonly ListedFile[]; letters?: readonly ListedFile[]; applications?: readonly ListedFile[] }): ScanResult {
     const result: ScanResult = { documents: [], conflictCopies: [], skipped: [], notWorkspaceFiles: [] };
-    const folders: Array<[DocKind, readonly ListedFile[]]> = [
-        ["cv", listing.cvs ?? []],
-        ["letter", listing.letters ?? []],
+    // CVs and letters first, then jobs under their own cap, so job files never push a CV or letter out.
+    const folders: Array<[DocKind, readonly ListedFile[], number]> = [
+        ["cv", listing.cvs ?? [], MAX_DOCUMENTS],
+        ["letter", listing.letters ?? [], MAX_DOCUMENTS],
+        ["application", listing.applications ?? [], MAX_APPLICATION_FILES],
     ];
 
-    for (const [folderKind, files] of folders) {
+    // CVs and letters share one count; jobs have their own.
+    const counts = { shared: 0, application: 0 };
+    for (const [folderKind, files, cap] of folders) {
+        const bucket = folderKind === "application" ? "application" : "shared";
         const present = new Set(files.filter((file) => !isIgnoredName(file.name)).map((file) => nameKey(file.name)));
         const sorted = [...files].filter((file) => !isIgnoredName(file.name)).sort((a, b) => a.name.localeCompare(b.name));
         for (const file of sorted) {
@@ -90,10 +95,11 @@ export function classifyListing(listing: { cvs?: readonly ListedFile[]; letters?
                 result.skipped.push({ fileName: file.name, reason: "too-large" });
                 continue;
             }
-            if (result.documents.length >= MAX_DOCUMENTS) {
+            if (counts[bucket] >= cap) {
                 result.skipped.push({ fileName: file.name, reason: "over-limit" });
                 continue;
             }
+            counts[bucket] += 1;
             result.documents.push({ ...file, kind: parsed.kind, stem: parsed.stem });
         }
     }

@@ -1,4 +1,4 @@
-import type { DocKind, ReasonCode } from "./types";
+import { DOC_KINDS, type DocKind, type ReasonCode } from "./types";
 
 /**
  * File names in a workspace folder. A name that is legal in the browser can be illegal or colliding on
@@ -12,7 +12,18 @@ const FALLBACK_STEM = "untitled";
 const ILLEGAL = /[\/:*?"<>|\u0000-\u001f\u007f]/g;
 const RESERVED = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(\..*)?$/i;
 
-export const EXTENSIONS: Record<DocKind, string> = { cv: ".cv.json", letter: ".letter.json" };
+export const EXTENSIONS: Record<DocKind, string> = { cv: ".cv.json", letter: ".letter.json", application: ".application.json" };
+/** The folder each kind of document lives in. */
+export const FOLDERS: Record<DocKind, string> = { cv: "cvs", letter: "letters", application: "applications" };
+
+export function folderOf(kind: DocKind): string {
+    return FOLDERS[kind];
+}
+
+/** `cvs/name.cv.json`, for logs and result files. */
+export function filePath(kind: DocKind, fileName: string): string {
+    return `${FOLDERS[kind]}/${fileName}`;
+}
 
 /** A safe file stem for a document title. */
 export function safeStem(title: string): string {
@@ -32,7 +43,7 @@ export function nameKey(name: string): string {
 
 /** Reason a name must not be written, or null when it is fine. */
 export function nameProblem(name: string): ReasonCode | null {
-    const stem = name.replace(/\.(cv|letter)\.json$/i, "");
+    const stem = name.replace(/\.(cv|letter|application)\.json$/i, "");
     if (RESERVED.test(stem) || RESERVED.test(name)) return "reserved-name";
     if (/[. ]$/.test(name) || /^[. ]/.test(stem) || ILLEGAL.test(name) || name.length > MAX_STEM_LENGTH + 20) {
         ILLEGAL.lastIndex = 0;
@@ -49,7 +60,7 @@ export function documentFileName(stem: string, kind: DocKind): string {
 /** The kind and stem a file name stands for, or null when it is not a workspace document name. */
 export function parseDocumentFileName(name: string): { kind: DocKind; stem: string } | null {
     const lower = name.toLowerCase();
-    for (const kind of ["cv", "letter"] as const) {
+    for (const kind of DOC_KINDS) {
         const extension = EXTENSIONS[kind];
         if (lower.endsWith(extension) && name.length > extension.length) return { kind, stem: name.slice(0, -extension.length) };
     }

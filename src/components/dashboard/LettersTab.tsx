@@ -9,6 +9,7 @@ import { RepointDialog } from "@/components/letters/RepointDialog";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { DeleteDocumentDialog } from "@/components/workspace/DeleteDocumentDialog";
 import { useHasWorkspaceFile } from "@/components/workspace/useHasWorkspaceFile";
+import { useTrackerUsageNote } from "@/components/jobs/useTrackerUsage";
 import { retireBeforeDelete } from "@/lib/workspace/controller";
 import type { RetireChoice } from "@/lib/workspace/lifecycle";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -115,6 +116,7 @@ export function LettersTab({ onCreateCv, gridClass = "grid-cols-1 md:grid-cols-2
     const [focus, setFocus] = useState<string | null>(null);
     const [dialog, setDialog] = useState<{ mode: "repoint" | "duplicate"; letter: LetterDocument } | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<LetterDocument | null>(null);
+    const deleteUsage = useTrackerUsageNote(deleteTarget?.id);
     const deleteHasFile = useHasWorkspaceFile(deleteTarget?.id);
     const [undoRow, setUndoRow] = useState<LetterDocument | null>(null);
     const undoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -394,7 +396,7 @@ export function LettersTab({ onCreateCv, gridClass = "grid-cols-1 md:grid-cols-2
             {!!deleteTarget && deleteHasFile && (
                 <DeleteDocumentDialog
                     name={dialogName}
-                    description={deleteTarget.status === "draft" ? t("dashboard.letters.deleteConfirm", { name: dialogName }) : t("dashboard.letters.deleteConfirmSent", { name: dialogName })}
+                    description={[deleteTarget.status === "draft" ? t("dashboard.letters.deleteConfirm", { name: dialogName }) : t("dashboard.letters.deleteConfirmSent", { name: dialogName }), deleteUsage].filter(Boolean).join(" ")}
                     confirmLabel={t("dashboard.letters.deleteLetter")}
                     onConfirm={(choice) => void confirmDelete(choice)}
                     onCancel={() => setDeleteTarget(null)}
@@ -403,7 +405,7 @@ export function LettersTab({ onCreateCv, gridClass = "grid-cols-1 md:grid-cols-2
             <ConfirmModal
                 open={!!deleteTarget && !deleteHasFile}
                 title={t("dashboard.letters.deleteTitle")}
-                description={deleteTarget?.status === "draft" ? t("dashboard.letters.deleteConfirm", { name: dialogName }) : t("dashboard.letters.deleteConfirmSent", { name: dialogName })}
+                description={[deleteTarget?.status === "draft" ? t("dashboard.letters.deleteConfirm", { name: dialogName }) : t("dashboard.letters.deleteConfirmSent", { name: dialogName }), deleteUsage].filter(Boolean).join(" ")}
                 confirmLabel={t("dashboard.letters.deleteLetter")}
                 destructive
                 onConfirm={() => void confirmDelete()}

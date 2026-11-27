@@ -14,6 +14,7 @@ const ICONS = { created: FilePlus, edited: Pencil, exported: FileDown, review: S
 
 function hrefOf(notice: AgentNotice): string | null {
     if (!notice.docId || !notice.docKind) return null;
+    if (notice.docKind === "application") return `/dashboard?tab=jobs&application=${notice.docId}`;
     return notice.docKind === "cv" ? `/editor/${notice.docId}` : `/letters/${notice.docId}`;
 }
 

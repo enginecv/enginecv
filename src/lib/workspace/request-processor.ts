@@ -89,6 +89,10 @@ async function handle(deps: ProcessorDeps, request: ExportRequest, written: Set<
         return;
     }
     const ctx = { id: request.id, docId: row.docId, agent: request.agent, format: request.format };
+    if (row.kind === "application") {
+        await answer(deps, ctx, { ok: false, code: "format-unavailable", message: "A tracked job is not a printable document and cannot be exported. Export its CV or letter instead." });
+        return;
+    }
     if (!formatsFor(row.kind).includes(request.format)) {
         await answer(deps, ctx, { ok: false, code: "format-unavailable", message: `A ${row.kind === "cv" ? "CV" : "letter"} cannot be exported as ${request.format}. Use one of: ${formatsFor(row.kind).join(", ")}. For PDF request html and follow .enginecv/reference/exports.md.` });
         return;

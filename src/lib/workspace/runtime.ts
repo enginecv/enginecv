@@ -2,6 +2,8 @@ import type { Notice } from "@/lib/agent/authoring/notices";
 import { forEachInSlices } from "./batch";
 import { createCvCodec } from "./codecs/cv";
 import { createLetterCodec } from "./codecs/letter";
+import { applicationGuard, createApplicationCodec } from "./codecs/application";
+import { createApplicationBinding } from "./application-binding";
 import type { DocumentCodec } from "./codecs/types";
 import type { LetterDocument } from "@/lib/letters/schema";
 import { createLetterBinding } from "./letter-binding";
@@ -18,7 +20,7 @@ import { checkShrink, pendingReviewFor, removedEntryTitles } from "./shrink-guar
 import { importUnclaimed } from "./discover";
 import { processRequests } from "./request-processor";
 import { MACHINE_DIR } from "./agent-files";
-import { EXTENSIONS, safeStem } from "./names";
+import { EXTENSIONS, safeStem, folderOf } from "./names";
 import { ensureMachineFiles, refreshIndex } from "./machine-files";
 import { REQUESTS_DIR } from "./requests";
 import type { DocKind, DocReason, DocState, PendingReview, WorkspaceDocRecord } from "./types";
@@ -90,6 +92,7 @@ export interface WorkspaceRuntime {
 }
 
 const cvCodec = createCvCodec();
+const applicationCodec = createApplicationCodec();
 
 /** The first words of the paragraphs a letter would lose, for the review dialog (shown in the app only). */
 function removedParagraphPreviews(before: LetterDocument, after: LetterDocument, max = 10): string[] {
@@ -148,7 +151,9 @@ export function createWorkspaceRuntime(options: RuntimeOptions): WorkspaceRuntim
      * app and the folder agree. Returns the title now in use (to remember as the one the file name came from),
      * or null when nothing changed. A sent letter keeps its title.
      */
-    async function adoptTitleFromFileName(docId: string, kind: "cv" | "letter", fileName: string): Promise<string | null> {
+    async function adoptTitleFromFileName(docId: string, kind: DocKind, fileName: string): Promise<string | null> {
+        // A job is named by its company and role, which the file itself carries; its file name is only a label.
+        if (kind === "application") return null;
         const suffix = EXTENSIONS[kind];
         const stem = (fileName.toLowerCase().endsWith(suffix) ? fileName.slice(0, -suffix.length) : fileName).trim();
         if (!stem) return null;
@@ -174,7 +179,7 @@ export function createWorkspaceRuntime(options: RuntimeOptions): WorkspaceRuntim
     async function reconcileFolder() {
         const workspace = await getWorkspace();
         const ignored = new Set((workspace?.ignoredFiles ?? []).map((name) => name.toLowerCase()));
-        const snapshot = await readFolderSnapshot(options.adapter, idCache, ignored);
+        const snapshot = await readFolderSnapshot(options.adapter, idCache, ignored, { includeJobs: workspace?.includeJobs === true });
         const rows = await listDocRows();
         const result = reconcile(rows, snapshot);
 
@@ -182,7 +187,7 @@ export function createWorkspaceRuntime(options: RuntimeOptions): WorkspaceRuntim
             detach(rename.docId);
             const followedTitle = await adoptTitleFromFileName(rename.docId, rename.kind, rename.to);
             await patchDocRow(rename.docId, { fileName: rename.to, state: "in-sync", reason: null, ...(followedTitle !== null ? { fileTitle: followedTitle } : {}) });
-            await appendLog(options.adapter, { at: Date.now(), doc: rename.docId, file: `${rename.kind === "cv" ? "cvs" : "letters"}/${rename.to}`, outcome: "info", detail: "renamed" }).catch(() => undefined);
+            await appendLog(options.adapter, { at: Date.now(), doc: rename.docId, file: `${folderOf(rename.kind)}/${rename.to}`, outcome: "info", detail: "renamed" }).catch(() => undefined);
             const fresh = (await listDocRows()).find((candidate) => candidate.docId === rename.docId);
             if (fresh) await attach(fresh);
         }
@@ -193,7 +198,7 @@ export function createWorkspaceRuntime(options: RuntimeOptions): WorkspaceRuntim
             await setDocState(docId, "detached", { code: "file-missing" });
             options.events?.onState?.(docId, "detached", { code: "file-missing" });
             await recordActivity({ docId, kind: "refused", code: "file-missing" });
-            await writeRefusal(options.adapter, { docId, file: row ? `${row.kind === "cv" ? "cvs" : "letters"}/${row.fileName}` : null, code: "file-missing" }).catch(() => undefined);
+            await writeRefusal(options.adapter, { docId, file: row ? `${folderOf(row.kind)}/${row.fileName}` : null, code: "file-missing" }).catch(() => undefined);
             await appendLog(options.adapter, { at: Date.now(), doc: docId, outcome: "info", code: "file-missing" }).catch(() => undefined);
         }
         for (const duplicate of result.duplicates) {
@@ -203,7 +208,7 @@ export function createWorkspaceRuntime(options: RuntimeOptions): WorkspaceRuntim
             await setDocState(duplicate.docId, "blocked", { code: "duplicate-id", detail: String(duplicate.files.length) });
             options.events?.onState?.(duplicate.docId, "blocked", { code: "duplicate-id" });
             await recordActivity({ docId: duplicate.docId, kind: "refused", code: "duplicate-id", detail: String(duplicate.files.length) });
-            await writeRefusal(options.adapter, { docId: duplicate.docId, file: duplicate.files[0] ? `${duplicate.kind === "cv" ? "cvs" : "letters"}/${duplicate.files[0]}` : null, code: "duplicate-id", detail: `${duplicate.files.length} files` }).catch(() => undefined);
+            await writeRefusal(options.adapter, { docId: duplicate.docId, file: duplicate.files[0] ? `${folderOf(duplicate.kind)}/${duplicate.files[0]}` : null, code: "duplicate-id", detail: `${duplicate.files.length} files` }).catch(() => undefined);
             await appendLog(options.adapter, { at: Date.now(), doc: duplicate.docId, outcome: "refused", code: "duplicate-id" }).catch(() => undefined);
         }
         // A file that came back, or a duplicate that was resolved, brings its document back to life.
@@ -222,7 +227,7 @@ export function createWorkspaceRuntime(options: RuntimeOptions): WorkspaceRuntim
             const found = await importUnclaimed(options.adapter, result.unmatched, { hideContact: options.hideContact() });
             for (const item of found.imported) {
                 await recordActivity({ docId: item.docId, kind: "accepted", code: "applied", detail: "new document from file" });
-                await appendLog(options.adapter, { at: Date.now(), doc: item.docId, file: `${item.kind === "cv" ? "cvs" : "letters"}/${item.fileName}`, outcome: "accepted", detail: "new document" }).catch(() => undefined);
+                await appendLog(options.adapter, { at: Date.now(), doc: item.docId, file: `${folderOf(item.kind)}/${item.fileName}`, outcome: "accepted", detail: "new document" }).catch(() => undefined);
                 const fresh = (await listDocRows()).find((candidate) => candidate.docId === item.docId);
                 if (fresh) await attach(fresh);
                 options.events?.onImported?.(item.docId, item.kind, item.agent);
@@ -300,6 +305,13 @@ export function createWorkspaceRuntime(options: RuntimeOptions): WorkspaceRuntim
             });
             return;
         }
+        if (row.kind === "application") {
+            if ((await getWorkspace())?.includeJobs !== true) return;
+            const binding = await createApplicationBinding(row.docId);
+            if (!binding) return;
+            await attachEngine(row, "applications", applicationCodec, binding, (before, incoming) => applicationGuard(before, applicationCodec.apply(before, incoming, { hideContact: false }), Date.now()));
+            return;
+        }
         const binding = await createLetterBinding(row.docId);
         if (!binding) return;
         await attachEngine(row, "letters", letterCodec, binding, (before, incoming) => {
@@ -310,7 +322,7 @@ export function createWorkspaceRuntime(options: RuntimeOptions): WorkspaceRuntim
         });
     }
 
-    async function attachEngine<TDoc>(row: WorkspaceDocRecord, folder: "cvs" | "letters", codec: DocumentCodec<TDoc>, binding: DocBinding<TDoc>, guard: (before: TDoc, incoming: TDoc) => PendingReview | null) {
+    async function attachEngine<TDoc>(row: WorkspaceDocRecord, folder: string, codec: DocumentCodec<TDoc>, binding: DocBinding<TDoc>, guard: (before: TDoc, incoming: TDoc) => PendingReview | null) {
         let file;
         try {
             file = await options.adapter.fileAdapter(folder, row.fileName!);
@@ -396,7 +408,7 @@ export function createWorkspaceRuntime(options: RuntimeOptions): WorkspaceRuntim
             await reconcileFolder().catch(() => undefined);
             source = options.createSource
                 ? options.createSource(() => void this.checkNow())
-                : createChangeSource({ adapter: options.adapter, folders: ["cvs", "letters", REQUESTS_DIR], root: options.root, onPossibleChange: () => void this.checkNow(), isVisible: options.isVisible });
+                : createChangeSource({ adapter: options.adapter, folders: [...((await getWorkspace())?.includeJobs ? ["cvs", "letters", "applications"] : ["cvs", "letters"]), REQUESTS_DIR], root: options.root, onPossibleChange: () => void this.checkNow(), isVisible: options.isVisible });
             await source.start();
             // The folder scan only watches the document folders, so a deleted AGENTS.md or index is noticed by this timer.
             housekeepingTimer = setInterval(() => {

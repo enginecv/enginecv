@@ -9,6 +9,10 @@ import { parseCv } from "@/lib/letters/store";
 import type { Resume } from "@/lib/schema";
 import type { Notice } from "@/lib/agent/authoring/notices";
 import { createCvCodec } from "./codecs/cv";
+import { applicationGuard, createApplicationCodec } from "./codecs/application";
+import { parseApplicationText } from "@/lib/jobs/file-format";
+import { recordApplicationHistory } from "@/lib/jobs/history";
+import { jobApplicationSchema, type JobApplication } from "@/lib/jobs/schema";
 import type { DocReason } from "./types";
 
 /**
@@ -23,7 +27,7 @@ export type StoredApplyResult =
     | { ok: true; restoreId: number | null; notices: Notice[]; changed: boolean }
     | { ok: false; reason: DocReason };
 
-export async function readAppDocuments(): Promise<{ cvs: Resume[]; letters: LetterDocument[] }> {
+export async function readAppDocuments(): Promise<{ cvs: Resume[]; letters: LetterDocument[]; applications: JobApplication[] }> {
     const rows = await db.resumes.toArray();
     const cvs = rows.map((row) => parseCv(row)).filter((cv): cv is Resume => cv !== null);
     const letterRows = await db.coverLetters.toArray();
@@ -32,7 +36,12 @@ export async function readAppDocuments(): Promise<{ cvs: Resume[]; letters: Lett
         const parsed = letterDocumentSchema.safeParse(row);
         if (parsed.success) letters.push(parsed.data);
     }
-    return { cvs, letters };
+    const applications: JobApplication[] = [];
+    for (const row of await db.jobApplications.toArray()) {
+        const parsed = jobApplicationSchema.safeParse(row);
+        if (parsed.success) applications.push(parsed.data);
+    }
+    return { cvs, letters, applications };
 }
 
 /** Applies file text to a stored CV: restore point first, design, photo and signature kept. */
@@ -106,4 +115,47 @@ export async function importLetterFromText(text: string, options: { now?: number
     // the controller marks it with reason "unknown-cv".
     await db.coverLetters.put(letter);
     return { ok: true, id, notices: parsed.notices };
+}
+
+const applicationCodec = createApplicationCodec();
+
+/**
+ * Applies file text to a stored job, with the same protections as the live engine: recorded copies are
+ * never changed from the file, and a change that removes history is refused here (the live engine holds it
+ * for review instead). A restore point is taken first.
+ */
+export async function applyFileToStoredApplication(docId: string, text: string, options: { now?: number } = {}): Promise<StoredApplyResult> {
+    const now = options.now ?? Date.now();
+    const parsedRow = jobApplicationSchema.safeParse(await db.jobApplications.get(docId));
+    if (!parsedRow.success) return { ok: false, reason: { code: "file-missing" } };
+    const before = parsedRow.data;
+    const parsed = applicationCodec.parse(text, { now, hideContact: false });
+    if (!parsed.ok) return { ok: false, reason: parsed.reason };
+    if (parsed.id !== null && parsed.id !== docId) return { ok: false, reason: { code: "duplicate-id" } };
+    let next: JobApplication;
+    try {
+        next = applicationCodec.apply(before, parsed.doc, { hideContact: false });
+    } catch {
+        return { ok: false, reason: { code: "invalid-field" } };
+    }
+    if (applicationGuard(before, next, now)) return { ok: false, reason: { code: "shrink-guard" } };
+    if (applicationCodec.isSameContent(before, next)) return { ok: true, restoreId: null, notices: [], changed: false };
+    const restoreId = await recordApplicationHistory(before, "file-sync", now);
+    await db.jobApplications.put(next);
+    return { ok: true, restoreId, notices: [], changed: true };
+}
+
+/**
+ * Creates a tracked job from a file. Its id is kept, because recorded copies belong to that id; a file
+ * whose id another job here already has is refused instead of being given a new one.
+ */
+export async function importApplicationFromText(text: string): Promise<ImportResult> {
+    const parsed = parseApplicationText(text);
+    if (!parsed.ok) return { ok: false, reason: parsed.reason };
+    if (!parsed.id) return { ok: false, reason: { code: "invalid-field", detail: "id" } };
+    if (await db.jobApplications.get(parsed.id)) return { ok: false, reason: { code: "duplicate-id" } };
+    const application = jobApplicationSchema.safeParse({ ...parsed.application, id: parsed.id, revision: 1 });
+    if (!application.success) return { ok: false, reason: { code: "invalid-field" } };
+    await db.jobApplications.add(application.data);
+    return { ok: true, id: parsed.id, notices: [] };
 }

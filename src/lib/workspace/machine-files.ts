@@ -15,6 +15,8 @@ import { readAppDocuments } from "./apply-stored";
 import type { DirectoryAdapter } from "./directory-adapter";
 import { buildIndex, indexText, type IndexDocState, type WorkspaceIndex } from "./index-file";
 import { cvTitle } from "./titles";
+import { localDateOnly } from "@/lib/jobs/dates";
+import { nextAction } from "@/lib/jobs/selectors";
 import { getWorkspace, listDocRows } from "./workspace-store";
 
 /**
@@ -73,6 +75,9 @@ export async function ensureMachineFiles(adapter: DirectoryAdapter, options: { h
     return result;
 }
 
+/** The date of a job's next step, or null when there is none or it has no date. */
+const datedNext = (key: string | undefined): string | null => (key && /^\d{4}-\d{2}-\d{2}$/.test(key) && !key.startsWith("9999") ? key : null);
+
 /** The index as an object: the same summary the file holds, for the file and for in-browser tools. */
 export async function computeIndex(): Promise<WorkspaceIndex> {
     const docs = await readAppDocuments();
@@ -88,9 +93,25 @@ export async function computeIndex(): Promise<WorkspaceIndex> {
         .filter(({ row }) => row?.included && row.fileName)
         .map(({ letter, row }) => ({ id: letter.id, fileName: row!.fileName!, cvId: letter.cvId, company: letter.company, role: letter.role, status: (letter.status === "draft" ? "draft" : "sent") as "draft" | "sent", updatedAt: letter.updatedAt }));
 
+    const today = localDateOnly();
+    const applications = docs.applications
+        .map((application) => ({ application, row: rows.get(application.id) }))
+        .filter(({ row }) => row?.kind === "application" && row.included && row.fileName)
+        .map(({ application, row }) => ({
+            id: application.id,
+            fileName: row!.fileName!,
+            company: application.company,
+            role: application.role,
+            stage: application.stage,
+            next: datedNext(nextAction(application, today)?.sortKey),
+            submissions: application.submissions.length,
+            trashed: application.trashedAt !== null,
+            updatedAt: application.updatedAt,
+        }));
+
     // The time is the newest document change, so an unchanged workspace gives an identical file and nothing is rewritten.
-    const updated = Math.max(0, ...cvs.map((cv) => cv.updatedAt), ...letters.map((letter) => letter.updatedAt));
-    return buildIndex({ cvs, letters, states, now: updated });
+    const updated = Math.max(0, ...cvs.map((cv) => cv.updatedAt), ...letters.map((letter) => letter.updatedAt), ...applications.map((application) => application.updatedAt));
+    return buildIndex({ cvs, letters, applications, states, now: updated });
 }
 
 /** `.enginecv/index.json` from the documents as they are now. Returns true when the file changed. */

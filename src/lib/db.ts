@@ -2,6 +2,7 @@ import Dexie, { type Table } from "dexie";
 import { type Resume } from "./schema";
 import type { LetterDocument, ParagraphEntry } from "./letters/schema";
 import { type TemplateDocument } from "./templates/template-schema";
+import type { JobApplication, JobApplicationHistoryEntry, SubmissionPacketRecord } from "./jobs/schema";
 import type { LetterHistoryEntry, WorkspaceActivityRecord, WorkspaceDocRecord, WorkspaceRecord } from "./workspace/types";
 
 export type { LetterHistoryEntry, WorkspaceActivityRecord, WorkspaceDocRecord, WorkspaceRecord };
@@ -26,6 +27,9 @@ class ResumeDatabase extends Dexie {
     workspaceDocs!: Table<WorkspaceDocRecord, string>; // string = CV or letter id
     workspaceActivity!: Table<WorkspaceActivityRecord, number>;
     letterHistory!: Table<LetterHistoryEntry, number>;
+    jobApplications!: Table<JobApplication, string>;
+    jobSubmissionPackets!: Table<SubmissionPacketRecord, string>;
+    jobApplicationHistory!: Table<JobApplicationHistoryEntry, number>;
 
     constructor() {
         super("EngineCVDatabase");
@@ -91,6 +95,22 @@ class ResumeDatabase extends Dexie {
             workspaceDocs: "docId, kind, state",
             workspaceActivity: "++id, at, docId",
             letterHistory: "++id, letterId, createdAt",
+        });
+        // Job tracker: applications, their frozen submission packets, and restore points taken before an
+        // outside change replaces an application. Additive; every earlier table is kept unchanged.
+        this.version(8).stores({
+            resumes: "id, updatedAt",
+            resumeHistory: "++id, resumeId, createdAt, trigger",
+            templates: "id, updatedAt, createdAt",
+            coverLetters: "id, cvId, updatedAt, status",
+            letterParagraphs: "id, updatedAt",
+            workspace: "id",
+            workspaceDocs: "docId, kind, state",
+            workspaceActivity: "++id, at, docId",
+            letterHistory: "++id, letterId, createdAt",
+            jobApplications: "id, stage, updatedAt, archivedAt, trashedAt",
+            jobSubmissionPackets: "id, applicationId, submissionId, capturedAt",
+            jobApplicationHistory: "++id, applicationId, createdAt",
         });
     }
 }

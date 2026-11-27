@@ -1,10 +1,11 @@
 import { createCvCodec } from "./codecs/cv";
 import type { DirectoryAdapter } from "./directory-adapter";
-import { nameKey } from "./names";
+import { nameKey, folderOf } from "./names";
 import { classifyListing, type ConflictCopy } from "./scan";
 import type { DocKind, WorkspaceDocRecord } from "./types";
 import { patchDocRow } from "./workspace-store";
 import { parseLetterText } from "@/lib/letters/file-format";
+import { parseApplicationText } from "@/lib/jobs/file-format";
 import { hashText } from "@/lib/workspace/hash";
 
 /**
@@ -37,8 +38,31 @@ const cvCodec = createCvCodec();
 /** Stamp and id cache, so a scan reads a file again only when its timestamp or size moved. */
 export type IdCache = Map<string, { stamp: string; id: string | null; valid: boolean }>;
 
-export async function readFolderSnapshot(adapter: DirectoryAdapter, cache: IdCache, ignored: ReadonlySet<string> = new Set()): Promise<FolderSnapshot> {
-    const scan = classifyListing({ cvs: await adapter.listFiles("cvs"), letters: await adapter.listFiles("letters") });
+/** The id a document file names, and whether it parses at all. */
+function peekId(kind: DocKind, text: string): { id: string | null; valid: boolean } {
+    switch (kind) {
+        case "cv": {
+            const parsed = cvCodec.parse(text, { now: 0, hideContact: false });
+            return { id: parsed.ok ? parsed.id : null, valid: parsed.ok };
+        }
+        case "letter": {
+            const parsed = parseLetterText(text);
+            return { id: parsed.ok ? parsed.id : null, valid: parsed.ok };
+        }
+        case "application": {
+            const parsed = parseApplicationText(text);
+            return { id: parsed.ok ? parsed.id : null, valid: parsed.ok && parsed.id !== null };
+        }
+    }
+}
+
+/** `applications/` is read only while the job tracker is included in the folder; otherwise its files are none of the app's business. */
+export async function readFolderSnapshot(adapter: DirectoryAdapter, cache: IdCache, ignored: ReadonlySet<string> = new Set(), options: { includeJobs?: boolean } = {}): Promise<FolderSnapshot> {
+    const scan = classifyListing({
+        cvs: await adapter.listFiles("cvs"),
+        letters: await adapter.listFiles("letters"),
+        applications: options.includeJobs ? await adapter.listFiles("applications") : [],
+    });
     const files: SnapshotFile[] = [];
     for (const doc of scan.documents) {
         if (ignored.has(nameKey(doc.name))) continue;
@@ -46,20 +70,8 @@ export async function readFolderSnapshot(adapter: DirectoryAdapter, cache: IdCac
         const stamp = `${doc.lastModified}:${doc.size}`;
         let cached = cache.get(key);
         if (!cached || cached.stamp !== stamp) {
-            const text = await adapter.readText(doc.kind === "cv" ? "cvs" : "letters", doc.name);
-            let id: string | null = null;
-            let valid = false;
-            if (text !== null) {
-                if (doc.kind === "cv") {
-                    const parsed = cvCodec.parse(text, { now: 0, hideContact: false });
-                    id = parsed.ok ? parsed.id : null;
-                    valid = parsed.ok;
-                } else {
-                    const parsed = parseLetterText(text);
-                    id = parsed.ok ? parsed.id : null;
-                    valid = parsed.ok;
-                }
-            }
+            const text = await adapter.readText(folderOf(doc.kind), doc.name);
+            const { id, valid } = text === null ? { id: null, valid: false } : peekId(doc.kind, text);
             cached = { stamp, id, valid };
             cache.set(key, cached);
         }
@@ -130,12 +142,12 @@ export function reconcile(rows: readonly WorkspaceDocRecord[], snapshot: FolderS
 
 /** Points a document at a file it did not have before (relink, or choosing which duplicate to keep). */
 export async function relinkDocument(docId: string, fileName: string, adapter: DirectoryAdapter, kind: DocKind): Promise<void> {
-    const text = await adapter.readText(kind === "cv" ? "cvs" : "letters", fileName);
+    const text = await adapter.readText(folderOf(kind), fileName);
     await patchDocRow(docId, { fileName, state: "in-sync", reason: null, lastHash: text === null ? null : hashText(text), lastStamp: null });
 }
 
 /** Writes the app's version to a (new) file for a detached document. */
 export async function recreateFile(docId: string, fileName: string, text: string, kind: DocKind, adapter: DirectoryAdapter): Promise<void> {
-    await adapter.writeText(kind === "cv" ? "cvs" : "letters", fileName, text);
+    await adapter.writeText(folderOf(kind), fileName, text);
     await patchDocRow(docId, { fileName, state: "in-sync", reason: null, lastHash: hashText(text), lastStamp: null });
 }

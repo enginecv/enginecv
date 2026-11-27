@@ -5,11 +5,13 @@ import { templateDisplayMeta } from "@/lib/templates/template-display";
 import { useLiveQuery } from "dexie-react-hooks";
 import { useDialogFocus } from "@/hooks/useDialogFocus";
 import { urlAfterDashboardTabSelect } from "@/lib/dashboard-tab-url";
+import { isTerminalStage } from "@/lib/jobs/schema";
+import { useTrackerUsageNote } from "@/components/jobs/useTrackerUsage";
 import { db } from "@/lib/db";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useResumeStore } from "@/lib/store";
 import {
-    ArrowLeft, FileText, Plus, Trash2, X, AlertTriangle, Search, Edit2, Check, Copy, Download, LayoutTemplate, Upload, Mail, ListFilter, Grid2X2, Grid3X3, LayoutGrid, Radiation, ShieldCheck, FolderSync, type LucideIcon,
+    ArrowLeft, FileText, Plus, Trash2, X, AlertTriangle, Search, Edit2, Check, Copy, Download, LayoutTemplate, Upload, Mail, Briefcase, ListFilter, Grid2X2, Grid3X3, LayoutGrid, Radiation, ShieldCheck, FolderSync, type LucideIcon,
 } from "lucide-react";
 import { exportTemplateToJson, importTemplateFromJsonText } from "@/lib/templates/template-io";
 import { templateDocumentSchema, type TemplateDocument } from "@/lib/templates/template-schema";
@@ -77,11 +79,13 @@ import { useClientPreferencesStore } from "@/lib/preferences/store";
 
 import { Skeleton } from "@/components/ui/skeleton";
 
-type DashboardTab = "resumes" | "letters" | "templates";
+type DashboardTab = "resumes" | "letters" | "jobs" | "templates";
 
 // Example content and the picker load when someone opens it, not with the dashboard.
 const ExamplePickerDialog = dynamic(() => import("@/components/dashboard/ExamplePickerDialog"), { ssr: false });
 const ImportDataDialog = dynamic(() => import("@/components/import/hub/ImportDataDialog").then((m) => m.ImportDataDialog), { ssr: false });
+// The Job Tracker loads when its tab opens, not with the dashboard.
+const JobsTab = dynamic(() => import("@/components/jobs/JobsTab").then((m) => m.JobsTab), { ssr: false });
 type GridDensity = "large" | "normal" | "compact";
 
 const GRID_DENSITY_CLASS: Record<GridDensity, string> = {
@@ -841,6 +845,7 @@ function Dashboard() {
     const [startError, setStartError] = useState<string | null>(null);
     const [startFocusId, setStartFocusId] = useState<StartPathId | null>(null);
     const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+    const deleteUsage = useTrackerUsageNote(deleteTarget?.id);
     const cvUndo = useUndoSlot<{ snapshot: DeletedCvSnapshot; fileKept: boolean }>();
     const templateUndo = useUndoSlot<NonNullable<Awaited<ReturnType<typeof snapshotTemplateForUndo>>>>();
     // The letters linked to the CV being deleted; when there are any, a dialog decides what happens to them.
@@ -1113,6 +1118,7 @@ function Dashboard() {
     }, [runStartLink]);
 
     const letterCount = useLiveQuery(() => db.coverLetters.count(), []);
+    const activeJobCount = useLiveQuery(() => db.jobApplications.filter((job) => job.trashedAt === null && job.archivedAt === null && !isTerminalStage(job.stage)).count(), []);
     const letterCountsByCv = useLiveQuery(async () => {
         const counts: Record<string, number> = {};
         await db.coverLetters.each((letter) => {
@@ -1172,7 +1178,7 @@ function Dashboard() {
     const userTemplatePageData = paginate(filteredUserTemplates, userTemplatePage, pageSize);
 
     const isValidTab = (value: string | null): value is DashboardTab =>
-        value === "resumes" || value === "letters" || value === "templates";
+        value === "resumes" || value === "letters" || value === "jobs" || value === "templates";
     // A `?tab=` pin the user has since navigated away from. Production builds do
     // not re-render useSearchParams after the pin is removed from the URL (neither
     // router.replace nor history.replaceState), so the dismissal is tracked here
@@ -1261,6 +1267,7 @@ function Dashboard() {
     const dashboardTabs: DashboardNavItem[] = [
         { id: "resumes", label: t("dashboard.tabResumes"), icon: FileText, count: resumeCount },
         { id: "letters", label: t("dashboard.tabCoverLetters"), icon: Mail, count: letterCount ?? 0 },
+        { id: "jobs", label: t("dashboard.tabJobs"), icon: Briefcase, count: activeJobCount ?? 0 },
         { id: "templates", label: t("dashboard.tabTemplates"), icon: LayoutTemplate, count: userTemplates.length },
     ];
 
@@ -1576,6 +1583,14 @@ function Dashboard() {
                                 onDensityChange={setGridDensity}
                                 cvFilter={letterCvFilter}
                                 onClearCvFilter={() => setLetterCvFilter(null)}
+                                navLead={<SidebarTrigger className="h-10 w-10 shrink-0 rounded-xl md:hidden" />}
+                                navTrail={<><ThemeToggle /><LanguageSwitcher compact /></>}
+                            />
+                        )}
+
+                        {/* Job Tracker tab */}
+                        {activeDashboardTab === "jobs" && (
+                            <JobsTab
                                 navLead={<SidebarTrigger className="h-10 w-10 shrink-0 rounded-xl md:hidden" />}
                                 navTrail={<><ThemeToggle /><LanguageSwitcher compact /></>}
                             />
@@ -1933,7 +1948,7 @@ function Dashboard() {
             <ConfirmModal
                 open={!!deleteTarget && deleteLetters.length === 0 && !deleteHasFile}
                 title={t("dashboard.deleteTitle")}
-                description={t("dashboard.deleteConfirm", { name: deleteTarget?.name ?? "" })}
+                description={[t("dashboard.deleteConfirm", { name: deleteTarget?.name ?? "" }), deleteUsage].filter(Boolean).join(" ")}
                 confirmLabel={t("dashboard.deletePermanently")}
                 destructive
                 onConfirm={() => void handleDelete()}
@@ -1942,7 +1957,7 @@ function Dashboard() {
             {!!deleteTarget && deleteLetters.length === 0 && deleteHasFile && (
                 <DeleteDocumentDialog
                     name={deleteTarget.name}
-                    description={t("dashboard.deleteConfirm", { name: deleteTarget.name })}
+                    description={[t("dashboard.deleteConfirm", { name: deleteTarget.name }), deleteUsage].filter(Boolean).join(" ")}
                     confirmLabel={t("dashboard.deletePermanently")}
                     onConfirm={(choice) => void handleDelete(choice)}
                     onCancel={cancelDelete}

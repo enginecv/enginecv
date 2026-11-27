@@ -7,7 +7,7 @@ import { db } from "@/lib/db";
 import { ConfirmModal } from "@/components/ui/ConfirmModal";
 import { useDialogFocus } from "@/hooks/useDialogFocus";
 import { useTranslation } from "@/lib/i18n";
-import { analyzeFolderHandle, applyHeldChange, chooseDuplicate, connectFolder, disconnectWorkspace, ignoreFile, keepAppVersion, recreateDocumentFile, relinkDocumentTo, resumePermission, setHideContact as applyHideContact, setNotifications, setPaused, showFolderLocation, useWorkspaceStore } from "@/lib/workspace/controller";
+import { analyzeFolderHandle, applyHeldChange, chooseDuplicate, connectFolder, disconnectWorkspace, ignoreFile, keepAppVersion, recreateDocumentFile, relinkDocumentTo, resumePermission, setBackupSubmissions, setHideContact as applyHideContact, setIncludeJobs, setNotifications, setPaused, showFolderLocation, useWorkspaceStore } from "@/lib/workspace/controller";
 import { isBrowserToolsEnabled, isBrowserToolsSupported, setBrowserToolsEnabled } from "@/lib/workspace/browser-tools";
 import { pickWorkspaceFolder } from "@/lib/workspace/directory-adapter";
 import type { PlanItem } from "@/lib/workspace/first-sync";
@@ -36,6 +36,7 @@ export function WorkspacePanel({ onClose, initialActivityDocId }: { onClose: () 
     const [error, setError] = useState<string | null>(null);
     const [confirmDisconnect, setConfirmDisconnect] = useState(false);
     const [confirmHide, setConfirmHide] = useState(false);
+    const [confirmJobs, setConfirmJobs] = useState<"jobs" | "copies" | null>(null);
     // Experimental: only offered where the browser has the assistant API at all.
     const toolsSupported = typeof window !== "undefined" && isBrowserToolsSupported();
     const [toolsOn, setToolsOn] = useState(() => isBrowserToolsEnabled());
@@ -46,6 +47,7 @@ export function WorkspacePanel({ onClose, initialActivityDocId }: { onClose: () 
         const map = new Map<string, string>();
         for (const cv of await db.resumes.toArray()) map.set(cv.id ?? "", cv.meta?.title || cv.basics?.name || "CV");
         for (const letter of await db.coverLetters.toArray()) map.set(letter.id, letter.title || [letter.company, letter.role].filter(Boolean).join(" - ") || letter.id);
+        for (const job of await db.jobApplications.toArray()) map.set(job.id, `${job.role} · ${job.company}`);
         return map;
     }, [], new Map<string, string>());
     const titleOf = (docId: string) => titles.get(docId) ?? docId;
@@ -175,6 +177,48 @@ export function WorkspacePanel({ onClose, initialActivityDocId }: { onClose: () 
                                     <div className="flex gap-2">
                                         <button type="button" onClick={() => { setConfirmHide(false); void applyHideContact(true); }} data-testid="workspace-hide-confirm-yes" className={primary}>{t("workspace.panel.hideConfirmYes")}</button>
                                         <button type="button" onClick={() => setConfirmHide(false)} data-testid="workspace-hide-confirm-no" className={button}>{t("workspace.panel.hideConfirmNo")}</button>
+                                    </div>
+                                </div>
+                            )}
+                            <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-edge bg-surface-1 p-3">
+                                <input type="checkbox" checked={state.includeJobs} onChange={(event) => { if (event.target.checked) setConfirmJobs("jobs"); else void setIncludeJobs(false); }} data-testid="workspace-include-jobs" className="mt-1" />
+                                <span className="min-w-0">
+                                    <span className="block text-sm font-medium text-strong">{t("workspace.jobs.include")}</span>
+                                    <span className="block text-xs text-mid">{t(state.includeJobs ? "workspace.jobs.includeOn" : "workspace.jobs.includeHint")}</span>
+                                </span>
+                            </label>
+                            {state.includeJobs && (
+                                <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-edge bg-surface-1 p-3">
+                                    <input type="checkbox" checked={state.backupSubmissions} onChange={(event) => { if (event.target.checked) setConfirmJobs("copies"); else void setBackupSubmissions(false); }} data-testid="workspace-backup-copies" className="mt-1" />
+                                    <span className="min-w-0">
+                                        <span className="block text-sm font-medium text-strong">{t("workspace.jobs.copies")}</span>
+                                        <span className="block text-xs text-mid">{t(state.backupSubmissions ? "workspace.jobs.copiesOn" : "workspace.jobs.copiesOff")}</span>
+                                        {state.submissionCopies && state.submissionCopies.conflicts + state.submissionCopies.tooLarge > 0 && (
+                                            <span role="status" className="block text-xs text-warning" data-testid="workspace-copies-problems">
+                                                {t("workspace.jobs.copiesProblems", { conflicts: state.submissionCopies.conflicts, tooLarge: state.submissionCopies.tooLarge })}
+                                            </span>
+                                        )}
+                                    </span>
+                                </label>
+                            )}
+                            {confirmJobs && (
+                                <div role="alertdialog" className="space-y-2 rounded-xl border border-accent/30 bg-surface-1 p-3 text-sm" data-testid="workspace-jobs-confirm">
+                                    <p className="text-mid">{t(confirmJobs === "jobs" ? "workspace.jobs.includeConfirm" : "workspace.jobs.copiesConfirm")}</p>
+                                    {confirmJobs === "copies" && state.hideContact && <p className="text-warning" data-testid="workspace-copies-contact-warning">{t("workspace.jobs.copiesContactWarning")}</p>}
+                                    <div className="flex gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const which = confirmJobs;
+                                                setConfirmJobs(null);
+                                                void (which === "jobs" ? setIncludeJobs(true) : setBackupSubmissions(true));
+                                            }}
+                                            data-testid="workspace-jobs-confirm-yes"
+                                            className={primary}
+                                        >
+                                            {t(confirmJobs === "jobs" ? "workspace.jobs.includeYes" : "workspace.jobs.copiesYes")}
+                                        </button>
+                                        <button type="button" onClick={() => setConfirmJobs(null)} data-testid="workspace-jobs-confirm-no" className={button}>{t("workspace.panel.hideConfirmNo")}</button>
                                     </div>
                                 </div>
                             )}
