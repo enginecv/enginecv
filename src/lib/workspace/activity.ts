@@ -1,3 +1,5 @@
+import { recordApplicationHistory } from "@/lib/jobs/history";
+import { jobApplicationSchema } from "@/lib/jobs/schema";
 import type { DirectoryAdapter } from "./directory-adapter";
 import { MACHINE_DIR } from "./agent-files";
 import { db } from "@/lib/db";
@@ -105,7 +107,26 @@ export async function undoActivity(activityId: number, now: number = Date.now())
     if (!entry || entry.kind !== "accepted" || entry.restoreId === null || !entry.docId || entry.undone) return { ok: false, reason: "not-undoable" };
     const docId = entry.docId;
 
-    if (entry.restoreKind === "letter") {
+    if (entry.restoreKind === "application") {
+        const point = await db.jobApplicationHistory.get(entry.restoreId);
+        const parsed = jobApplicationSchema.safeParse(await db.jobApplications.get(docId));
+        if (!point || !parsed.success) return { ok: false, reason: "gone" };
+        const current = parsed.data;
+        // Back to the earlier record, but anything recorded since (submissions and their copies, timeline events) is kept.
+        const earlierSubmissions = new Set(point.application.submissions.map((submission) => submission.id));
+        const earlierEvents = new Set(point.application.events.map((event) => event.id));
+        const restored = jobApplicationSchema.safeParse({
+            ...point.application,
+            id: docId,
+            submissions: [...point.application.submissions, ...current.submissions.filter((submission) => !earlierSubmissions.has(submission.id))],
+            events: [...point.application.events, ...current.events.filter((event) => !earlierEvents.has(event.id))],
+            revision: current.revision + 1,
+            updatedAt: Math.max(now, current.updatedAt + 1),
+        });
+        if (!restored.success) return { ok: false, reason: "unreadable" };
+        await recordApplicationHistory(current, "restore", now);
+        await db.jobApplications.put(restored.data);
+    } else if (entry.restoreKind === "letter") {
         const point = await db.letterHistory.get(entry.restoreId);
         const row = await db.coverLetters.get(docId);
         const current = row ? letterDocumentSchema.safeParse(row) : null;

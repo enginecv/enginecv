@@ -1,7 +1,7 @@
 import { MACHINE_DIR } from "./agent-files";
 import type { DirectoryAdapter } from "./directory-adapter";
 import { cleanAgentName } from "./agent-name";
-import { nameKey } from "./names";
+import { nameKey, folderOf } from "./names";
 import type { DocKind, WorkspaceDocRecord } from "./types";
 
 /**
@@ -31,7 +31,8 @@ export const CV_FORMATS = ["html", "docx", "md", "txt", "tex", "json"] as const;
 export const LETTER_FORMATS = ["html", "docx", "md", "txt", "tex"] as const;
 export type ExportRequestFormat = (typeof CV_FORMATS)[number];
 
-export const formatsFor = (kind: DocKind): readonly string[] => (kind === "cv" ? CV_FORMATS : LETTER_FORMATS);
+/** Tracked jobs are records, not printable documents: an export request for one is refused. */
+export const formatsFor = (kind: DocKind): readonly string[] => (kind === "cv" ? CV_FORMATS : kind === "letter" ? LETTER_FORMATS : []);
 export const extensionFor = (format: string) => (format === "tex" ? "tex" : format);
 
 export interface ExportRequest {
@@ -79,7 +80,7 @@ export function resolveTarget(target: string, rows: readonly WorkspaceDocRecord[
     const byId = rows.find((row) => row.docId === target);
     if (byId) return byId;
     const path = target.replace(/\\/g, "/").replace(/^\.?\//, "");
-    return rows.find((row) => row.fileName && nameKey(`${row.kind === "cv" ? "cvs" : "letters"}/${row.fileName}`) === nameKey(path)) ?? null;
+    return rows.find((row) => row.fileName && nameKey(`${folderOf(row.kind)}/${row.fileName}`) === nameKey(path)) ?? null;
 }
 
 /** A name for the export that is not taken, with `-2`, `-3` ... before the extension when it is. */

@@ -28,7 +28,7 @@ describe("agent file budgets (o200k_base)", () => {
     it("keeps each reference within 1,500 tokens", () => {
         const sizes = Object.fromEntries(Object.entries(referenceFiles()).map(([name, text]) => [name, tokens(text)]));
         for (const [name, size] of Object.entries(sizes)) expect(size, name).toBeLessThanOrEqual(1500);
-        expect(Object.keys(sizes).sort()).toEqual(["cv-format.md", "exports.md", "letter-format.md", "recipes.md"]);
+        expect(Object.keys(sizes).sort()).toEqual(["application-format.md", "cv-format.md", "exports.md", "letter-format.md", "recipes.md"]);
     });
 
     it("keeps the index at 250 tokens for one CV and one letter, then about 170 per extra CV with every section filled and 80 per extra letter (a letter carries its file, the CV id it follows, company and role)", () => {

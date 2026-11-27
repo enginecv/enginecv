@@ -27,6 +27,20 @@ export interface IndexLetterInput {
     updatedAt: number;
 }
 
+/** A tracked job, summarised: no contacts, notes, descriptions or links. */
+export interface IndexApplicationInput {
+    id: string;
+    fileName: string;
+    company: string;
+    role: string;
+    stage: string;
+    /** The date of the next task or interview (YYYY-MM-DD), if any. */
+    next: string | null;
+    submissions: number;
+    trashed: boolean;
+    updatedAt: number;
+}
+
 export interface IndexDocState {
     state: DocState;
     reason: DocReason | null;
@@ -55,6 +69,20 @@ export interface WorkspaceIndex {
         state?: DocState;
         reason?: string;
     }>;
+    /** Present only when the job tracker is included and holds jobs. */
+    applications?: Array<{
+        id: string;
+        file: string;
+        company: string;
+        role: string;
+        stage: string;
+        next?: string;
+        sent: number;
+        trashed?: true;
+        updated: string;
+        state?: DocState;
+        reason?: string;
+    }>;
 }
 
 const iso = (ms: number) => new Date(ms).toISOString().replace(/\.\d{3}Z$/, "Z");
@@ -62,7 +90,7 @@ const iso = (ms: number) => new Date(ms).toISOString().replace(/\.\d{3}Z$/, "Z")
 /** Titles and company names are the person's own words but short; cap them so one odd title cannot blow the budget. */
 const clip = (text: string, max = 60) => (text.length > max ? `${text.slice(0, max - 1)}…` : text);
 
-export function buildIndex(input: { cvs: readonly IndexCvInput[]; letters: readonly IndexLetterInput[]; states: ReadonlyMap<string, IndexDocState>; now: number }): WorkspaceIndex {
+export function buildIndex(input: { cvs: readonly IndexCvInput[]; letters: readonly IndexLetterInput[]; applications?: readonly IndexApplicationInput[]; states: ReadonlyMap<string, IndexDocState>; now: number }): WorkspaceIndex {
     const stateOf = (id: string): IndexDocState => input.states.get(id) ?? { state: "in-sync", reason: null };
     // A document in sync needs no word about it; only trouble is spelled out.
     const troubleOf = (state: IndexDocState) => (state.state === "in-sync" ? {} : { state: state.state, ...(state.reason ? { reason: state.reason.code } : {}) });
@@ -82,6 +110,24 @@ export function buildIndex(input: { cvs: readonly IndexCvInput[]; letters: reado
                 const state = stateOf(letter.id);
                 return { file: `letters/${letter.fileName}`, cv: letter.cvId, company: clip(letter.company), role: clip(letter.role), status: letter.status, updated: iso(letter.updatedAt), ...troubleOf(state) };
             }),
+        ...(input.applications && input.applications.length > 0
+            ? {
+                applications: [...input.applications]
+                    .sort((a, b) => b.updatedAt - a.updatedAt)
+                    .map((application) => ({
+                        id: application.id,
+                        file: `applications/${application.fileName}`,
+                        company: clip(application.company),
+                        role: clip(application.role),
+                        stage: application.stage,
+                        ...(application.next ? { next: application.next } : {}),
+                        sent: application.submissions,
+                        ...(application.trashed ? { trashed: true as const } : {}),
+                        updated: iso(application.updatedAt),
+                        ...troubleOf(stateOf(application.id)),
+                    })),
+            }
+            : {}),
     };
 }
 

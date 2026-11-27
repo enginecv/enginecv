@@ -1,3 +1,5 @@
+import { applicationFileText } from "@/lib/jobs/file-format";
+import type { JobApplication } from "@/lib/jobs/schema";
 import { db } from "@/lib/db";
 import { hashText } from "@/lib/workspace/hash";
 import { applyLetterContent } from "@/lib/letters/apply-content";
@@ -10,7 +12,7 @@ import { createCvCodec } from "./codecs/cv";
 import type { DirectoryAdapter } from "./directory-adapter";
 import { planFirstSync, type AppDocumentInfo, type FolderFileInfo, type PlanItem } from "./first-sync";
 import { ensureMachineFiles, refreshIndex } from "./machine-files";
-import { safeStem, uniqueFileName, keysOf, nameKey } from "./names";
+import { safeStem, uniqueFileName, keysOf, nameKey, FOLDERS } from "./names";
 import { classifyListing } from "./scan";
 import { MAX_FILE_BYTES, type DocKind, type WorkspaceDocRecord } from "./types";
 import { newDocRow, saveWorkspace } from "./workspace-store";
@@ -25,7 +27,6 @@ import { sectionCounts } from "@/lib/workspace/apply-content";
 const cvCodec = createCvCodec();
 const CV_DIR = "cvs";
 const LETTER_DIR = "letters";
-const FOLDER_OF: Record<DocKind, string> = { cv: CV_DIR, letter: LETTER_DIR };
 
 export interface SetupOptions {
     hideContact: boolean;
@@ -43,10 +44,16 @@ export interface SetupAnalysis {
 export { cvTitle, letterTitle } from "./titles";
 import { cvTitle, letterTitle } from "./titles";
 
-export function appText(doc: Resume | LetterDocument, kind: DocKind, options: SetupOptions, titles: Map<string, string>): string {
-    return kind === "cv"
-        ? cvCodec.serialize(doc as Resume, { hideContact: options.hideContact })
-        : letterFileText(doc as LetterDocument, { hideContact: options.hideContact, cvTitle: titles.get((doc as LetterDocument).cvId ?? "") });
+export function appText(doc: Resume | LetterDocument | JobApplication, kind: DocKind, options: SetupOptions, titles: Map<string, string>): string {
+    switch (kind) {
+        case "cv":
+            return cvCodec.serialize(doc as Resume, { hideContact: options.hideContact });
+        case "letter":
+            return letterFileText(doc as LetterDocument, { hideContact: options.hideContact, cvTitle: titles.get((doc as LetterDocument).cvId ?? "") });
+        case "application":
+            // Job files carry the tracker's own contacts; the person agreed to that when turning the tracker on.
+            return applicationFileText(doc as JobApplication);
+    }
 }
 
 /** The file names app documents would get: an earlier name is kept, a new one is made unique. */
@@ -74,7 +81,7 @@ async function readFolderFiles(adapter: DirectoryAdapter): Promise<{ files: Fold
     const scan = classifyListing({ cvs: await adapter.listFiles(CV_DIR), letters: await adapter.listFiles(LETTER_DIR) });
     const files: FolderFileInfo[] = [];
     for (const doc of scan.documents) {
-        const text = await adapter.readText(FOLDER_OF[doc.kind], doc.name);
+        const text = await adapter.readText(FOLDERS[doc.kind], doc.name);
         let id: string | null = null;
         if (text !== null) {
             if (doc.kind === "cv") {
@@ -171,7 +178,7 @@ export async function runSetup(input: {
             const info = item.docId ? infoById.get(item.docId) : undefined;
             if (item.class === "only-in-folder" || (item.class === "conflict" && !info)) {
                 if (item.choice === "import" && item.fileName) {
-                    const text = await adapter.readText(FOLDER_OF[item.kind], item.fileName);
+                    const text = await adapter.readText(FOLDERS[item.kind], item.fileName);
                     if (text === null || text.length > MAX_FILE_BYTES) { result.failed.push({ key: item.key, code: "too-large" }); continue; }
                     const imported = item.kind === "cv" ? await importCvFromText(text, { hideContact: options.hideContact, now }) : await importLetterFromText(text, { now });
                     if (!imported.ok) { result.failed.push({ key: item.key, code: imported.reason.code }); continue; }
@@ -181,7 +188,7 @@ export async function runSetup(input: {
                 continue;
             }
             if (!info) continue;
-            const folder = FOLDER_OF[info.kind];
+            const folder = FOLDERS[info.kind];
             const fileName = item.fileName ?? info.fileName;
 
             if (item.choice === "use-file" && item.fileName) {

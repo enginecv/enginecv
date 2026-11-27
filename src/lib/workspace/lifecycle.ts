@@ -3,11 +3,13 @@ import { hashText } from "@/lib/workspace/hash";
 import type { LetterDocument } from "@/lib/letters/schema";
 import type { Resume } from "@/lib/schema";
 import { MACHINE_DIR } from "./agent-files";
-import { applyFileToStoredCv, applyFileToStoredLetter, readAppDocuments } from "./apply-stored";
+import { applyFileToStoredApplication, applyFileToStoredCv, applyFileToStoredLetter, readAppDocuments } from "./apply-stored";
 import type { DirectoryAdapter } from "./directory-adapter";
 import { readFolderSnapshot, type FolderSnapshot, type IdCache } from "./documents";
-import { keysOf, nameKey, safeStem, uniqueFileName } from "./names";
+import { keysOf, nameKey, safeStem, uniqueFileName, FOLDERS } from "./names";
 import { appText, cvTitle, letterTitle } from "./setup";
+import { applicationFileTitle } from "./titles";
+import type { JobApplication } from "@/lib/jobs/schema";
 import type { DocKind, WorkspaceDocRecord } from "./types";
 import { getWorkspace, listDocRows, newDocRow, patchDocRow, putDocRow, removeDocRow, updateWorkspace } from "./workspace-store";
 
@@ -19,7 +21,7 @@ import { getWorkspace, listDocRows, newDocRow, patchDocRow, putDocRow, removeDoc
  * Nothing here deletes a file unless the person said so for that document.
  */
 
-const FOLDER: Record<DocKind, string> = { cv: "cvs", letter: "letters" };
+const FOLDER = FOLDERS;
 
 export interface MirrorResult {
     created: string[];
@@ -50,15 +52,23 @@ export async function mirrorDocuments(adapter: DirectoryAdapter, options: Option
     const result: MirrorResult = { created: [], renamed: [], orphaned: [], failed: [] };
     const docs = await readAppDocuments();
     const rows = await listDocRows();
+    const includeJobs = (await getWorkspace())?.includeJobs === true;
     const byId = new Map(rows.map((row) => [row.docId, row]));
     const titles = titleMap(docs);
-    const entries: Array<{ id: string; kind: DocKind; title: string; doc: Resume | LetterDocument }> = [
+    const entries: Array<{ id: string; kind: DocKind; title: string; doc: Resume | LetterDocument | JobApplication }> = [
         ...docs.cvs.filter((cv) => cv.id).map((cv) => ({ id: cv.id!, kind: "cv" as const, title: cvTitle(cv), doc: cv })),
         ...docs.letters.map((letter) => ({ id: letter.id, kind: "letter" as const, title: letterTitle(letter), doc: letter as Resume | LetterDocument })),
+        // Jobs in the trash keep their file (it says so), so a restore elsewhere brings them back as they were.
+        ...(includeJobs ? docs.applications.map((application) => ({ id: application.id, kind: "application" as const, title: applicationFileTitle(application), doc: application })) : []),
     ];
     const live = new Set(entries.map((entry) => entry.id));
 
     for (const row of rows) {
+        if (row.kind === "application" && !includeJobs) {
+            // The tracker left the folder: its rows go, its files stay where they are and are not ignored, so turning it on again finds them.
+            await removeDocRow(row.docId);
+            continue;
+        }
         if (!live.has(row.docId)) {
             await removeDocRow(row.docId);
             result.orphaned.push(row.docId);
@@ -79,7 +89,7 @@ export async function mirrorDocuments(adapter: DirectoryAdapter, options: Option
         const row = byId.get(entry.id);
         try {
             if (!row) {
-                unclaimed ??= await readFolderSnapshot(adapter, idCache);
+                unclaimed ??= await readFolderSnapshot(adapter, idCache, new Set(), { includeJobs });
                 const own = unclaimed.files.find((file) => file.kind === entry.kind && file.id === entry.id && !claimedKeys.has(`${file.kind}:${nameKey(file.name)}`));
                 if (own) {
                     const adopted = newDocRow({ docId: entry.id, kind: entry.kind, fileName: own.name, fileTitle: entry.title, included: true }, now);
@@ -145,15 +155,21 @@ export async function includeDocument(adapter: DirectoryAdapter, docId: string, 
     const row = rows.find((candidate) => candidate.docId === docId);
     const cv = docs.cvs.find((candidate) => candidate.id === docId);
     const letter = docs.letters.find((candidate) => candidate.id === docId);
-    const doc = cv ?? letter;
+    const application = docs.applications.find((candidate) => candidate.id === docId);
+    const doc = cv ?? letter ?? application;
     if (!row || !doc) return { ok: false, fileName: null };
     const kind = row.kind;
     const titles = titleMap(docs);
-    const fileName = row.fileName ?? uniqueFileName(cv ? cvTitle(cv) : letterTitle(letter!), kind, await takenKeys(adapter, rows, kind, docId));
+    const title = cv ? cvTitle(cv) : letter ? letterTitle(letter) : applicationFileTitle(application!);
+    const fileName = row.fileName ?? uniqueFileName(title, kind, await takenKeys(adapter, rows, kind, docId));
     const existing = await adapter.readText(FOLDER[kind], fileName);
 
     if (existing !== null && choice === "use-file") {
-        const applied = kind === "cv" ? await applyFileToStoredCv(docId, existing, { hideContact: options.hideContact, now }) : await applyFileToStoredLetter(docId, existing, { now });
+        const applied = kind === "cv"
+            ? await applyFileToStoredCv(docId, existing, { hideContact: options.hideContact, now })
+            : kind === "letter"
+                ? await applyFileToStoredLetter(docId, existing, { now })
+                : await applyFileToStoredApplication(docId, existing, { now });
         if (!applied.ok) return { ok: false, fileName };
         await patchDocRow(docId, { included: true, fileName, state: "in-sync", reason: null, lastHash: hashText(existing) }, now);
         return { ok: true, fileName };

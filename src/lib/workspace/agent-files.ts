@@ -38,11 +38,12 @@ Rules
 6. If a change is refused, read \`.enginecv/results/\` and \`.enginecv/log.ndjson\`, fix the file, save again.
 7. Sign files you write: \`"edited_by": "<your name>"\`. EngineCV shows it.
 
-Read more only when needed
-- \`.enginecv/reference/cv-format.md\`: CV fields
-- \`.enginecv/reference/letter-format.md\`: letters
-- \`.enginecv/reference/exports.md\`: exports and PDFs
-- \`.enginecv/reference/recipes.md\`: worked examples
+Read more only when needed, in \`.enginecv/reference/\`
+- \`cv-format.md\`: CV fields
+- \`letter-format.md\`: letters
+- \`application-format.md\`: jobs
+- \`exports.md\`: exports and PDFs
+- \`recipes.md\`: worked examples
 `;
 }
 
@@ -265,12 +266,34 @@ function recipesBody(): string {
     ].join("\n");
 }
 
+function applicationFormatBody(): string {
+    return [
+        GENERATED_MARK,
+        "# Tracked job files",
+        "",
+        "Present only when the person included the job tracker in this folder. One file per job: `applications/<company - role>.application.json`.",
+        "",
+        "Shape: `format` (`enginecv.application/v1`, required), `id`, `company`, `role`, `jobUrl`, `source`, `location`, `workMode` (onsite, hybrid, remote, unspecified), `employmentType`, `compensation` ({min, max, currency, period} or null), `descriptionMarkdown`, `notesMarkdown`, `tags`, `stage` (saved, preparing, applied, interviewing, offer, accepted, rejected, withdrawn), `workingCvId`, `workingLetterId`, `deadline` (YYYY-MM-DD), `contacts`, `tasks`, `interviews`, `submissions`, `events`, `archivedAt`, `trashedAt`, `createdAt`, `updatedAt`.",
+        "",
+        "Rules",
+        "1. The file is the whole record. Keep every list, even empty ones (`[]`); a missing list is refused, never read as empty.",
+        "2. Times are ISO 8601 UTC (`2026-11-20T09:30:00.000Z`). Due dates and deadlines are calendar dates (`YYYY-MM-DD`). Interview times are UTC with an IANA `timeZone`.",
+        "3. Never change or remove a submission: its `packetId`, `packetSha256` and document selections are fixed by EngineCV. Edits to them are ignored.",
+        "4. Removing tasks, interviews, contacts, submissions or timeline events, or emptying the notes, is held for the person's review.",
+        "5. Add a task: `{\"id\": \"<new id>\", \"title\": \"...\", \"dueOn\": \"2026-12-01\", \"completedAt\": null, \"cancelledAt\": null, \"createdAt\": \"<now>\"}`.",
+        "6. `submissions/*.submission.json` are frozen copies of what was sent. Read them if useful; never edit, rename or delete them.",
+        "",
+    ].join("\n");
+}
+
 export const CV_FORMAT_REFERENCE_FILE = "cv-format.md";
 export const LETTER_FORMAT_REFERENCE_FILE = "letter-format.md";
 export const RECIPES_REFERENCE_FILE = "recipes.md";
+export const APPLICATION_FORMAT_REFERENCE_FILE = "application-format.md";
 export const cvFormatReference = () => stamped(cvFormatBody());
 export const letterFormatReference = () => stamped(letterFormatBody());
 export const recipesReference = () => stamped(recipesBody());
+export const applicationFormatReference = () => stamped(applicationFormatBody());
 
 /** Every reference file by name, in one place so setup, regeneration, the budget test and the public copies agree. */
 export const referenceFiles = (): Record<string, string> => ({
@@ -278,6 +301,7 @@ export const referenceFiles = (): Record<string, string> => ({
     [LETTER_FORMAT_REFERENCE_FILE]: letterFormatReference(),
     [EXPORTS_REFERENCE_FILE]: exportsReference(),
     [RECIPES_REFERENCE_FILE]: recipesReference(),
+    [APPLICATION_FORMAT_REFERENCE_FILE]: applicationFormatReference(),
 });
 
 /** The workspace instruction and reference files as static copies for `public/agent/enginecv/folder/`, keyed by path. */

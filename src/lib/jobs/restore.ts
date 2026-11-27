@@ -1,5 +1,6 @@
 import { db } from "@/lib/db";
 import type { TrackerBackup } from "./backup";
+import { recordApplicationHistory } from "./history";
 import { jobApplicationSchema, type JobApplication, type SubmissionPacketRecord } from "./schema";
 
 /**
@@ -86,7 +87,7 @@ export async function restoreTrackerBackup(
             landing.push(record);
         }
         for (const { local, incoming } of replace) {
-            await db.jobApplicationHistory.add({ applicationId: local.id, createdAt: now, trigger: "restore", application: local });
+            await recordApplicationHistory(local, "restore", now);
             const record = jobApplicationSchema.parse({ ...incoming, revision: local.revision + 1 });
             await db.jobApplications.put(record);
             landing.push(record);

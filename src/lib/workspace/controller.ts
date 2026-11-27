@@ -10,13 +10,14 @@ import { createCvCodec } from "./codecs/cv";
 import { recreateFile, relinkDocument, type Reconciliation } from "./documents";
 import type { ConflictCopy } from "./scan";
 import { MACHINE_DIR } from "./agent-files";
-import { safeStem } from "./names";
+import { safeStem, folderOf } from "./names";
 import { parseCv } from "@/lib/letters/store";
 import { useNotices, type NewNotice } from "./notices";
 import { cvTitle, letterTitle } from "./setup";
 import type { ChangeSourceKind, DocKind, DocState, WorkspaceDocRecord } from "./types";
 import { BROWSER_TOOLS_EVENT, syncBrowserTools } from "./browser-tools";
 import { excludeDocument, includeDocument, mirrorDocuments, retireDocument, type IncludeChoice, type RetireChoice } from "./lifecycle";
+import { syncSubmissionCopies } from "./submission-copies";
 import { clearWorkspace, getWorkspace, putDocRow, setDocState, updateWorkspace } from "./workspace-store";
 
 /**
@@ -34,6 +35,12 @@ export interface WorkspaceUiState {
     hideContact: boolean;
     /** Notifications when something changes in the folder (on unless turned off). */
     notify: boolean;
+    /** Tracked jobs are mirrored to `applications/` (off until chosen). */
+    includeJobs: boolean;
+    /** Full copies of submitted documents are written to `submissions/` (off until chosen separately). */
+    backupSubmissions: boolean;
+    /** Problems with recorded copies in `submissions/` (counts only), or null before the first check. */
+    submissionCopies: { conflicts: number; tooLarge: number; unreferenced: number } | null;
     paused: boolean;
     isLeader: boolean;
     docCount: number;
@@ -49,7 +56,7 @@ export interface WorkspaceUiState {
     attention: { unmatched: Reconciliation["unmatched"]; duplicates: Reconciliation["duplicates"]; conflictCopies: ConflictCopy[] };
 }
 
-const initial: WorkspaceUiState = { phase: "loading", folderName: null, changeSource: null, hideContact: false, notify: true, paused: false, isLeader: false, docCount: 0, byState: {}, error: null, storageProblem: false, rewriting: null, attention: { unmatched: [], duplicates: [], conflictCopies: [] } };
+const initial: WorkspaceUiState = { phase: "loading", folderName: null, changeSource: null, hideContact: false, notify: true, includeJobs: false, backupSubmissions: false, submissionCopies: null, paused: false, isLeader: false, docCount: 0, byState: {}, error: null, storageProblem: false, rewriting: null, attention: { unmatched: [], duplicates: [], conflictCopies: [] } };
 
 export const useWorkspaceStore = create<WorkspaceUiState>(() => initial);
 
@@ -138,6 +145,10 @@ function notify(docId: string | null, build: (title: string, docKind: DocKind | 
             else {
                 const letter = await db.coverLetters.get(docId);
                 if (letter) { title = letterTitle(letter); docKind = "letter"; }
+                else {
+                    const job = await db.jobApplications.get(docId);
+                    if (job) { title = `${job.role} · ${job.company}`; docKind = "application"; }
+                }
             }
         }
         useNotices.getState().push(await build(title, docKind));
@@ -200,7 +211,12 @@ export async function verifyFolder(): Promise<void> {
 async function documentSignature(): Promise<string> {
     const cvs = (await db.resumes.toArray()).map((row) => `${row.id}|${row.meta?.title ?? ""}|${row.basics?.name ?? ""}`);
     const letters = (await db.coverLetters.toArray()).map((row) => `${row.id}|${row.title ?? ""}|${row.company ?? ""}|${row.role ?? ""}`);
-    return [...cvs, ...letters].sort().join("\n");
+    // Jobs that come, go or are renamed; their content reaches the file through their own engines.
+    const includeJobs = useWorkspaceStore.getState().includeJobs;
+    const jobs = includeJobs ? (await db.jobApplications.toArray()).map((row) => `${row.id}|${row.company}|${row.role}`) : [];
+    // A newly recorded copy is written to `submissions/` on the next pass.
+    const copies = includeJobs ? (await db.jobSubmissionPackets.toCollection().primaryKeys()).map((id) => `packet|${id}`) : [];
+    return [...cvs, ...letters, ...jobs, ...copies].sort().join("\n");
 }
 
 /** Mirrors new, renamed and deleted documents into the folder, then restarts the engines that moved. */
@@ -212,6 +228,11 @@ export async function mirrorNow(): Promise<void> {
         await runtime?.refreshTitles().catch(() => undefined);
         runtime?.refreshIndexSoon();
         for (const docId of [...result.created, ...result.renamed]) await runtime?.reload(docId);
+        const { includeJobs, backupSubmissions } = useWorkspaceStore.getState();
+        if (includeJobs && adapter) {
+            const copies = await syncSubmissionCopies(adapter, { write: backupSubmissions }).catch(() => null);
+            if (copies) set({ submissionCopies: { conflicts: copies.conflicts.length, tooLarge: copies.tooLarge.length, unreferenced: copies.unreferenced } });
+        }
         await refreshCounts();
     } catch {
         // A folder problem is reported by the engines and the controller; the next change tries again.
@@ -277,7 +298,7 @@ export async function initWorkspace(): Promise<void> {
     }
     adapter = createDirectoryAdapter(row.handle);
     rootHandle = row.handle;
-    set({ folderName: row.folderName, hideContact: row.hideContact, notify: row.notify !== false, paused: row.paused, changeSource: row.changeSource });
+    set({ folderName: row.folderName, hideContact: row.hideContact, notify: row.notify !== false, includeJobs: row.includeJobs === true, backupSubmissions: row.backupSubmissions === true, paused: row.paused, changeSource: row.changeSource });
     await refreshCounts();
     try {
         const state = await adapter.permissionState();
@@ -385,7 +406,7 @@ export async function applyHeldChange(docId: string): Promise<void> {
 export async function keepAppVersion(docId: string): Promise<void> {
     const row = await db.workspaceDocs.get(docId);
     if (adapter && row?.fileName) {
-        const folder = row.kind === "cv" ? "cvs" : "letters";
+        const folder = folderOf(row.kind);
         const existing = await adapter.readText(folder, row.fileName);
         if (existing !== null) await adapter.writeText(`${MACHINE_DIR}/conflicts`, `${safeStem(row.fileName)}.${Date.now()}.bak`, existing);
     }
@@ -502,6 +523,40 @@ export async function setHideContact(hide: boolean): Promise<void> {
         set({ rewriting: null });
         await refreshCounts();
     }
+}
+
+/** Restarts the running engines so they pick up which folders to read and watch. */
+async function restartRuntime(): Promise<void> {
+    if (runtime) {
+        runtime.stop();
+        runtime = null;
+        stopMirroring();
+    }
+    syncRuntime();
+}
+
+/**
+ * Includes tracked jobs in the folder (one file each in `applications/`, contacts and notes included) or
+ * leaves them out. Turning it off stops reading and writing those files; it never deletes them, and turning
+ * it on again finds them where they were.
+ */
+export async function setIncludeJobs(on: boolean): Promise<void> {
+    if (useWorkspaceStore.getState().includeJobs === on) return;
+    await updateWorkspace({ includeJobs: on });
+    set({ includeJobs: on });
+    await restartRuntime();
+    await mirrorNow();
+}
+
+/**
+ * Writes full copies of submitted documents to `submissions/` (personal data, design and images included),
+ * or stops writing them. Turning it off leaves copies already written where they are.
+ */
+export async function setBackupSubmissions(on: boolean): Promise<void> {
+    if (useWorkspaceStore.getState().backupSubmissions === on) return;
+    await updateWorkspace({ backupSubmissions: on });
+    set({ backupSubmissions: on });
+    await mirrorNow();
 }
 
 let browserToolsListening = false;
